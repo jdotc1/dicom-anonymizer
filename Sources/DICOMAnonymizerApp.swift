@@ -101,6 +101,8 @@ final class EngineRunner: @unchecked Sendable {
     }
 }
 
+enum BatchProblem { case input, output, processing, report }
+
 @MainActor
 final class BatchModel: ObservableObject {
     // ObservableObject retains the original app's macOS 13 deployment target.
@@ -116,27 +118,48 @@ final class BatchModel: ObservableObject {
     @Published var ready = false
     @Published var status = "Choose a batch folder to begin."
     @Published var errorMessage: String?
+    @Published var problem: BatchProblem = .processing
+    @Published var problemURL: URL?
+    @Published private(set) var cancelling = false
     @Published var completedOutput: URL?
     @Published var runStarted: Date?
     @Published var summary: CompletionSummary?
     private var runner: EngineRunner?
     static let outputDefaultsKey = "OutputParentPath"
 
-    init() {
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         // Restore the last chosen output location only when it is still an existing folder.
-        if let path = UserDefaults.standard.string(forKey: Self.outputDefaultsKey) {
+        if let path = defaults.string(forKey: Self.outputDefaultsKey) {
             var isDirectory: ObjCBool = false
             if FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue {
                 outputParent = URL(fileURLWithPath: path, isDirectory: true)
             } else {
-                UserDefaults.standard.removeObject(forKey: Self.outputDefaultsKey)
+                defaults.removeObject(forKey: Self.outputDefaultsKey)
             }
         }
     }
 
+    private func isDirectory(_ url: URL) -> Bool {
+        var directory: ObjCBool = false
+        return url.isFileURL && FileManager.default.fileExists(atPath: url.path, isDirectory: &directory) && directory.boolValue
+    }
+
+    @discardableResult private func validateOutput(_ url: URL) -> Bool {
+        guard isDirectory(url) else {
+            presentProblem(.output, message: "The output location is no longer an accessible folder.", url: url)
+            return false
+        }
+        return true
+    }
+
     func setOutputParent(_ url: URL) {
+        guard !busy, validateOutput(url) else { return }
         outputParent = url.standardizedFileURL
-        UserDefaults.standard.set(url.standardizedFileURL.path, forKey: Self.outputDefaultsKey)
+        defaults.set(url.standardizedFileURL.path, forKey: Self.outputDefaultsKey)
+        if problem == .output { clearProblem(); status = idleStatus }
     }
     private var scanReceived = false
     private var completeReceived = false
@@ -145,10 +168,11 @@ final class BatchModel: ObservableObject {
 
     func selectSource(_ url: URL) {
         guard !busy else { return }
-        var isDirectory: ObjCBool = false
-        guard url.isFileURL, FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
-            errorMessage = "Choose one folder containing numerical patient subfolders."; return
+        guard isDirectory(url) else {
+            rejectSource(url, message: "The selected item is not an accessible folder. Choose the parent folder containing numerical patient subfolders.")
+            return
         }
+        clearProblem()
         source = url.standardizedFileURL
         if outputParent == nil { outputParent = url.deletingLastPathComponent() }
         scan()
@@ -182,14 +206,14 @@ final class BatchModel: ObservableObject {
     }
 
     func scan() {
-        guard let source, !busy else { return }
+        guard canScan, let source else { return }
         patients = []; total = 0; excluded = 0; processed = 0
         ready = false; completedOutput = nil; summary = nil
         launch(arguments: ["--source", source.path, "--scan"], isScan: true, output: nil)
     }
 
     func anonymize() {
-        guard ready, !busy, let source, let outputParent else { return }
+        guard canAnonymize, let source, let outputParent, validateOutput(outputParent) else { return }
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd_HHmmss"
         let output = outputParent.appendingPathComponent("Anonymized_" + formatter.string(from: Date()) + "_" + UUID().uuidString.prefix(6))
@@ -198,7 +222,7 @@ final class BatchModel: ObservableObject {
     }
 
     private func launch(arguments: [String], isScan: Bool, output: URL?) {
-        busy = true; scanning = isScan; errorMessage = nil
+        busy = true; scanning = isScan; cancelling = false; clearProblem()
         scanReceived = false; completeReceived = false
         runStarted = isScan ? nil : Date()
         status = isScan ? "Checking patient folders and DICOM metadata…" : "Checking the batch before processing…"
@@ -208,7 +232,7 @@ final class BatchModel: ObservableObject {
         }, finished: { [weak self] code, cancelled in
             guard let self else { return }
             let elapsed = self.runStarted.map { Date().timeIntervalSince($0) } ?? 0
-            self.busy = false; self.scanning = false; self.runner = nil; self.activePatient = nil; self.runStarted = nil
+            self.busy = false; self.scanning = false; self.cancelling = false; self.runner = nil; self.activePatient = nil; self.runStarted = nil
             if code == 0 && !isScan && self.completeReceived, let output {
                 self.completedOutput = output
                 self.summary = CompletionSummary(patients: self.completedPatients ?? self.patients.count, files: self.processed,
@@ -216,7 +240,7 @@ final class BatchModel: ObservableObject {
                 self.status = "Complete · \(self.processed) DICOM files across \(self.completedPatients ?? self.patients.count) patients in \(elapsedText(elapsed))."
             } else if cancelled {
                 self.status = "Cancelled. No completed batch was published."
-                self.errorMessage = nil
+                self.clearProblem()
                 if isScan { self.ready = false }
             } else if code == 0 && isScan && self.scanReceived {
                 self.ready = true
@@ -224,7 +248,7 @@ final class BatchModel: ObservableObject {
             } else {
                 self.ready = false
                 self.status = "Batch needs attention."
-                if self.errorMessage == nil { self.errorMessage = "The engine stopped before completing the batch. No completed batch was published." }
+                if self.errorMessage == nil { self.presentProblem(.processing, message: "The engine stopped before completing the batch. No completed batch was published.") }
             }
             self.terminationReply?(); self.terminationReply = nil
         })
@@ -247,6 +271,7 @@ final class BatchModel: ObservableObject {
             completedPatients = nil
             scanReceived = true
         case "progress":
+            guard !cancelling else { return }
             if let reported = eventCount(event["total_files"]), reported > 0 { total = reported }
             processed = min(eventCount(event["processed"]) ?? processed, max(total, processed))
             if let patient = event["patient_id"] as? String, !patient.isEmpty { activePatient = patient }
@@ -257,7 +282,7 @@ final class BatchModel: ObservableObject {
             if let value = eventCount(event["excluded_files"]) { excluded = value }
             completeReceived = true
         case "error":
-            errorMessage = (event["message"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "The batch could not be processed."
+            presentProblem(.processing, message: (event["message"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "The batch could not be processed.")
         default: break
         }
     }
@@ -272,30 +297,97 @@ final class BatchModel: ObservableObject {
     }
 
     func revealOutput() {
-        guard let output = completedOutput else { return }
+        guard canInspectOutput, let output = completedOutput else { return }
         NSWorkspace.shared.activateFileViewerSelecting([output])
     }
 
     func openReport() {
-        guard let output = completedOutput else { return }
+        guard canInspectOutput, let output = completedOutput else { return }
         let report = output.appendingPathComponent("anonymization-report.json")
-        if FileManager.default.fileExists(atPath: report.path) { NSWorkspace.shared.open(report) }
-        else { errorMessage = "The anonymization report could not be found in the output folder." }
+        var directory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: report.path, isDirectory: &directory), !directory.boolValue else {
+            presentProblem(.report, message: "The anonymization report could not be found. Check whether the output batch was moved or deleted.", url: output)
+            return
+        }
+        if NSWorkspace.shared.open(report) { dismissReportProblem() }
+        else { presentProblem(.report, message: "The report could not be opened. Reveal the output folder and try opening it there.", url: output) }
     }
 
-    var canAnonymize: Bool { ready && !busy && outputParent != nil && errorMessage == nil }
+    var hasBlockingProblem: Bool { errorMessage != nil && problem != .report }
+    var canAnonymize: Bool { ready && !busy && outputParent != nil && !hasBlockingProblem }
+    var canScan: Bool { source != nil && !busy && (errorMessage == nil || problem == .processing) }
+    var canInspectOutput: Bool { completedOutput != nil && !busy }
+
+    var problemTitle: String {
+        switch problem {
+        case .input: "Choose a batch folder"
+        case .output: "Output location unavailable"
+        case .processing: "Batch needs attention"
+        case .report: "Report unavailable"
+        }
+    }
+    var recoveryMessage: String {
+        switch problem {
+        case .input: "Choose the parent folder containing numerical patient subfolders, such as 00001."
+        case .output: "Reconnect the output volume or choose another existing folder, then try again."
+        case .processing: "Correct the reported problem, then check again. You can change the batch folder or output location."
+        case .report: "Reveal the output location to look for the report, or dismiss this message. The completed-batch record is kept."
+        }
+    }
+    var recoveryTitle: String {
+        switch problem {
+        case .input: "Choose Folder…"
+        case .output: "Choose Location…"
+        case .processing: source == nil ? "Choose Folder…" : "Check Again"
+        case .report: "Reveal Output"
+        }
+    }
+    func recover() {
+        guard !busy else { return }
+        switch problem {
+        case .input: chooseSource()
+        case .output: chooseOutput()
+        case .processing: if source == nil { chooseSource() } else { scan() }
+        case .report: revealOutput()
+        }
+    }
+    private var idleStatus: String {
+        if let summary {
+            return "Complete · \(summary.files) DICOM files across \(summary.patients) patients in \(elapsedText(summary.elapsed))."
+        }
+        return ready ? "Ready · \(patients.count) patients and \(total) DICOM files." : "Choose a batch folder to begin."
+    }
+    private func clearProblem() {
+        errorMessage = nil; problemURL = nil; problem = .processing
+    }
+    private func presentProblem(_ kind: BatchProblem, message: String, url: URL? = nil) {
+        problem = kind; problemURL = url; errorMessage = message
+        if kind == .processing { ready = false }
+        if kind != .report { status = problemTitle + "." }
+    }
+    private func rejectSource(_ url: URL?, message: String) {
+        source = nil; ready = false; patients = []; total = 0; processed = 0; excluded = 0; activePatient = nil
+        presentProblem(.input, message: message, url: url)
+    }
+    func dismissReportProblem() {
+        guard !busy, problem == .report else { return }
+        clearProblem(); status = idleStatus
+    }
 
     var isFinalizing: Bool { total > 0 && processed >= total }
     var progressTitle: String {
-        isFinalizing ? "Finalizing batch" : processed == 0 ? "Preparing batch" : "Anonymizing"
+        cancelling ? "Cancelling" : isFinalizing ? "Finalizing batch" : processed == 0 ? "Preparing batch" : "Anonymizing"
     }
     var progressDetail: String {
-        isFinalizing ? "Writing is complete. Checking output and preparing the report…" :
+        cancelling ? "Stopping and removing incomplete output…" : isFinalizing ? "Writing is complete. Checking output and preparing the report…" :
             processed == 0 ? "Checking the batch before writing files…" :
             "Anonymizing patient \(activePatient ?? "—") · \(processed) of \(total) files"
     }
 
-    func cancel() { status = "Cancelling and removing incomplete output…"; runner?.cancel() }
+    func cancel() {
+        guard busy, !cancelling else { return }
+        cancelling = true; status = "Cancelling and removing incomplete output…"; runner?.cancel()
+    }
 
     func prepareToQuit(completion: @escaping () -> Void) {
         terminationReply = completion
@@ -311,7 +403,7 @@ final class BatchModel: ObservableObject {
             else { url = nil }
             Task { @MainActor in
                 if let url { self?.selectSource(url) }
-                else { self?.errorMessage = "The dropped folder could not be read. Use Choose Folder." }
+                else if let self, !self.busy { self.rejectSource(nil, message: "The dropped folder could not be read. Use Choose Folder.") }
             }
         }
         return true
@@ -429,12 +521,13 @@ struct BatchProgress: View {
     let total: Int
     let activePatient: String?
     let started: Date?
+    let cancelling: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            if processed == 0 || (total > 0 && processed >= total) {
+            if cancelling || processed == 0 || (total > 0 && processed >= total) {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text(processed == 0 ? "Preparing batch" : "Finalizing batch").bold()
+                    Text(cancelling ? "Cancelling" : processed == 0 ? "Preparing batch" : "Finalizing batch").bold()
                 }
                 .accessibilityElement(children: .combine)
             } else {
@@ -514,24 +607,36 @@ struct BatchView: View {
             } else {
                 FolderInput(source: nil, busy: model.busy, choose: model.chooseSource, acceptDrop: model.acceptDrop)
             }
-            PatientPreview(patients: model.patients, activePatient: model.activePatient, total: model.total, excluded: model.excluded)
+            if model.errorMessage == nil {
+                PatientPreview(patients: model.patients, activePatient: model.activePatient, total: model.total, excluded: model.excluded)
+            }
             OutputSection(parent: model.outputParent, disabled: model.busy, choose: model.chooseOutput)
             Divider()
-            PolicySummary()
+            if model.errorMessage == nil { PolicySummary() }
             if let error = model.errorMessage {
-                HStack(alignment: .top) {
-                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red)
-                        .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                    Spacer()
-                    Button("Copy Details", action: model.copyErrorDetails)
-                        .accessibilityHint("Copies the error message to the clipboard")
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(model.problemTitle, systemImage: "exclamationmark.triangle.fill").bold().foregroundStyle(.red)
+                    Text(error).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                    Text(model.recoveryMessage).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    HStack {
+                        Button(model.recoveryTitle, action: model.recover).disabled(model.busy)
+                        if model.problem == .report {
+                            Button("Dismiss", action: model.dismissReportProblem)
+                        } else if model.problem == .processing {
+                            if model.source != nil { Button("Choose Folder…", action: model.chooseSource).disabled(model.busy) }
+                            Button("Choose Location…", action: model.chooseOutput).disabled(model.busy)
+                        }
+                        Spacer()
+                        Button("Copy Details", action: model.copyErrorDetails)
+                            .accessibilityHint("Copies the error message to the clipboard")
+                    }
                 }
                 .accessibilityIdentifier("batchError")
             }
             VStack(alignment: .leading, spacing: 8) {
-                if model.busy {
-                    if model.scanning { ProgressView().controlSize(.small).accessibilityLabel("Checking batch") }
-                    else { BatchProgress(processed: model.processed, total: model.total, activePatient: model.activePatient, started: model.runStarted) }
+                if model.busy && model.errorMessage == nil {
+                    if model.scanning { ProgressView().controlSize(.small).accessibilityLabel(model.cancelling ? "Cancelling" : "Checking batch") }
+                    else { BatchProgress(processed: model.processed, total: model.total, activePatient: model.activePatient, started: model.runStarted, cancelling: model.cancelling) }
                 }
                 if let summary = model.summary, !model.busy {
                     CompletionView(summary: summary, reveal: model.revealOutput, openReport: model.openReport)
@@ -539,11 +644,11 @@ struct BatchView: View {
                 Text(model.status).id(model.status).accessibilityIdentifier("batchStatus").textSelection(.enabled)
             }
             HStack {
-                if model.busy { Button("Cancel", action: model.cancel).keyboardShortcut(.cancelAction) }
-                else { Button("Check Again", action: model.scan).disabled(model.source == nil) }
+                if model.busy { Button(model.cancelling ? "Cancelling…" : "Cancel", action: model.cancel).keyboardShortcut(.cancelAction).disabled(model.cancelling) }
+                else { Button("Check Again", action: model.scan).disabled(!model.canScan) }
                 Spacer()
                 if let output = model.completedOutput {
-                    Button("Open Output") { NSWorkspace.shared.open(output) }
+                    Button("Open Output") { NSWorkspace.shared.open(output) }.disabled(!model.canInspectOutput)
                 }
                 Button("Anonymize Batch", action: model.anonymize)
                     .buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
@@ -588,16 +693,16 @@ struct DICOMAnonymizerApp: App {
                 Button("Choose Output Location…", action: model.chooseOutput)
                     .keyboardShortcut("o", modifiers: [.command, .shift]).disabled(model.busy)
                 Button("Check Again", action: model.scan)
-                    .keyboardShortcut("r").disabled(model.source == nil || model.busy)
+                    .keyboardShortcut("r").disabled(!model.canScan)
                 Button("Anonymize Batch", action: model.anonymize)
                     .keyboardShortcut(.return, modifiers: .command).disabled(!model.canAnonymize)
                 Divider()
                 Button("Reveal Output in Finder", action: model.revealOutput)
                     .keyboardShortcut("r", modifiers: [.command, .shift])
-                    .disabled(model.completedOutput == nil || model.busy)
+                    .disabled(!model.canInspectOutput)
                 Button("Open Report", action: model.openReport)
                     .keyboardShortcut("r", modifiers: [.command, .option])
-                    .disabled(model.completedOutput == nil || model.busy)
+                    .disabled(!model.canInspectOutput)
             }
         }
     }
