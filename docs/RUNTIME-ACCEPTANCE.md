@@ -1,8 +1,10 @@
 # macOS release acceptance
 
-## Current download and historical previews
+## Current release — preview 5, build 9
 
-As of 2026-10-14, `v2.0.0-preview.4` is the only downloadable GitHub release. Previews 1–3 were superseded by preview 4 and their GitHub release entries were removed; their Git tags remain. The earlier source-publication and runtime-acceptance records below are preserved as historical evidence. Preview 4 reuses the accepted standalone runtime from preview 3 and adds the approved icon; this housekeeping does not change source behavior, the current app download or acceptance scope.
+## Preview 4 download housekeeping (historical)
+
+Before preview 5 was prepared on 2026-10-14, `v2.0.0-preview.4` was the only downloadable GitHub release. Previews 1–3 were superseded by preview 4 and their GitHub release entries were removed; their Git tags remain. The earlier source-publication and runtime-acceptance records below are preserved as historical evidence. Preview 4 reuses the accepted standalone runtime from preview 3 and adds the approved icon; this housekeeping does not change source behavior, the current app download or acceptance scope.
 
 ## Preview 2 baseline acceptance
 
@@ -48,3 +50,7 @@ The standalone runtime's build deployment target is macOS 11. The app remains ar
 The accepted preview-3 standalone bundle is reused. Already compiled `Assets.car` and `AppIcon.icns` were copied from the separately accepted icon build, with `CFBundleIconName` and `CFBundleIconFile` both set to `AppIcon`. The new package build number is 8; engine policy remains `2.0-build5`. The icon's authoring files/provenance remain private by the owner's instruction.
 
 Existing icon compilation and native appearance evidence were reused. No Swift or engine rebuild, icon recompilation, runtime/engine test, self-audit test, dependency re-verification or source hash was repeated for this resource-only delta. The icon package composition was checked, its changed root signature passed strict verification, Apple accepted notarization submission `f026e02d-f2ad-43c4-ace9-98c60bcdc46c`, and its ticket and Gatekeeper assessment passed. Nested code signatures and all standalone acceptance evidence remain reused.
+
+## Workflow polish distribution — preview 5, build 9
+
+The focused workflow-polish source, optimized build, synthetic model/layout and native presentation evidence is reused from the accepted polish pass. The standalone runtime, engine, self-audit, compiled icon and nested signatures remain unchanged. Release metadata selects app 2.0/build 9. A new Developer ID root signature passed strict verification and Apple accepted notarization `c36ff882-9b96-4888-8cf2-a7edf23edb98`. Stapling, ticket validation and Gatekeeper acceptance are recorded with the final release artifact. No engine/self-audit processing, unchanged UI/theme/runtime/dependency checks or hashes were repeated.

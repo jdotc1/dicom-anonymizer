@@ -18,3 +18,5 @@ Native local candidates launched. The public output-location menu command and pr
 ## Reused evidence and delivery boundary
 
 Reuse prior engine, metadata policy, self-audit, bundled-Python, dependency, icon, theme and notarization receipts for unchanged inputs. No batch processing, engine/self-audit suite, unchanged theme/signature/dependency check, provenance hash or corpus pass ran for this polish. The root signatures of the new local candidate/preview copies are ad-hoc; they are not new notarized releases.
+
+Apple accepted the updated distribution submission `c36ff882-9b96-4888-8cf2-a7edf23edb98` on 2026-10-14. The accepted optimized executable was reused; no runtime or source test was repeated for submission.
