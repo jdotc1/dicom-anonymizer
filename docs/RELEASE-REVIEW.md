@@ -1,27 +1,21 @@
-# Source-only release review
-
-Draft prepared 2026-10-14 under the DICOM Anonymizer Project identity. MIT license selected. This is a new repository with a fresh initial commit, no remote and no copied development Git history. It is prepared for owner review before publication.
+# Source preview release
 
 ## Included
 
-Python engine and bootstrap, native Swift source, local build scripts, pinned requirements, synthetic unit/native test sources, a standalone fictional-data generator, manual-only synthetic CI, license/dependency notices and public-facing documentation. The generator reads no files and writes only new synthetic objects. No actual DICOM files or patient-derived examples are committed.
+Python engine and bootstrap, native Swift source, local build scripts, pinned requirements, synthetic unit/native test sources, a standalone fictional-data generator, manual-only synthetic CI, license/dependency notices and documentation. The generator reads no files and writes new synthetic objects. No actual DICOM files or patient-derived examples are committed.
 
 ## Excluded
 
-## Public project identity
+## Attribution and contact
 
-Copyright and Git display identity: DICOM Anonymizer Project contributors. The local Git author/committer email is `maintainers@dicom-anonymizer.invalid`, a deliberately non-deliverable placeholder, not a claimed registered account or contact. The proposed organization handle is dicom-anonymizer-project; it is not created or reserved. An organization does not itself provide a user noreply email. This neutral commit address may remain until a dedicated project/bot identity is selected; no personal email or existing account is used in this new history. The example bundle namespace is reserved `org.example`, pending a final project identifier.
-
-No public repository, organization, release upload or third-party sharing has been performed as part of this local repository preparation. A private review attachment may be provided separately in the owner's ChatGPT account.
-
-## Owner review items before publication
+Copyright: DICOM Anonymizer Project contributors. Source commit metadata uses the deliberately non-deliverable `maintainers@dicom-anonymizer.invalid` address. It is not a registered contact or support mailbox. Public repository ownership is `jdotc1`. Use GitHub private vulnerability reporting for security-sensitive reports. The app uses the reserved `org.example` bundle namespace; choose a final identifier before signed app distribution.
 
 ## Evidence boundaries
 
-Historical private results exist for prior development and a separate full proposed patch. They are reused privately and do not certify this different source snapshot. No test suites, real-data audit, compiler/build, dependency re-verification, source-provenance rehash or baseline signing checks were rerun during this preparation. A first bounded static disclosure/syntax inspection of this newly prepared export is recorded outside the public repository, so review-tool details and machine paths are not embedded in public content.
+Historical private results for prior development and a separate proposed patch do not certify this source snapshot. No test suites, real-data audit, compiler/build, dependency re-verification, source-provenance rehash or baseline signing checks were rerun during export preparation or publication. A first bounded static disclosure/syntax inspection of the newly prepared export found no flagged disclosure patterns or syntax errors; its receipt remains outside this public repository. Static review cannot prove absence of every identifying detail or establish runtime correctness.
 
-The public-native wrapper now generates six fictional objects for two patients, instead of using a private cohort. It uses a separate test preferences identifier. Those changes, the source-only runtime lookup and the synthetic generator are authored but unexecuted. No binary or notarization claim is made.
+The public native-test wrapper generates six fictional objects for two patients and uses a separate preferences identifier. The wrapper changes, source-only runtime lookup and synthetic generator are authored but unexecuted. Native build and interaction acceptance remain pending. No app binary, notarization or validated clinical-use claim is made.
 
-## Identity and security preparation
+## Release designation
 
-The owner selected GitHub private vulnerability reporting and deferred the organization naming recommendation. No existing organization was returned by the authenticated connections, so dicom-anonymizer-project is proposed. SECURITY.md and a synthetic-only private reporting form are prepared. See docs/PUBLICATION-CHECKLIST.md for the remaining organization creation, private staging and explicit publication approvals. No push or public visibility change has occurred.
+This is a source preview prerelease. Runtime acceptance must precede a stronger maturity claim or binary distribution. The repository documentation describes retained pixels, descriptors and linkable pseudonyms. Source publication does not turn metadata pseudonymization into complete anonymization.
