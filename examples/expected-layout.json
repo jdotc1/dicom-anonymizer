@@ -1,0 +1,11 @@
+{
+  "synthetic_only": true,
+  "input_folders": ["00001", "00002"],
+  "files_per_patient": ["mr.dcm", "ct.dcm", "rtstruct.dcm"],
+  "expected_dicom_files": 6,
+  "expected_patient_count": 2,
+  "output_identity": "Each folder's exact numeric pseudonym replaces PatientName and PatientID.",
+  "geometry": "2 x 2 fabricated image pixels and one fabricated square contour per patient.",
+  "clinical_data_read": false,
+  "acceptance_status": "Illustrative expectations; generator and integration were not executed for this review snapshot."
+}

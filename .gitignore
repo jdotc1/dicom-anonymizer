@@ -1,0 +1,15 @@
+build/
+.synthetic/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+*.dcm
+*.dicom
+*.app/
+*.zip
+*.dmg
+*.p12
+*.p8
+.env
+.env.*
