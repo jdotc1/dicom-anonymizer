@@ -54,7 +54,7 @@ bash test_drop.sh
 
 These are reference commands, not results reported for this snapshot. No suite, build or native integration was rerun during source-export preparation. CI is manual-only, requires an explicit acknowledgement, and has read-only repository permissions. Maintainers should reuse valid verification evidence and authorize any new acceptance work deliberately.
 
-The native test uses a separate preferences identifier and writes only under `.synthetic/`. The production engine/policy is build 5. Public-release acceptance and the final project account/contact remain pending review; see `docs/RELEASE-REVIEW.md`.
+The native test uses a separate preferences identifier and writes only under `.synthetic/`. The production engine/policy is build 5. GitHub private vulnerability reporting is the selected security contact and must be enabled at an approved public launch. The project organization and public-release acceptance remain pending review; see `docs/RELEASE-REVIEW.md`.
 
 ## License and dependencies
 
