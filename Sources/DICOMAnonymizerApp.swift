@@ -51,7 +51,7 @@ final class EngineRunner: @unchecked Sendable {
                finished: @escaping @MainActor @Sendable (Int32, Bool) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async { [self] in
             guard let resources = Bundle.main.resourceURL else {
-                DispatchQueue.main.async { event(["event": "error", "message": "The app resources are missing. Rebuild the app."]); finished(1, false) }
+                DispatchQueue.main.async { event(["event": "error", "message": "The app resources are missing. Reinstall the app and retry."]); finished(1, false) }
                 return
             }
             let interpreter = resources.appendingPathComponent("python/bin/python3").path
@@ -73,7 +73,7 @@ final class EngineRunner: @unchecked Sendable {
             process = task
             do { try task.run() } catch {
                 process = nil; lock.unlock()
-                DispatchQueue.main.async { event(["event": "error", "message": "The anonymization engine could not start. Rebuild the app and retry."]); finished(1, false) }
+                DispatchQueue.main.async { event(["event": "error", "message": "The anonymization engine could not start. Reinstall the app and retry."]); finished(1, false) }
                 return
             }
             lock.unlock()
@@ -250,7 +250,7 @@ final class BatchModel: ObservableObject {
             if let reported = eventCount(event["total_files"]), reported > 0 { total = reported }
             processed = min(eventCount(event["processed"]) ?? processed, max(total, processed))
             if let patient = event["patient_id"] as? String, !patient.isEmpty { activePatient = patient }
-            status = "Anonymizing patient \(activePatient ?? "") · \(processed) of \(total) files"
+            status = progressDetail
         case "complete":
             processed = eventCount(event["processed"]) ?? total
             completedPatients = eventCount(event["patients"])
@@ -283,7 +283,17 @@ final class BatchModel: ObservableObject {
         else { errorMessage = "The anonymization report could not be found in the output folder." }
     }
 
-    var canAnonymize: Bool { ready && !busy && outputParent != nil }
+    var canAnonymize: Bool { ready && !busy && outputParent != nil && errorMessage == nil }
+
+    var isFinalizing: Bool { total > 0 && processed >= total }
+    var progressTitle: String {
+        isFinalizing ? "Finalizing batch" : processed == 0 ? "Preparing batch" : "Anonymizing"
+    }
+    var progressDetail: String {
+        isFinalizing ? "Writing is complete. Checking output and preparing the report…" :
+            processed == 0 ? "Checking the batch before writing files…" :
+            "Anonymizing patient \(activePatient ?? "—") · \(processed) of \(total) files"
+    }
 
     func cancel() { status = "Cancelling and removing incomplete output…"; runner?.cancel() }
 
@@ -337,9 +347,12 @@ struct FolderInput: View {
         VStack(spacing: 10) {
             Image(systemName: "folder.badge.plus").foregroundStyle(.tint)
             Text(source?.lastPathComponent ?? "Drop a folder containing patient subfolders").bold()
+                .lineLimit(2).truncationMode(.middle)
+                .help(source?.path ?? "Choose the batch folder containing numerical patient folders.")
             Text("Each immediate patient folder must have a numerical name, such as 00001.")
                 .foregroundStyle(.secondary)
             Button(source == nil ? "Choose Folder…" : "Change Folder…", action: choose).disabled(busy)
+                .help("Choose a batch folder. Command-O.")
         }
         .frame(maxWidth: .infinity).padding(18)
         .background(drop.targeted ? Color.accentColor.opacity(0.10) : Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
@@ -371,7 +384,8 @@ struct PatientPreview: View {
                 LazyVStack(spacing: 9) {
                     ForEach(patients) { patient in
                         HStack {
-                            Text(patient.id).bold().frame(maxWidth: .infinity, alignment: .leading)
+                            Text(patient.id).monospaced().bold().lineLimit(1).truncationMode(.middle)
+                                .help(patient.id).frame(maxWidth: .infinity, alignment: .leading)
                             if activePatient == patient.id { Text("Processing").foregroundStyle(.tint) }
                             Text("\(patient.series)").frame(width: 65, alignment: .trailing)
                             Text("\(patient.files)").frame(width: 70, alignment: .trailing)
@@ -398,10 +412,12 @@ struct OutputSection: View {
             HStack {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Save anonymized batch in").bold()
-                    Text(parent?.path ?? "Choose an output location").id(parent).lineLimit(2).textSelection(.enabled).foregroundStyle(.secondary)
+                    Text(parent?.path ?? "Choose an output location").id(parent).lineLimit(2).truncationMode(.middle).textSelection(.enabled).foregroundStyle(.secondary)
+                        .help(parent?.path ?? "Choose where new anonymized batches will be saved.")
                 }
                 Spacer()
                 Button("Choose Location…", action: choose).disabled(disabled)
+                    .help("Choose an output location. Shift-Command-O.")
             }
             Text("A new Anonymized folder is created for each run. Source files stay intact.").foregroundStyle(.secondary)
         }
@@ -415,9 +431,17 @@ struct BatchProgress: View {
     let started: Date?
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            ProgressView(value: Double(min(processed, max(1, total))), total: Double(max(1, total)))
-                .accessibilityLabel("Anonymization progress")
-                .accessibilityValue("\(processed) of \(total) files")
+            if processed == 0 || (total > 0 && processed >= total) {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text(processed == 0 ? "Preparing batch" : "Finalizing batch").bold()
+                }
+                .accessibilityElement(children: .combine)
+            } else {
+                ProgressView(value: Double(processed), total: Double(max(1, total)))
+                    .accessibilityLabel("Anonymization progress")
+                    .accessibilityValue("\(processed) of \(total) files")
+            }
             HStack {
                 Text("\(processed) of \(total) files")
                 if let activePatient { Text("· Patient \(activePatient)").foregroundStyle(.tint) }
@@ -440,17 +464,23 @@ struct CompletionView: View {
     let reveal: () -> Void
     let openReport: () -> Void
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Batch complete · \(summary.output.lastPathComponent)").bold().textSelection(.enabled)
-                Text("\(summary.patients) patients · \(summary.files) files · \(summary.excluded) excluded · \(elapsedText(summary.elapsed))")
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Batch complete").bold()
+                    Text(summary.output.lastPathComponent).lineLimit(2).truncationMode(.middle)
+                        .textSelection(.enabled).help(summary.output.path)
+                    Text("\(summary.patients) patients · \(summary.files) files · \(summary.excluded) excluded · \(elapsedText(summary.elapsed))")
+                        .foregroundStyle(.secondary).monospacedDigit()
+                }
+                .accessibilityElement(children: .combine)
+                Spacer(minLength: 0)
             }
-            .accessibilityElement(children: .combine)
-            Spacer()
-            Button("Reveal in Finder", action: reveal)
-            Button("Open Report", action: openReport)
+            HStack {
+                Button("Reveal in Finder", action: reveal).help("Show the completed batch in Finder. Shift-Command-R.")
+                Button("Open Report", action: openReport).help("Open the anonymization report. Option-Command-R.")
+            }
         }
         .padding(10)
         .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
@@ -462,8 +492,8 @@ struct PolicySummary: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text("Identifier preserved in folder, PatientName and PatientID. New internal folder and file names.")
-            Text("Series descriptions and sequence names retained. Patient identifiers, dates and private tags anonymized.")
-            Text("Pixel text is not redacted. Review images before sharing. MR, CT and RTSTRUCT supported.").foregroundStyle(.secondary)
+            Text("Series descriptions and sequence names retained. Other patient identifiers, dates and private tags anonymized.")
+            Text("Numerical identifiers remain linkable to your patient list. Pixel text is not redacted. Review images before sharing. MR, CT and RTSTRUCT supported.").foregroundStyle(.secondary)
         }
     }
 }
@@ -473,7 +503,17 @@ struct BatchView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             BatchHeader()
-            FolderInput(source: model.source, busy: model.busy, choose: model.chooseSource, acceptDrop: model.acceptDrop)
+            if let source = model.source {
+                HStack {
+                    Label(source.lastPathComponent, systemImage: "folder")
+                        .lineLimit(1).truncationMode(.middle).help(source.path)
+                    Spacer()
+                    Button("Change Folder…", action: model.chooseSource).disabled(model.busy)
+                        .help("Choose a different batch folder. Command-O.")
+                }
+            } else {
+                FolderInput(source: nil, busy: model.busy, choose: model.chooseSource, acceptDrop: model.acceptDrop)
+            }
             PatientPreview(patients: model.patients, activePatient: model.activePatient, total: model.total, excluded: model.excluded)
             OutputSection(parent: model.outputParent, disabled: model.busy, choose: model.chooseOutput)
             Divider()
@@ -510,12 +550,14 @@ struct BatchView: View {
                     .disabled(!model.canAnonymize)
                     .accessibilityIdentifier("anonymizeBatch")
                     .accessibilityHint("Anonymizes every patient folder. Shortcut: Command-Return.")
+                    .help(model.canAnonymize ? "Create a new anonymized batch. Command-Return." : "Choose a valid batch folder and output location first.")
             }
         }
         .font(.custom("Arial", size: 10))
         .padding(22)
         .frame(minWidth: 700, idealWidth: 780, minHeight: 655, idealHeight: 720)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onDrop(of: [.fileURL], isTargeted: nil, perform: model.acceptDrop)
     }
 }
 
@@ -543,8 +585,19 @@ struct DICOMAnonymizerApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Open Batch Folder…", action: model.chooseSource).keyboardShortcut("o").disabled(model.busy)
+                Button("Choose Output Location…", action: model.chooseOutput)
+                    .keyboardShortcut("o", modifiers: [.command, .shift]).disabled(model.busy)
+                Button("Check Again", action: model.scan)
+                    .keyboardShortcut("r").disabled(model.source == nil || model.busy)
                 Button("Anonymize Batch", action: model.anonymize)
                     .keyboardShortcut(.return, modifiers: .command).disabled(!model.canAnonymize)
+                Divider()
+                Button("Reveal Output in Finder", action: model.revealOutput)
+                    .keyboardShortcut("r", modifiers: [.command, .shift])
+                    .disabled(model.completedOutput == nil || model.busy)
+                Button("Open Report", action: model.openReport)
+                    .keyboardShortcut("r", modifiers: [.command, .option])
+                    .disabled(model.completedOutput == nil || model.busy)
             }
         }
     }
