@@ -18,4 +18,4 @@ The runtime is copied without changing Python or dependency code and is signed f
 
 ## Artwork and standards
 
-No third-party or recovered custom app artwork is included. DICOM attribute names/numeric tags are used by the implementation, but no complete standards table or private conformance archive is redistributed. DICOM is a standards name, not a project endorsement. Contributor submissions must preserve any applicable notices and document third-party origins.
+The public source repository contains no custom app artwork. The downloadable app includes a project-selected Lumen icon; its Icon Composer document and provenance are retained privately and are not distributed in this repository. DICOM attribute names/numeric tags are used by the implementation, but no complete standards table or private conformance archive is redistributed. DICOM is a standards name, not a project endorsement. Contributor submissions must preserve any applicable notices and document third-party origins.
