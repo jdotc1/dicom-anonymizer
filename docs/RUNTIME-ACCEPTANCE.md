@@ -1,6 +1,10 @@
 # macOS release acceptance
 
-## Current release — preview 5, build 9
+## Current release — preview 6, build 10
+
+`v2.0.0-preview.6` delivers focused error recovery from `4e08049` using the accepted optimized executable. It retains the independent SwiftUI interface, macOS 13 target, bundled Python and approved icon. See `ERROR-RECOVERY.md` for new focused evidence and verification reuse. Previous releases and their acceptance records remain historical.
+
+## Preview 5 delivery (historical) — preview 5, build 9
 
 ## Preview 4 download housekeeping (historical)
 
@@ -54,3 +58,7 @@ Existing icon compilation and native appearance evidence were reused. No Swift o
 ## Workflow polish distribution — preview 5, build 9
 
 The focused workflow-polish source, optimized build, synthetic model/layout and native presentation evidence is reused from the accepted polish pass. The standalone runtime, engine, self-audit, compiled icon and nested signatures remain unchanged. Release metadata selects app 2.0/build 9. A new Developer ID root signature passed strict verification and Apple accepted notarization `c36ff882-9b96-4888-8cf2-a7edf23edb98`. Stapling, ticket validation and Gatekeeper acceptance are recorded with the final release artifact. No engine/self-audit processing, unchanged UI/theme/runtime/dependency checks or hashes were repeated.
+
+## Focused recovery distribution — preview 6, build 10
+
+The accepted recovery executable and unchanged bundled resources are reused. The new root Developer ID signature passed strict verification and Apple accepted submission `97c13195-06fc-4cec-9261-1ef558d33792`. Final stapling, ticket validation and Gatekeeper evidence are recorded for this artifact. No unchanged engine, self-audit, UI suite, runtime/dependency check or hash was repeated.

@@ -25,3 +25,7 @@ This remains a preview prerelease. Focused runtime acceptance does not establish
 ## Workflow polish delta — preview 5
 
 The optimized executable accepted in `438fccb` is reused. The update improves preparing/finalizing feedback, long paths, completion layout and file commands, and disables processing after invalid selection. Focused model/layout and native presentation/command evidence is recorded in `WORKFLOW-POLISH.md`. The engine, self-audit, Python/runtime dependencies and compiled icon are unchanged; their existing receipts and nested signatures are reused. New release metadata and root signing/notarization are checked once for this artifact. No full UI or engine suite is repeated.
+
+## Focused recovery delta — preview 6
+
+The accepted optimized executable from `4e08049` is reused. Source and binary changes are limited to recovery/model action guards and existing-interface error presentation; engine policy, standalone runtime and compiled icon are unchanged. `ERROR-RECOVERY.md` records the new model/layout/native presentation checks. Distribution uses new metadata (app 2.0/build 10), root signing and notarization. No unchanged engine, self-audit, UI, runtime or dependency checks are repeated.

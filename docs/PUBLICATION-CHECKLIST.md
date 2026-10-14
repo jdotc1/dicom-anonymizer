@@ -1,6 +1,10 @@
 # Source publication record
 
-## Current release — preview 5, build 9
+## Current release — preview 6, build 10
+
+`v2.0.0-preview.6` delivers focused error recovery from `4e08049` using the accepted optimized executable. It retains the independent SwiftUI interface, macOS 13 target, bundled Python and approved icon. See `ERROR-RECOVERY.md` for new focused evidence and verification reuse. Previous releases and their acceptance records remain historical.
+
+## Preview 5 delivery (historical) — preview 5, build 9
 
 ## Preview 4 download housekeeping (historical)
 
