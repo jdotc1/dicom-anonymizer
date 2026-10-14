@@ -38,3 +38,9 @@ The engine, pydicom package, metadata policy, original synthetic fixture, ten bu
 - First bounded disclosure inspection covered the newly introduced runtime/notices and changed native executable: no checked private-path, account-email, private-key or DICOM-payload findings. Unchanged engine/vendor content reused its existing receipt.
 
 The standalone runtime's build deployment target is macOS 11. The app remains arm64/macOS 13+. Runtime interaction was checked on macOS 27.2; older macOS versions, Intel execution and physical clean-machine installation were not tested. Denied external-runtime access is the evidence for Python independence. This changes runtime delivery, not scientific or clinical validation scope. Apple notarization accepted standalone submission `dbf019f6-291e-4dd9-961d-e46ac4e5013c`; the ticket was stapled and validated, and Gatekeeper accepted the app as Notarized Developer ID.
+
+## Icon resource delta — preview 4, build 8
+
+The accepted preview-3 standalone bundle is reused. Already compiled `Assets.car` and `AppIcon.icns` were copied from the separately accepted icon build, with `CFBundleIconName` and `CFBundleIconFile` both set to `AppIcon`. The new package build number is 8; engine policy remains `2.0-build5`. The icon's authoring files/provenance remain private by the owner's instruction.
+
+Existing icon compilation and native appearance evidence were reused. No Swift or engine rebuild, icon recompilation, runtime/engine test, self-audit test, dependency re-verification or source hash was repeated for this resource-only delta. The icon package composition was checked, its changed root signature passed strict verification, Apple accepted notarization submission `f026e02d-f2ad-43c4-ace9-98c60bcdc46c`, and its ticket and Gatekeeper assessment passed. Nested code signatures and all standalone acceptance evidence remain reused.

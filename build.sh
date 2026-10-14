@@ -39,7 +39,7 @@ info = {
  'CFBundleExecutable':'DICOMAnonymizer2',
  'CFBundleIdentifier':'io.github.jdotc1.dicom-anonymizer', 'CFBundleInfoDictionaryVersion':'6.0',
  'CFBundleName':'DICOM Anonymizer 2.0', 'CFBundlePackageType':'APPL',
- 'CFBundleShortVersionString':'2.0', 'CFBundleVersion':'7', 'LSMinimumSystemVersion':'13.0',
+ 'CFBundleShortVersionString':'2.0', 'CFBundleVersion':'8', 'LSMinimumSystemVersion':'13.0',
  'NSHighResolutionCapable':True, 'NSPrincipalClass':'NSApplication',
 }
 with (app / 'Contents/Info.plist').open('wb') as f: plistlib.dump(info, f)
@@ -48,5 +48,8 @@ for cache in resources.rglob('__pycache__'):
 print(app)
 PY
 python3 "$PROJECT_DIR/scripts/bundle_python.py" "$APP_PATH"
+if [[ -n "${APP_ICON_RESOURCES:-}" ]]; then
+  python3 "$PROJECT_DIR/scripts/apply_icon.py" "$APP_PATH" "$APP_ICON_RESOURCES"
+fi
 /usr/bin/codesign --force --sign - "$APP_PATH"
 /usr/bin/codesign --verify --strict "$APP_PATH"
