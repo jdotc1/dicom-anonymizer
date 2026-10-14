@@ -2,9 +2,9 @@
 
 A local bulk metadata-pseudonymization tool for numeric patient-folder batches, with a Python engine and an optional native macOS interface. Licensed under MIT.
 
-**Standalone macOS preview — v2.0.0-preview.5.** Focused runtime acceptance of the public-export changes is complete on Apple Silicon. The repository contains source and entirely synthetic example generators. Synthetic objects demonstrate metadata behavior and references; they are not clinical images or complete IOD-validation fixtures.
+**Standalone macOS preview — v2.0.0-preview.6.** Focused runtime acceptance of the public-export changes is complete on Apple Silicon. The repository contains source and entirely synthetic example generators. Synthetic objects demonstrate metadata behavior and references; they are not clinical images or complete IOD-validation fixtures.
 
-The workflow-polish update adds clearer preparing/finalizing status, long-path handling, completion actions and File-menu shortcuts. See `docs/WORKFLOW-POLISH.md` for focused evidence and reuse boundaries.
+Preview 6/build 10 adds focused recovery for invalid input, unavailable output, missing reports and cancellation. It keeps the existing interface and engine policy. See `docs/ERROR-RECOVERY.md` for changed-input evidence and reuse boundaries; preceding workflow-polish evidence remains in `docs/WORKFLOW-POLISH.md`.
 
 ## Workflow
 

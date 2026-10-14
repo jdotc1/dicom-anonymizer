@@ -1,6 +1,10 @@
 # Source publication record
 
-## Current release — preview 5, build 9
+## Current release — preview 6, build 10
+
+`v2.0.0-preview.6` delivers focused error recovery from `4e08049` using the accepted optimized executable. It retains the independent SwiftUI interface, macOS 13 target, bundled Python and approved icon. See `ERROR-RECOVERY.md` for new focused evidence and verification reuse. Previous releases and their acceptance records remain historical.
+
+## Preview 5 delivery (historical) — preview 5, build 9
 
 `v2.0.0-preview.5` delivers the accepted workflow polish with the existing standalone Python and icon. The SwiftUI interface remains independent of the private Lumen app. Preview 4 remains available as the previous release; tags and earlier acceptance history are preserved.
 
@@ -10,7 +14,7 @@ Before preview 5 was prepared on 2026-10-14, `v2.0.0-preview.4` was the only dow
 
 ## Destination and scope
 
-The owner authorized public publication under the personal GitHub profile `jdotc1`. The publication destination is [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). This is a fresh source-only repository, separate from private development history. The initial source-only release is `v2.0.0-preview.1`. The current standalone macOS binary preview is `v2.0.0-preview.5`; it bundles Python and its focused acceptance is recorded in `RUNTIME-ACCEPTANCE.md`.
+The owner authorized public publication under the personal GitHub profile `jdotc1`. The publication destination is [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). This is a fresh source-only repository, separate from private development history. The initial source-only release is `v2.0.0-preview.1`. The current standalone macOS binary preview is `v2.0.0-preview.6`; it bundles Python and its focused acceptance is recorded in `RUNTIME-ACCEPTANCE.md`.
 
 ## Publication controls
 
