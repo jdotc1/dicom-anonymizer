@@ -1,12 +1,16 @@
 # Source publication record
 
-## Current download and historical previews
+## Current release — preview 5, build 9
 
-As of 2026-10-14, `v2.0.0-preview.4` is the only downloadable GitHub release. Previews 1–3 were superseded by preview 4 and their GitHub release entries were removed; their Git tags remain. The earlier source-publication and runtime-acceptance records below are preserved as historical evidence. Preview 4 reuses the accepted standalone runtime from preview 3 and adds the approved icon; this housekeeping does not change source behavior, the current app download or acceptance scope.
+`v2.0.0-preview.5` delivers the accepted workflow polish with the existing standalone Python and icon. The SwiftUI interface remains independent of the private Lumen app. Preview 4 remains available as the previous release; tags and earlier acceptance history are preserved.
+
+## Preview 4 download housekeeping (historical)
+
+Before preview 5 was prepared on 2026-10-14, `v2.0.0-preview.4` was the only downloadable GitHub release. Previews 1–3 were superseded by preview 4 and their GitHub release entries were removed; their Git tags remain. The earlier source-publication and runtime-acceptance records below are preserved as historical evidence. Preview 4 reuses the accepted standalone runtime from preview 3 and adds the approved icon; this housekeeping does not change source behavior, the current app download or acceptance scope.
 
 ## Destination and scope
 
-The owner authorized public publication under the personal GitHub profile `jdotc1`. The publication destination is [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). This is a fresh source-only repository, separate from private development history. The initial source-only release is `v2.0.0-preview.1`. The standalone macOS binary preview is `v2.0.0-preview.4`; it bundles Python and its focused acceptance is recorded in `RUNTIME-ACCEPTANCE.md`.
+The owner authorized public publication under the personal GitHub profile `jdotc1`. The publication destination is [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). This is a fresh source-only repository, separate from private development history. The initial source-only release is `v2.0.0-preview.1`. The current standalone macOS binary preview is `v2.0.0-preview.5`; it bundles Python and its focused acceptance is recorded in `RUNTIME-ACCEPTANCE.md`.
 
 ## Publication controls
 

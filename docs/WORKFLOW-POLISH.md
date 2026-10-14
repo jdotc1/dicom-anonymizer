@@ -21,4 +21,6 @@ Native local candidates launched. The public output-location menu command and pr
 
 Reuse prior engine, metadata policy, self-audit, bundled-Python, dependency, icon, theme and notarization receipts for unchanged inputs. No batch processing, engine/self-audit suite, unchanged theme/signature/dependency check, provenance hash or corpus pass ran for this polish. The root signatures of the new local candidate/preview copies are ad-hoc; they are not new notarized releases.
 
-Changes are on the local `codex/workflow-polish` branch. The installed build and current public download remain unchanged. Existing physical drag-and-drop acceptance limitations remain; the new public root drop target uses the unchanged NSItemProvider handler, without a new physical-drop acceptance claim.
+The accepted `codex/workflow-polish` branch is merged into `main`. Delivery uses its accepted optimized executable with updated release metadata: private build 10 and public preview 5/build 9. Distribution signing/notarization is recorded separately from the local candidate checks. Existing physical drag-and-drop acceptance limitations remain; the new public root drop target uses the unchanged NSItemProvider handler, without a new physical-drop acceptance claim.
+
+Apple accepted the updated distribution submission `c36ff882-9b96-4888-8cf2-a7edf23edb98` on 2026-10-14. The accepted optimized executable was reused; no runtime or source test was repeated for submission.

@@ -2,7 +2,9 @@
 
 A local bulk metadata-pseudonymization tool for numeric patient-folder batches, with a Python engine and an optional native macOS interface. Licensed under MIT.
 
-**Standalone macOS preview — v2.0.0-preview.4.** Focused runtime acceptance of the public-export changes is complete on Apple Silicon. The repository contains source and entirely synthetic example generators. Synthetic objects demonstrate metadata behavior and references; they are not clinical images or complete IOD-validation fixtures.
+**Standalone macOS preview — v2.0.0-preview.5.** Focused runtime acceptance of the public-export changes is complete on Apple Silicon. The repository contains source and entirely synthetic example generators. Synthetic objects demonstrate metadata behavior and references; they are not clinical images or complete IOD-validation fixtures.
+
+The workflow-polish update adds clearer preparing/finalizing status, long-path handling, completion actions and File-menu shortcuts. See `docs/WORKFLOW-POLISH.md` for focused evidence and reuse boundaries.
 
 ## Workflow
 
@@ -43,7 +45,7 @@ bash build.sh
 
 The local result is `build/DICOM Anonymizer 2.0.app`, ad-hoc signed for local development. Building requires a local Python 3.12+ environment with the pinned pydicom dependency, and downloads the pinned standalone Python archive on first use. Unchanged cached archives reuse their digest-bound acquisition receipt. This is a build-time requirement; the resulting app includes Python and pydicom. Runtime and dependency notices are bundled. No Developer ID certificate, notarization credential, signing key or custom artwork is included in source. The downloadable app includes the project-selected icon. For a local build with externally supplied compiled icon resources, set `APP_ICON_RESOURCES` to a folder containing `Assets.car` and `AppIcon.icns`; the build copies those resources and sets both icon plist keys before signing.
 
-The release bundle identifier is `io.github.jdotc1.dicom-anonymizer`, with app version 2.0/build 8. Intel and other operating systems are not claimed as native-app targets; the Python engine remains available separately.
+The release bundle identifier is `io.github.jdotc1.dicom-anonymizer`, with app version 2.0/build 9. Intel and other operating systems are not claimed as native-app targets; the Python engine remains available separately.
 
 ## Retained content and privacy
 
