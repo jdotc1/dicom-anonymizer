@@ -4,7 +4,7 @@ The project source license is in LICENSE. That license does not replace dependen
 
 ## pydicom
 
-The Python engine depends on pydicom 3.0.2. The source-only repository distributes a dependency requirement rather than a vendored copy. The optional local app build copies the installed pydicom package and its complete distribution metadata/license into the app's vendor resources. Preserve those notices whenever redistributing that package.
+The Python engine depends on pydicom 3.0.2. The source-only repository distributes a dependency requirement rather than a vendored copy. The app build copies the installed pydicom package and its complete distribution metadata/license into the app's vendor resources, excluding upstream DICOM test/character-set/palette fixture payloads that the metadata workflow does not use. Preserve those notices whenever redistributing that package.
 
 The upstream license is MIT-based with component-specific exceptions. Review the actual installed version's complete LICENSE and bundled notices; do not replace them with only this summary. Upstream: https://github.com/pydicom/pydicom and https://github.com/pydicom/pydicom/blob/main/LICENSE.
 

@@ -2,7 +2,7 @@
 
 A local bulk metadata-pseudonymization tool for numeric patient-folder batches, with a Python engine and an optional native macOS interface. Licensed under MIT.
 
-**Source preview — v2.0.0-preview.1.** The current changes have not completed runtime acceptance. This repository contains source and entirely synthetic example generators, with no downloadable app release. Synthetic objects demonstrate metadata behavior and references; they are not clinical images or complete IOD-validation fixtures.
+**macOS preview — v2.0.0-preview.2.** Focused runtime acceptance of the public-export changes is complete on Apple Silicon. The repository contains source and entirely synthetic example generators. Synthetic objects demonstrate metadata behavior and references; they are not clinical images or complete IOD-validation fixtures.
 
 ## Workflow
 
@@ -25,6 +25,14 @@ python engine/engine.py --source .synthetic/input --destination .synthetic/outpu
 
 The generator reads no patient data and creates two fictional patients with six small MR/CT/RTSTRUCT objects. It refuses to overwrite an existing destination. Expected output contains `00001` and `00002`, three DICOM files per patient, and `anonymization-report.json`. Inspect that report for aggregate counts and self-audit status. Choose a new destination for another run.
 
+## Download and install the macOS app
+
+The macOS release ZIP contains `DICOM Anonymizer 2.0.app`. Expand the ZIP and copy the app to Applications. This preview targets **Apple Silicon and macOS 13 or newer**. Runtime acceptance was performed on macOS 27.2; older supported deployment versions and Intel Macs were not exercised.
+
+**Install Python 3.10 or newer before using the app.** The interpreter must be available at `/opt/homebrew/bin/python3` or `/usr/local/bin/python3`; the app selects the first compatible interpreter. A standard Homebrew Python installation provides the first path on Apple Silicon. The app includes pydicom 3.0.2 and needs no separate pydicom installation. Python itself is external, so this download is not a standalone runtime bundle.
+
+The downloadable release is Developer ID signed and Apple notarized, with the notarization ticket stapled to the app. See the repository’s Releases section for the ZIP and acceptance details. Metadata processing runs locally. Review the retained-content policy below before sharing outputs.
+
 ## Native macOS interface
 
 The source target is Apple Silicon with macOS 13+. Building requires full Xcode with Apple Swift 6.4 and Swift 6 language mode; warnings are treated as errors. `toolchain.sh` uses the selected Xcode installation or `DEVELOPER_DIR`.
@@ -35,7 +43,7 @@ bash build.sh
 
 The local result is `build/DICOM Anonymizer 2.0.app`, ad-hoc signed for local development. No Developer ID certificate, notarization credential or signing key is included. There is no standalone runtime: install Python 3.10+ at a standard Homebrew location (`/opt/homebrew/bin/python3` or `/usr/local/bin/python3`). The app bundles pydicom and its distribution notices but not Python. The source build does not embed the build-machine interpreter path. No custom artwork is included.
 
-The bundle identifier uses the reserved `org.example` namespace for this source preview. Choose the project's final identifier before a signed distribution. Intel and other operating systems are not claimed as native-app targets; the Python engine remains available separately.
+The release bundle identifier is `io.github.jdotc1.dicom-anonymizer`, with app version 2.0/build 6. Intel and other operating systems are not claimed as native-app targets; the Python engine remains available separately.
 
 ## Retained content and privacy
 
@@ -52,8 +60,8 @@ python -m unittest discover -s tests -v
 bash test_drop.sh
 ```
 
-These are reference commands, not results reported for this snapshot. No suite, build or native integration was rerun during source-export preparation. CI is manual-only, requires an explicit acknowledgement, and has read-only repository permissions. Maintainers should reuse valid verification evidence and authorize any new acceptance work deliberately.
+For this macOS preview, the ten previously unexecuted build-5 regression tests passed. The real app compiled with Swift 6.4, the synthetic native model integration passed, and the signed release app completed a native six-file batch. Existing earlier suite receipts were reused; full suites and corpus passes were not repeated. See `docs/RUNTIME-ACCEPTANCE.md` for scope and results. CI is manual-only, requires explicit acknowledgement, and has read-only repository permissions.
 
-The native test uses a separate preferences identifier and writes only under `.synthetic/`. The engine/policy is build 5. The public repository is maintained under the owner’s personal GitHub profile at [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). Use GitHub private vulnerability reporting for security-sensitive reports; see `SECURITY.md`. Runtime acceptance remains pending; see `docs/RELEASE-REVIEW.md`.
+The native test uses a separate preferences identifier and writes only under `.synthetic/`. The engine/policy is build 5. The public repository is maintained under the owner’s personal GitHub profile at [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). Use GitHub private vulnerability reporting for security-sensitive reports; see `SECURITY.md`. Focused runtime acceptance is recorded in `docs/RUNTIME-ACCEPTANCE.md`; see `docs/RELEASE-REVIEW.md` for release boundaries.
 
 ## License and dependencies

@@ -8,4 +8,4 @@ Use entirely synthetic reproductions. Never attach patient datasets, identifiers
 
 For an ordinary bug, provide the app/policy version, operating-system version, expected behavior and a synthetic reproduction. Maintainers should monitor GitHub Security alerts and their private-report notifications; no response-time guarantee or supported binary maintenance period has been announced.
 
-The current release is a source preview with runtime acceptance pending. The tool retains pseudonyms, pixels and selected descriptors; a successful metadata audit is not proof that all identifiable content has been removed.
+The current release is a macOS preview with focused synthetic runtime acceptance. The tool retains pseudonyms, pixels and selected descriptors; a successful metadata audit is not proof that all identifiable content has been removed.

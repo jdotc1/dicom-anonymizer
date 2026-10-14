@@ -17,9 +17,15 @@ if pydicom.__version__ != '3.0.2':
     raise SystemExit('Build requires pydicom 3.0.2; install the pinned version from requirements.txt.')
 shutil.copytree(project / 'engine', resources / 'engine', dirs_exist_ok=True, ignore=shutil.ignore_patterns('__pycache__'))
 shutil.copy2(project / 'bootstrap.py', resources)
+shutil.copy2(project / 'LICENSE', resources)
+shutil.copy2(project / 'THIRD_PARTY_NOTICES.md', resources)
 vendor = resources / 'vendor'
 vendor.mkdir(exist_ok=True)
-shutil.copytree(pathlib.Path(pydicom.__file__).parent, vendor / 'pydicom', dirs_exist_ok=True, ignore=shutil.ignore_patterns('__pycache__', 'test_files', 'tests'))
+shutil.copytree(pathlib.Path(pydicom.__file__).parent, vendor / 'pydicom', dirs_exist_ok=True, ignore=shutil.ignore_patterns('__pycache__', 'test_files', 'tests', '*.dcm', '*.dicom'))
+# Remove fixture payloads from an earlier incremental build as well.
+for pattern in ('*.dcm', '*.dicom'):
+    for fixture in (vendor / 'pydicom').rglob(pattern):
+        fixture.unlink()
 metadata = pathlib.Path(pydicom.__file__).parent.parent / 'pydicom-3.0.2.dist-info'
 shutil.copytree(metadata, vendor / metadata.name, dirs_exist_ok=True)
 (resources / 'BuildInfo.json').write_text(json.dumps({
@@ -31,9 +37,9 @@ shutil.copytree(metadata, vendor / metadata.name, dirs_exist_ok=True)
 info = {
  'CFBundleDevelopmentRegion':'en', 'CFBundleDisplayName':'DICOM Anonymizer 2.0',
  'CFBundleExecutable':'DICOMAnonymizer2',
- 'CFBundleIdentifier':'org.example.dicomanonymizer', 'CFBundleInfoDictionaryVersion':'6.0',
+ 'CFBundleIdentifier':'io.github.jdotc1.dicom-anonymizer', 'CFBundleInfoDictionaryVersion':'6.0',
  'CFBundleName':'DICOM Anonymizer 2.0', 'CFBundlePackageType':'APPL',
- 'CFBundleShortVersionString':'2.0', 'CFBundleVersion':'5', 'LSMinimumSystemVersion':'13.0',
+ 'CFBundleShortVersionString':'2.0', 'CFBundleVersion':'6', 'LSMinimumSystemVersion':'13.0',
  'NSHighResolutionCapable':True, 'NSPrincipalClass':'NSApplication',
 }
 with (app / 'Contents/Info.plist').open('wb') as f: plistlib.dump(info, f)

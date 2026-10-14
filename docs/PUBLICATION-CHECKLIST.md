@@ -12,4 +12,4 @@ Use the repository’s Security > Advisories > Report a vulnerability channel. R
 
 ## Evidence and maturity
 
-Publication readiness concerns source disclosure, packaging and truthful documentation. It does not establish runtime acceptance, clinical suitability, certified DICOM confidentiality-profile compliance or complete IOD conformance. The existing export disclosure/syntax receipt is retained privately. Unchanged sources were not retested or rehashed for publication. See `RELEASE-REVIEW.md` for remaining runtime work.
+Publication readiness concerns source disclosure, packaging and truthful documentation. It does not establish runtime acceptance, clinical suitability, certified DICOM confidentiality-profile compliance or complete IOD conformance. The existing export disclosure/syntax receipt is retained privately. Unchanged sources were not retested or rehashed for publication. See `RUNTIME-ACCEPTANCE.md` for the newly executed focused runtime work and `RELEASE-REVIEW.md` for release boundaries.

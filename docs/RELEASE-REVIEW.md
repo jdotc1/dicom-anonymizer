@@ -1,4 +1,4 @@
-# Source preview release
+# macOS preview release
 
 ## Included
 
@@ -8,14 +8,14 @@ Python engine and bootstrap, native Swift source, local build scripts, pinned re
 
 ## Attribution and contact
 
-Copyright: DICOM Anonymizer Project contributors. Source commit metadata uses the deliberately non-deliverable `maintainers@dicom-anonymizer.invalid` address. It is not a registered contact or support mailbox. Public repository ownership is `jdotc1`. Use GitHub private vulnerability reporting for security-sensitive reports. The app uses the reserved `org.example` bundle namespace; choose a final identifier before signed app distribution.
+Copyright: DICOM Anonymizer Project contributors. Source commit metadata uses the deliberately non-deliverable `maintainers@dicom-anonymizer.invalid` address. It is not a registered contact or support mailbox. Public repository ownership is `jdotc1`. Use GitHub private vulnerability reporting for security-sensitive reports. The release app identifier is `io.github.jdotc1.dicom-anonymizer`.
 
 ## Evidence boundaries
 
-Historical private results for prior development and a separate proposed patch do not certify this source snapshot. No test suites, real-data audit, compiler/build, dependency re-verification, source-provenance rehash or baseline signing checks were rerun during export preparation or publication. A first bounded static disclosure/syntax inspection of the newly prepared export found no flagged disclosure patterns or syntax errors; its receipt remains outside this public repository. Static review cannot prove absence of every identifying detail or establish runtime correctness.
+Focused acceptance of previously unexecuted build-5 regressions and public-export changes is complete. The ten focused tests, real Swift 6.4 build, native model integration and signed-app six-file workflow passed. See `RUNTIME-ACCEPTANCE.md` for exact checks and limits. Earlier evidence was reused; unchanged full suites, corpus passes and provenance/dependency checks were not repeated.
 
-The public native-test wrapper generates six fictional objects for two patients and uses a separate preferences identifier. The wrapper changes, source-only runtime lookup and synthetic generator are authored but unexecuted. Native build and interaction acceptance remain pending. No app binary, notarization or validated clinical-use claim is made.
+The release ZIP targets Apple Silicon and requires Python 3.10+ at a supported Homebrew location. It bundles pydicom and its complete distribution notices, along with the project MIT license and third-party notice. The app identifier is `io.github.jdotc1.dicom-anonymizer` and the build number is 6. GitHub release metadata records final signing/notarization and download status.
 
 ## Release designation
 
-This is a source preview prerelease. Runtime acceptance must precede a stronger maturity claim or binary distribution. The repository documentation describes retained pixels, descriptors and linkable pseudonyms. Source publication does not turn metadata pseudonymization into complete anonymization.
+This remains a preview prerelease. Focused runtime acceptance does not establish clinical validation, complete anonymization, certified confidentiality-profile compliance, complete IOD conformance or all-macOS-version qualification. Retained pixels, descriptors and linkable pseudonyms remain documented in the README and data-handling contract.
