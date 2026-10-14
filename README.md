@@ -2,7 +2,7 @@
 
 A local bulk metadata-pseudonymization tool for numeric patient-folder batches, with a Python engine and an optional native macOS interface. Licensed under MIT.
 
-**Source review candidate.** The current changes have not completed runtime acceptance. This repository contains source and entirely synthetic example generators, with no downloadable app release. Synthetic objects demonstrate metadata behavior and references; they are not clinical images or complete IOD-validation fixtures.
+**Source preview — v2.0.0-preview.1.** The current changes have not completed runtime acceptance. This repository contains source and entirely synthetic example generators, with no downloadable app release. Synthetic objects demonstrate metadata behavior and references; they are not clinical images or complete IOD-validation fixtures.
 
 ## Workflow
 
@@ -35,7 +35,7 @@ bash build.sh
 
 The local result is `build/DICOM Anonymizer 2.0.app`, ad-hoc signed for local development. No Developer ID certificate, notarization credential or signing key is included. There is no standalone runtime: install Python 3.10+ at a standard Homebrew location (`/opt/homebrew/bin/python3` or `/usr/local/bin/python3`). The app bundles pydicom and its distribution notices but not Python. The source build does not embed the build-machine interpreter path. No custom artwork is included.
 
-The bundle identifier uses the reserved `org.example` namespace for this review draft. Choose the project's final identifier before a signed distribution. Intel and other operating systems are not claimed as native-app targets; the Python engine remains available separately.
+The bundle identifier uses the reserved `org.example` namespace for this source preview. Choose the project's final identifier before a signed distribution. Intel and other operating systems are not claimed as native-app targets; the Python engine remains available separately.
 
 ## Retained content and privacy
 
@@ -54,7 +54,7 @@ bash test_drop.sh
 
 These are reference commands, not results reported for this snapshot. No suite, build or native integration was rerun during source-export preparation. CI is manual-only, requires an explicit acknowledgement, and has read-only repository permissions. Maintainers should reuse valid verification evidence and authorize any new acceptance work deliberately.
 
-The native test uses a separate preferences identifier and writes only under `.synthetic/`. The production engine/policy is build 5. GitHub private vulnerability reporting is the selected security contact and must be enabled at an approved public launch. The project organization and public-release acceptance remain pending review; see `docs/RELEASE-REVIEW.md`.
+The native test uses a separate preferences identifier and writes only under `.synthetic/`. The engine/policy is build 5. The public repository is maintained under the owner’s personal GitHub profile at [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). Use GitHub private vulnerability reporting for security-sensitive reports; see `SECURITY.md`. Runtime acceptance remains pending; see `docs/RELEASE-REVIEW.md`.
 
 ## License and dependencies
 

@@ -1,35 +1,24 @@
-# Publication preparation
+# Source publication record
 
-Status: private source-review preparation. No source push, public visibility change or release upload is approved yet.
+## Destination and scope
 
-## Project owner
+The owner authorized public publication under the personal GitHub profile `jdotc1`. The publication destination is [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). This is a fresh source-only repository, separate from private development history. The initial release is `v2.0.0-preview.1`, a prerelease with no app binary.
 
-Proposed display identity: DICOM Anonymizer Project. Proposed organization handle: `dicom-anonymizer-project`. This is a recommendation, not an organization claimed to exist or a reserved name. The authenticated maintainer currently has no visible organization memberships. If an existing organization is preferred, provide its exact handle and make appropriate repository-admin access available.
+## Publication controls
 
-Create a GitHub Free organization through GitHub Settings > Organizations > New organization. The owner completes the account/organization prompts and any required terms. Use the project display name, keep optional public personal/contact fields empty, review membership visibility and public activity, and avoid adding personal affiliation to the public organization profile. This does not promise anonymity: GitHub account activity and administration can still associate people with a project.
+- Include reviewed source, synthetic example/test sources, MIT license and dependency notices.
+- Exclude patient data, private development history, internal receipts, prior build artifacts, credentials, signing material and existing artwork.
+- Keep GitHub Actions disabled at publication. The committed workflow is manual-only and requires explicit acknowledgement if Actions is enabled later.
+- Enable GitHub private vulnerability reporting and confirm its API status after the repository becomes public.
+- Confirm the repository owner, public visibility, published source commit and prerelease metadata through GitHub.
+- Preserve the private development repository and its history separately.
 
-The public Git author and committer display name remains DICOM Anonymizer Project. The non-deliverable `maintainers@dicom-anonymizer.invalid` address is commit metadata, not the security contact. A GitHub organization does not itself supply a user noreply identity. Retain neutral metadata unless a dedicated project/bot identity is chosen; do not insert a personal noreply address if its account linkage is unwanted. Preserve legally required copyright attribution.
+## Attribution and security
 
-## Private staging after the owner exists
+Copyright remains DICOM Anonymizer Project contributors. The source commits use a neutral display identity and the deliberately non-deliverable `maintainers@dicom-anonymizer.invalid` address. This address is not a contact channel. Repository ownership publicly associates this project with `jdotc1` by the owner’s choice; no personal email address is included in source metadata.
 
-Create a new empty private repository called `dicom-anonymizer` under the chosen project organization. Do not import or transfer the development repository. Do not initialize another README, license or gitignore: the reviewed fresh-history source already contains them. Keep it private, leave the local source unpushed until the owner's final approval, and add no collaborators/integrations by default. Obtain and verify the actual repository owner/visibility before configuring a remote; do not invent its URL.
+Use the repository’s Security > Advisories > Report a vulnerability channel. Reports must use synthetic reproductions. Repository administrators should monitor private-report notifications; no personal notification address is published and no response-time guarantee is made.
 
-Keep Actions disabled during private staging; the source workflow itself is manual-only. Do not create GitHub Pages, releases, public discussions or sponsorship/contact links during staging. No test execution, build, artifact hash or baseline verification is authorized by creating the repository.
+## Evidence and maturity
 
-## Security contact
-
-Use GitHub private vulnerability reporting; no dedicated email has been requested. SECURITY.md and `.github/VULNERABILITY_REPORT.yml` are prepared. GitHub exposes this reporting feature for public repositories, so it cannot be claimed active while this staging repository remains private.
-
-At the approved public launch, enable private vulnerability reporting and confirm the reporting status and form. Configure the actual maintainer account to receive Security alerts/private-report notifications. Do not expose notification email addresses in repository content. If an active contact is required before public launch, the owner must supply a real project mailbox; none is invented here.
-
-## Final approval package
-
-Present the actual organization/repository identity, PRIVATE visibility, source commit, MIT license, documentation and synthetic examples for approval. Record that the export-specific native/runtime changes remain unexecuted and the release is a source preview. Confirm ownership/redistribution rights and private security-notification responsibility.
-
-Obtain approval for the exact source push and, separately if needed, the public visibility change. Only then upload reviewed source, make the intended repository public and activate/confirm private vulnerability reporting. Publication is source-only; no app binary or inherited private history is included. Runtime acceptance or CI runs require their own agreed scope.
-
-## References
-
-[Create an organization](https://docs.github.com/en/organizations/collaborating-with-groups-in-organizations/creating-a-new-organization-from-scratch)
-
-[Configure private vulnerability reporting](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository)
+Publication readiness concerns source disclosure, packaging and truthful documentation. It does not establish runtime acceptance, clinical suitability, certified DICOM confidentiality-profile compliance or complete IOD conformance. The existing export disclosure/syntax receipt is retained privately. Unchanged sources were not retested or rehashed for publication. See `RELEASE-REVIEW.md` for remaining runtime work.
