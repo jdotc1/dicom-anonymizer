@@ -1,5 +1,9 @@
 # Source publication record
 
+## Current download and historical previews
+
+As of 2026-10-14, `v2.0.0-preview.4` is the only downloadable GitHub release. Previews 1–3 were superseded by preview 4 and their GitHub release entries were removed; their Git tags remain. The earlier source-publication and runtime-acceptance records below are preserved as historical evidence. Preview 4 reuses the accepted standalone runtime from preview 3 and adds the approved icon; this housekeeping does not change source behavior, the current app download or acceptance scope.
+
 ## Destination and scope
 
 ## Publication controls
