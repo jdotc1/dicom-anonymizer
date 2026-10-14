@@ -54,21 +54,9 @@ final class EngineRunner: @unchecked Sendable {
                 DispatchQueue.main.async { event(["event": "error", "message": "The app resources are missing. Rebuild the app."]); finished(1, false) }
                 return
             }
-            let candidates = ["/opt/homebrew/bin/python3", "/usr/local/bin/python3"]
-            var interpreter: String?
-            for candidate in candidates where FileManager.default.isExecutableFile(atPath: candidate) {
-                lock.lock(); let stop = cancelled; lock.unlock()
-                if stop { DispatchQueue.main.async { finished(130, true) }; return }
-                let probe = Process()
-                probe.executableURL = URL(fileURLWithPath: candidate)
-                probe.arguments = ["-I", "-c", "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)"]
-                probe.standardOutput = FileHandle.nullDevice
-                probe.standardError = FileHandle.nullDevice
-                do { try probe.run(); probe.waitUntilExit() } catch { continue }
-                if probe.terminationStatus == 0 { interpreter = candidate; break }
-            }
-            guard let interpreter else {
-                DispatchQueue.main.async { event(["event": "error", "message": "Python 3.10 or newer is required. Restore the local Python installation, then reopen the app."]); finished(1, false) }
+            let interpreter = resources.appendingPathComponent("python/bin/python3").path
+            guard FileManager.default.isExecutableFile(atPath: interpreter) else {
+                DispatchQueue.main.async { event(["event": "error", "message": "The bundled Python runtime is missing. Reinstall the app from the official release."]); finished(1, false) }
                 return
             }
             let task = Process()

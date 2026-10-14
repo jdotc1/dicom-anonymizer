@@ -2,7 +2,7 @@
 set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$PROJECT_DIR/toolchain.sh"
-BUILD_DIR="$PROJECT_DIR/build"
+BUILD_DIR="${BUILD_DIR:-$PROJECT_DIR/build}"
 APP_PATH="$BUILD_DIR/DICOM Anonymizer 2.0.app"
 mkdir -p "$APP_PATH/Contents/MacOS" "$APP_PATH/Contents/Resources"
 "$SWIFT_COMPILER" "${SWIFT_FLAGS[@]}" -O \
@@ -39,7 +39,7 @@ info = {
  'CFBundleExecutable':'DICOMAnonymizer2',
  'CFBundleIdentifier':'io.github.jdotc1.dicom-anonymizer', 'CFBundleInfoDictionaryVersion':'6.0',
  'CFBundleName':'DICOM Anonymizer 2.0', 'CFBundlePackageType':'APPL',
- 'CFBundleShortVersionString':'2.0', 'CFBundleVersion':'6', 'LSMinimumSystemVersion':'13.0',
+ 'CFBundleShortVersionString':'2.0', 'CFBundleVersion':'7', 'LSMinimumSystemVersion':'13.0',
  'NSHighResolutionCapable':True, 'NSPrincipalClass':'NSApplication',
 }
 with (app / 'Contents/Info.plist').open('wb') as f: plistlib.dump(info, f)
@@ -47,5 +47,6 @@ for cache in resources.rglob('__pycache__'):
     shutil.rmtree(cache)
 print(app)
 PY
+python3 "$PROJECT_DIR/scripts/bundle_python.py" "$APP_PATH"
 /usr/bin/codesign --force --sign - "$APP_PATH"
 /usr/bin/codesign --verify --strict "$APP_PATH"

@@ -1,6 +1,6 @@
 # macOS preview release
 
-Release: `v2.0.0-preview.2`, prepared 2026-10-14. Destination: [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). MIT license. The owner authorized public source publication under the personal profile. A fresh source history is published; private development history is excluded.
+Release: `v2.0.0-preview.3`, prepared 2026-10-14. Destination: [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). MIT license. The owner authorized public source publication under the personal profile. A fresh source history is published; private development history is excluded.
 
 ## Included
 
@@ -18,7 +18,7 @@ Copyright: DICOM Anonymizer Project contributors. Source commit metadata uses th
 
 Focused acceptance of previously unexecuted build-5 regressions and public-export changes is complete. The ten focused tests, real Swift 6.4 build, native model integration and signed-app six-file workflow passed. See `RUNTIME-ACCEPTANCE.md` for exact checks and limits. Earlier evidence was reused; unchanged full suites, corpus passes and provenance/dependency checks were not repeated.
 
-The release ZIP targets Apple Silicon and requires Python 3.10+ at a supported Homebrew location. It bundles pydicom and its complete distribution notices, along with the project MIT license and third-party notice. The app identifier is `io.github.jdotc1.dicom-anonymizer` and the build number is 6. GitHub release metadata records final signing/notarization and download status.
+The standalone release ZIP targets Apple Silicon and includes CPython 3.13.16. No Homebrew or separate Python installation is required. It bundles pydicom and its complete distribution notices, along with the project MIT license and third-party notice. Python and compiled-dependency license texts are retained. The app identifier is `io.github.jdotc1.dicom-anonymizer` and the build number is 7. GitHub release metadata records final signing/notarization and download status.
 
 ## Release designation
 

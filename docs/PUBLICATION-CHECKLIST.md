@@ -2,7 +2,7 @@
 
 ## Destination and scope
 
-The owner authorized public publication under the personal GitHub profile `jdotc1`. The publication destination is [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). This is a fresh source-only repository, separate from private development history. The initial source-only release is `v2.0.0-preview.1`. The macOS binary preview is `v2.0.0-preview.2`; its focused acceptance is recorded in `RUNTIME-ACCEPTANCE.md`.
+The owner authorized public publication under the personal GitHub profile `jdotc1`. The publication destination is [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). This is a fresh source-only repository, separate from private development history. The initial source-only release is `v2.0.0-preview.1`. The standalone macOS binary preview is `v2.0.0-preview.3`; it bundles Python and its focused acceptance is recorded in `RUNTIME-ACCEPTANCE.md`.
 
 ## Publication controls
 
