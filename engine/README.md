@@ -1,12 +1,31 @@
 # Bulk metadata engine
 
-Use Python 3.10+ with pydicom 3.0.2. From the repository root:
+The Python engine processes numeric patient-folder batches: it pseudonymizes
+selected metadata, remaps patient-specific references, audits staged output, and
+atomically publishes a new batch. Source files remain read-only.
+
+Use **Python 3.10+ with pydicom 3.0.2**. From an installed checkout, try the
+synthetic example described in the [root README](../README.md#try-it-with-synthetic-data):
 
 ```sh
 python engine/engine.py --source .synthetic/input --scan
 python engine/engine.py --source .synthetic/input --destination .synthetic/output
 ```
 
-Input folders are numeric patient pseudonyms. The engine performs bulk metadata pseudonymization, remaps references, audits staged output and publishes a new batch atomically. Read `docs/DATA-HANDLING.md` and the root README for exact retention and limits. No Python runtime or patient data is bundled in this source repository.
+The destination must be new. Exact numeric folder names, including leading
+zeros, become PatientName and PatientID. Read the [data-handling policy](../docs/DATA-HANDLING.md)
+for supported MR/CT/RTSTRUCT scope, retained pixels/text/demographics, refusal
+conditions, and pseudonymization limits. No patient data or Python runtime is
+bundled in the source repository; the separately released macOS app bundles its
+runtime.
 
-JSON-line event names are scan, progress, complete and error. Errors use fixed text to avoid exposing source identity. Library diagnostic messages are suppressed. Policy version: 2.0-build5. Runtime acceptance of this source review snapshot remains pending.
+JSON-line event names are `scan`, `progress`, `complete`, and `error`. Errors use
+fixed text to avoid exposing source identity, and library diagnostic messages
+are suppressed. Completed output includes `anonymization-report.json` with
+aggregate counts and self-audit status.
+
+**Policy version: 2.0-build5.** App preview/build numbers are separate. Accepted
+engine and bundled-runtime evidence, reused checks, and remaining limits are
+recorded in [runtime acceptance](../docs/RUNTIME-ACCEPTANCE.md). Later
+[interface recovery checks](../docs/ERROR-RECOVERY.md) do not change the engine
+policy or constitute a new full engine suite.

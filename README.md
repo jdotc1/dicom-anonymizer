@@ -1,22 +1,92 @@
 # DICOM Anonymizer
 
-A local bulk metadata-pseudonymization tool for numeric patient-folder batches, with a Python engine and an optional native macOS interface. Licensed under MIT.
+**Pseudonymize DICOM metadata in patient-folder batches, locally.**
 
-**Standalone macOS preview — v2.0.0-preview.6.** Focused runtime acceptance of the public-export changes is complete on Apple Silicon. The repository contains source and entirely synthetic example generators. Synthetic objects demonstrate metadata behavior and references; they are not clinical images or complete IOD-validation fixtures.
+DICOM Anonymizer combines a Python engine with a native macOS interface for
+numeric patient-folder batches. It replaces patient identity fields with your
+folder pseudonyms, remaps patient-specific UIDs and references, audits staged
+output, and publishes a new batch while keeping source files read-only.
 
-Preview 6/build 10 adds focused recovery for invalid input, unavailable output, missing reports and cancellation. It keeps the existing interface and engine policy. See `docs/ERROR-RECOVERY.md` for changed-input evidence and reuse boundaries; preceding workflow-polish evidence remains in `docs/WORKFLOW-POLISH.md`.
+**[Download the macOS preview](https://github.com/jdotc1/dicom-anonymizer/releases)** ·
+**[Try the Python engine](#try-it-with-synthetic-data)** ·
+**[Data-handling policy](docs/DATA-HANDLING.md)** ·
+**[Report an issue](https://github.com/jdotc1/dicom-anonymizer/issues)**
 
-## Workflow
+The standalone preview targets **Apple silicon and macOS 13+** and includes
+Python and pydicom. The Python engine is also available separately. Project
+source is [MIT-licensed](LICENSE).
 
-Each immediate folder under an input batch is a numeric pseudonym, such as `00001` or `00002`. Its exact spelling, including leading zeros, becomes the output folder name and both PatientName and PatientID. The engine processes the whole batch, generates new internal names, and atomically publishes a new output folder. Sources remain read-only.
+> **Metadata pseudonymization has limits.** Numeric folder identifiers remain in
+> PatientName and PatientID and can remain linkable. Pixels, contours, selected
+> free text, and demographic attributes are retained. The tool does not redact
+> image text or faces and does not guarantee irreversible anonymity, certified
+> DICOM confidentiality-profile conformance, or complete IOD validation. Review
+> [retained content](#what-changes-and-what-remains) before sharing output.
 
-MR, CT and RTSTRUCT are supported. Conflicting patient identities, a study split across patient folders, or patient-relative frame-of-reference UIDs shared across patient folders stop the batch. References within each patient remain consistently remapped. Other unsupported or malformed inputs can also stop the batch; see `docs/DATA-HANDLING.md`.
+## The batch workflow
 
-## Python engine
+Arrange the input as a batch folder whose immediate child folders are numeric
+patient pseudonyms, such as `00001` and `00002`. Each identifier may be up to 64
+characters, and its exact spelling—including leading zeros—becomes the output
+folder name and both PatientName and PatientID.
 
-Requires Python 3.10+ and pydicom 3.0.2. Dependency installation needs access to a package source; anonymization itself has no upload or network feature.
+1. **Scan the batch.** The engine checks supported inputs and cross-file identity
+   and reference constraints.
+2. **Process into a new destination.** Internal filenames are generated
+   independently of source names; patient-specific UIDs and nested references
+   are consistently remapped within each patient.
+3. **Review the report and retained content.** Staged files are reread and
+   self-audited before atomic publication. The completed batch includes
+   `anonymization-report.json` with pseudonyms, aggregate counts, software/policy
+   versions, and audit status, without an original-identity mapping.
+
+The supported modality labels are **MR, CT, and RTSTRUCT**. Conflicting patient
+identities, a study split across patient folders, or patient-relative
+frame-of-reference UIDs shared across patient folders stop the batch. Repeated
+references within one patient remain allowed. These checks do not establish
+complete validity of every MR/CT/RTSTRUCT object.
+
+## Download and install the macOS app
+
+1. Open [Releases](https://github.com/jdotc1/dicom-anonymizer/releases) and download
+   the standalone macOS arm64 preview ZIP.
+2. Expand it and copy **DICOM Anonymizer 2.0.app** to Applications.
+3. Open the app, choose the input batch and an output location, inspect the scan
+   summary, and process the batch.
+
+The [preview 6 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.6)
+is app version 2.0, build 10. Its app is Developer ID signed and Apple notarized,
+with a stapled ticket. It includes **CPython 3.13.16 and pydicom 3.0.2** and uses
+its bundled interpreter wherever the app is moved. No Homebrew, separate Python
+installation, launch-time runtime download, or package installation is needed.
+
+Runtime acceptance was performed on Apple silicon with macOS 27.2. Older
+deployment versions and Intel Macs were not exercised. The macOS 13 deployment
+target is not a claim of runtime acceptance on every newer OS release.
+
+### Recover from a problem
+
+Preview 6 adds focused recovery while retaining the existing interface and engine
+policy:
+
+| Problem | App behavior |
+| --- | --- |
+| Rejected or inaccessible input | Clears the previous source and ready preview so another action cannot silently process an old batch. Choose a valid folder and check again. |
+| Invalid or disconnected output location | Offers Choose Location. A valid replacement preserves the scanned batch without rescanning. Directory-existence validation does not guarantee write permission. |
+| Missing or unopenable report | Keeps the completed-batch summary. Reveal Output locates the result; Dismiss returns to the completed state. |
+| Cancellation or pending error | Keeps action availability consistent while the worker stops, ignores late progress, and disables repeated cancellation. |
+
+See [error recovery](docs/ERROR-RECOVERY.md) for behavior and focused evidence, and
+[workflow polish](docs/WORKFLOW-POLISH.md) for the preceding interface changes.
+
+## Try it with synthetic data
+
+The engine requires **Python 3.10+ and pydicom 3.0.2**. Installing the dependency
+needs access to a package source; processing has no upload or network feature.
 
 ```sh
+git clone https://github.com/jdotc1/dicom-anonymizer.git
+cd dicom-anonymizer
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
@@ -25,45 +95,101 @@ python engine/engine.py --source .synthetic/input --scan
 python engine/engine.py --source .synthetic/input --destination .synthetic/output
 ```
 
-The generator reads no patient data and creates two fictional patients with six small MR/CT/RTSTRUCT objects. It refuses to overwrite an existing destination. Expected output contains `00001` and `00002`, three DICOM files per patient, and `anonymization-report.json`. Inspect that report for aggregate counts and self-audit status. Choose a new destination for another run.
+The generator reads no patient files. It creates two fictional patients and six
+small MR/CT/RTSTRUCT objects, demonstrating metadata and references rather than
+clinical images or complete IOD validation fixtures. Both the generator and
+processing destination refuse an existing destination; choose a new path for
+another run.
 
-## Download and install the macOS app
+Expected output has `00001` and `00002`, three DICOM files per patient, and
+`anonymization-report.json`. Inspect the report's aggregate counts and self-audit
+status. The CLI emits JSON-line `scan`, `progress`, `complete`, and `error` events;
+see the [engine guide](engine/README.md).
 
-The macOS release ZIP contains `DICOM Anonymizer 2.0.app`. Expand the ZIP and copy the app to Applications. This preview targets **Apple Silicon and macOS 13 or newer**. Runtime acceptance was performed on macOS 27.2; older supported deployment versions and Intel Macs were not exercised.
+## What changes and what remains
 
-**No Homebrew or separate Python installation is required.** The app includes CPython 3.13.16 and pydicom 3.0.2. It uses only its bundled interpreter and relocates with the app. No runtime download or package installation occurs at launch.
+| Content | Policy |
+| --- | --- |
+| PatientName and PatientID | Replaced recursively with the exact numeric patient-folder identifier. |
+| Patient-specific UIDs and nested references | Consistently remapped. SOP-class, transfer-syntax, and explicit structural/coding identifiers remain. |
+| Private tags, uninterpreted public UN elements, dates/times, and known identifying fields | Cleared or removed; retired curve groups are removed. Required type-2 fields may remain present with empty values. |
+| File metadata and preamble | Rebuilt and synchronized; preambles are zeroed. |
+| SeriesDescription, ProtocolName, SequenceName, ContrastBolusAgent, SoftwareVersions, and Manufacturer | Retained. Free text can still identify people or institutions. |
+| PatientSex, PatientAge, PatientSize, and PatientWeight | Retained. These attributes can remain identifying in combination with other information. |
+| Image pixels, contour geometry, public quantitative measurements, ROI names, and observation labels | Retained. Visual identifiers and facial anatomy are not removed. |
 
-The downloadable release is Developer ID signed and Apple notarized, with the notarization ticket stapled to the app. See the repository’s Releases section for the ZIP and acceptance details. Metadata processing runs locally. Review the retained-content policy below before sharing outputs.
+Removing private tags can remove vendor-specific quantitative information;
+clearing dates removes temporal information. An absent burned-in annotation flag
+does not establish that pixels contain no identifying content.
 
-## Native macOS interface
+Symbolic links, nonregular patient-file entries, unsupported modalities,
+duplicate instance UIDs, invalid required UIDs, declared burned-in annotations,
+and overlays stop processing. Non-DICOM sidecars, including recognized
+AppleDouble companions, are excluded and counted. Malformed DICOM files stop
+the batch; not every malformed-stream or resource-exhaustion case is covered.
+Common atlas-space workflows are not an approved exception to cross-patient
+frame-of-reference checks.
 
-The source target is Apple Silicon with macOS 13+. Building requires full Xcode with Apple Swift 6.4 and Swift 6 language mode; warnings are treated as errors. `toolchain.sh` uses the selected Xcode installation or `DEVELOPER_DIR`.
+A disk-space preflight estimates required capacity. The pre-publication audit
+checks identity, date, private-tag, UN, clear/remove, and UID invariants, including
+metadata after Pixel Data. Some policy lists are shared with the cleaner, so the
+self-audit is not an independent conformance oracle. Failures and handled
+cancellation remove staging; abrupt process death or power loss can leave hidden
+staging. The [data-handling policy](docs/DATA-HANDLING.md) is the detailed contract.
+
+## Build the macOS interface from source
+
+The native target is arm64 with macOS 13+. Building requires full Xcode, Apple
+Swift 6.4 in Swift 6 language mode, and a local Python 3.12+ environment with the
+pinned pydicom dependency. Warnings are treated as errors.
+[toolchain.sh](toolchain.sh) uses the selected Xcode installation or
+`DEVELOPER_DIR`.
 
 ```sh
 bash build.sh
 ```
 
-The local result is `build/DICOM Anonymizer 2.0.app`, ad-hoc signed for local development. Building requires a local Python 3.12+ environment with the pinned pydicom dependency, and downloads the pinned standalone Python archive on first use. Unchanged cached archives reuse their digest-bound acquisition receipt. This is a build-time requirement; the resulting app includes Python and pydicom. Runtime and dependency notices are bundled. No Developer ID certificate, notarization credential, signing key or custom artwork is included in source. The downloadable app includes the project-selected icon. For a local build with externally supplied compiled icon resources, set `APP_ICON_RESOURCES` to a folder containing `Assets.car` and `AppIcon.icns`; the build copies those resources and sets both icon plist keys before signing.
+The result is `build/DICOM Anonymizer 2.0.app`, ad-hoc signed for local
+development. The first build downloads the pinned standalone Python archive;
+unchanged cached archives reuse their digest-bound acquisition receipt. These
+are build-time requirements. The resulting app includes the interpreter,
+pydicom, runtime licenses, and dependency notices.
 
-The release bundle identifier is `io.github.jdotc1.dicom-anonymizer`, with app version 2.0/build 9. Intel and other operating systems are not claimed as native-app targets; the Python engine remains available separately.
+The bundle identifier is `io.github.jdotc1.dicom-anonymizer`. Source contains no
+Developer ID certificate, notarization credential, signing key, or custom artwork.
+The downloadable app includes the project-selected icon. For a local build with
+externally supplied compiled icon resources, set `APP_ICON_RESOURCES` to a folder
+containing `Assets.car` and `AppIcon.icns`; the build copies them and sets the icon
+plist keys before signing. Intel and other operating systems are not claimed as
+native-app targets; the Python engine remains available separately.
 
-## Retained content and privacy
+## Development and acceptance evidence
 
-SeriesDescription, ProtocolName, SequenceName, ContrastBolusAgent, SoftwareVersions, Manufacturer, pixels, contour geometry, measurements, and approved ROI names/observation labels are retained. Numeric pseudonyms remain linkable. Image text, faces and retained free text are not visually redacted. Processing is metadata pseudonymization, without a claim of certified DICOM confidentiality-profile or complete IOD conformance. Review retained content before sharing.
-
-Do not post patient files, original filenames, identifiers, or unredacted logs in issues or pull requests. Use synthetic reproductions. See `SECURITY.md` and `CONTRIBUTING.md`.
-
-## Development and acceptance
-
-Unit tests use synthetic temporary data. The optional native integration test uses only the example generator:
+Unit tests use synthetic temporary data. The optional native integration test
+uses only the example generator and a separate preferences identifier, writing
+under `.synthetic/`.
 
 ```sh
 python -m unittest discover -s tests -v
 bash test_drop.sh
 ```
 
-The ten build-5 regression tests passed for preview 2 and that evidence is reused. The real app compiled with Swift 6.4, the synthetic native model integration passed, and the signed release app completed a native six-file batch. Existing earlier suite receipts were reused; full suites and corpus passes were not repeated. See `docs/RUNTIME-ACCEPTANCE.md` for scope and results. CI is manual-only, requires explicit acknowledgement, and has read-only repository permissions.
+[Runtime acceptance](docs/RUNTIME-ACCEPTANCE.md),
+[error recovery](docs/ERROR-RECOVERY.md), and
+[release review](docs/RELEASE-REVIEW.md) distinguish focused checks from reused
+engine, self-audit, native processing, runtime, and dependency evidence. Bundled
+runtime checks include scan/completion with external Python locations denied and
+the missing-runtime error without external fallback. These are recorded checks,
+not a claim that every preview reruns all suites or covers all native gestures.
 
-Bundled-runtime checks cover Swift-to-Python scan/completion with external Python locations denied and the missing-runtime error without external fallback. The native test uses a separate preferences identifier and writes only under `.synthetic/`. The engine/policy is build 5. The public repository is maintained under the owner’s personal GitHub profile at [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). Use GitHub private vulnerability reporting for security-sensitive reports; see `SECURITY.md`. Focused runtime acceptance is recorded in `docs/RUNTIME-ACCEPTANCE.md`; see `docs/RELEASE-REVIEW.md` for release boundaries.
+The engine policy remains **2.0-build5**, separately versioned from the app's
+release/build number. CI is manual-only, requires explicit acknowledgment, and
+has read-only repository permissions. Use the linked records for actual command,
+environment, and acceptance scope.
 
-## License and dependencies
+## Contributing, reporting, and license
+
+Use minimal synthetic examples in [issues](https://github.com/jdotc1/dicom-anonymizer/issues)
+and pull requests. Do not post patient files, original filenames, identifiers,
+or unredacted logs. Follow [CONTRIBUTING.md](CONTRIBUTING.md); security-sensitive
+reports use the private reporting route in [SECURITY.md](SECURITY.md).
