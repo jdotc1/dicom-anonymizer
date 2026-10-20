@@ -1,11 +1,18 @@
 # DICOM Anonymizer
 
-**Pseudonymize DICOM metadata in patient-folder batches, locally.**
+**Local DICOM metadata pseudonymization for imaging-data privacy.**
 
 DICOM Anonymizer combines a Python engine with a native macOS interface for
-numeric patient-folder batches. It replaces patient identity fields with your
-folder pseudonyms, remaps patient-specific UIDs and references, audits staged
-output, and publishes a new batch while keeping source files read-only.
+preparing pseudonymized MR, CT, and RTSTRUCT batches. It replaces patient
+identity fields with numeric folder pseudonyms and consistently remaps
+patient-specific UIDs and nested references. Processing runs locally, keeps
+source files read-only, and rereads staged output for self-audit before
+publishing a new batch.
+
+Use it when a research workflow calls for numeric patient pseudonyms and
+consistent references across a batch. Its metadata policy preserves image
+pixels and contour geometry; retained content still requires review before
+sharing.
 
 **[Download the macOS preview](https://github.com/jdotc1/dicom-anonymizer/releases)** ·
 **[Try the Python engine](#try-it-with-synthetic-data)** ·
