@@ -146,3 +146,8 @@ Receipts predating this distinction default both component sources to their
 single accepted source. Four new isolated fixtures per app profile cover distinct
 sources, missing/mismatched native metadata, and legacy selection; existing
 packaging fixtures remain reused.
+
+Vendor `__pycache__`, `.pyc` and `.pyo` import caches are excluded during assembly.
+They are generated locally and can contain local compiler paths. Vendor sources
+and the separately accepted interpreter/runtime resources remain preserved. A new
+focused fixture covers this boundary without rerunning unchanged packaging checks.
