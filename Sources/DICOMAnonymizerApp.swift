@@ -267,7 +267,7 @@ final class BatchModel: ObservableObject {
         guard let name = event["event"] as? String else { return }
         switch name {
         case "scan":
-            guard processingPhase == .writing else { return }
+            guard !cancelling, processingPhase == .writing else { return }
             resetProcessingProgress()
             patients = (event["patients"] as? [Any] ?? []).compactMap { item in
                 guard let row = item as? [String: Any], let id = row["id"] as? String, !id.isEmpty else { return nil }

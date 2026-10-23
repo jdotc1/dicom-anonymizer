@@ -103,6 +103,10 @@ struct AuditProgressChecks {
             try require(m.processingPhase == .writing && m.auditTotalFiles == 0, "Audit phases must be ignored outside a processing run")
         }
         m.scanning = false; m.busy = true
+        let cancelling = try AuditProgressFixture(); defer { cancelling.cleanup() }
+        cancelling.model.cancel()
+        cancelling.model.receive(["event": "scan", "patients": [], "total_files": 2])
+        try require(cancelling.model.total == 20 && cancelling.model.activePatient == "00001", "Late scans must not reset a cancelling writing run")
         m.receive(["event": "audit_progress", "audited_files": 10, "total_files": 20])
         m.cancel()
         let status = m.status
@@ -116,7 +120,7 @@ struct AuditProgressChecks {
         let m = f.model
         m.receive(["event": "audit_progress", "audited_files": 10, "total_files": 20])
         m.resetProcessingProgress()
-        try require(m.processingPhase == .writing && m.auditedFiles == 0 && m.auditTotalFiles == 0, "The run reset must clear audit state")
+        try require(m.processingPhase == .writing && m.auditedFiles == 0 && m.auditTotalFiles == 0 && m.activePatient == nil, "The run reset must clear audit state and the previous patient")
         m.receive(["event": "audit_progress", "audited_files": 10, "total_files": 20])
         m.resetProcessingProgress()
         m.receive(["event": "scan", "patients": [], "total_files": 3, "excluded_files": 0])
