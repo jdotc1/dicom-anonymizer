@@ -219,3 +219,11 @@ build artifacts, or internal evidence archives are included in this repository.
 Receipt-driven packaging and explicit resumable distribution steps are documented in
 [Release automation](docs/RELEASE-AUTOMATION.md). Accepted application verification is reused;
 packaging fixtures cover only the new tooling.
+
+## Local scan-progress increment
+
+Initial scan/preflight examined-file and examined-folder feedback is implemented on
+`codex/scan-progress`, pending merge and distribution. It stays inside the existing
+progress area and remains indeterminate. See [Scan progress](docs/SCAN-PROGRESS.md)
+for changed-input evidence and accepted verification reuse. The current download
+and installed release listed above have not been replaced by this source work.
