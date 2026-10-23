@@ -181,6 +181,28 @@ class PublicationRecoveryTests(unittest.TestCase):
         emit.assert_called_once_with('error', message=str(failure.exception), cancelled=False, cleanup_failed=False, output_published=True)
         self.assertTrue(self.destination.is_dir())
 
+    def test_replaced_staging_is_preserved_and_never_offered_for_removal(self):
+        replacement = None
+        def fail_after_replacement(staging, *_args, **_kwargs):
+            nonlocal replacement
+            staging.rename(self.root / 'owned-original')
+            staging.mkdir()
+            replacement = staging / 'unrelated.txt'
+            replacement.write_text('preserve')
+            raise engine.BatchError('Original processing failure')
+        with patch.object(engine, 'self_audit', side_effect=fail_after_replacement):
+            with self.assertRaises(engine.BatchError) as failure:
+                self.run_batch()
+        error = failure.exception
+        self.assertTrue(error.cleanup_failed)
+        self.assertIsNone(error.staging_path)
+        self.assertIn('Original processing failure', str(error))
+        self.assertIn('staging location changed', str(error))
+        self.assertEqual(replacement.read_text(), 'preserve')
+        with patch.object(sys, 'argv', ['engine', '--source', str(self.source), '--destination', str(self.destination)]), patch.object(engine.signal, 'signal'), patch.object(engine, 'run', side_effect=error), patch.object(engine, 'emit') as emit:
+            self.assertEqual(engine.main(), 1)
+        emit.assert_called_once_with('error', message=str(error), cancelled=False, cleanup_failed=True)
+
     def test_main_late_signal_returns_zero_after_complete(self):
         def run(source, destination, *, cancellation):
             cancellation.begin_publication()

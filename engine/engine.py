@@ -63,6 +63,10 @@ class Cancellation:
             raise BatchError(CANCELLED, cancelled=True)
 
 
+class StagingOwnershipError(OSError):
+    pass
+
+
 def remove_staging(staging, identity):
     """Remove only the directory created by this operation, never a replacement."""
     try:
@@ -70,7 +74,7 @@ def remove_staging(staging, identity):
     except FileNotFoundError:
         return
     if (current.st_dev, current.st_ino) != identity or not stat.S_ISDIR(current.st_mode):
-        raise OSError('The staging directory was replaced.')
+        raise StagingOwnershipError('The staging directory was replaced.')
     shutil.rmtree(staging)
 
 
@@ -585,12 +589,17 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
         if staging is not None:
             try:
                 remove_staging(staging, staging_identity)
-            except OSError:
+            except OSError as cleanup_error:
+                owned_path = None if isinstance(cleanup_error, StagingOwnershipError) else str(staging)
+                recovery = (
+                    ' The staging location changed and could not be cleaned safely. Inspect the output location before retrying.'
+                    if owned_path is None else
+                    ' Incomplete output could not be removed. Remove the staging folder before retrying.')
                 message = str(original) if isinstance(original, BatchError) else PROCESSING_FAILURE
                 raise BatchError(
-                    message + ' Incomplete output could not be removed. Remove the staging folder before retrying.',
+                    message + recovery,
                     cancelled=isinstance(original, BatchError) and original.cancelled,
-                    cleanup_failed=True, staging_path=str(staging)) from original
+                    cleanup_failed=True, staging_path=owned_path) from original
         raise
 
 
@@ -717,7 +726,7 @@ def main():
     except BatchError as exc:
         cancellation.deferred = True
         details = dict(message=str(exc), cancelled=exc.cancelled, cleanup_failed=exc.cleanup_failed)
-        if exc.cleanup_failed:
+        if exc.cleanup_failed and exc.staging_path is not None:
             details['staging_path'] = exc.staging_path
         if exc.output_published:
             details['output_published'] = True
