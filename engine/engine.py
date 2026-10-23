@@ -31,11 +31,12 @@ POLICY = {
 }
 
 class BatchError(Exception):
-    def __init__(self, message, *, cancelled=False, cleanup_failed=False, staging_path=None):
+    def __init__(self, message, *, cancelled=False, cleanup_failed=False, staging_path=None, output_published=False):
         super().__init__(message)
         self.cancelled = cancelled
         self.cleanup_failed = cleanup_failed
         self.staging_path = staging_path
+        self.output_published = output_published
 
 
 CANCELLED = 'Processing was cancelled. No completed output was published.'
@@ -504,6 +505,7 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
     check_disk_space(records, destination.parent)
     staging = None
     staging_identity = None
+    publication_succeeded = False
     try:
         # Capture ownership before honoring a signal delivered during allocation.
         cancellation.deferred = True
@@ -568,6 +570,7 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
                 raise BatchError('The output could not be published without overwriting. Choose a new writable location.')
         else:
             os.rename(staging, destination)
+        publication_succeeded = True
         staging = None
         result = dict(processed=len(records), total_files=len(records), patients=len(patients), excluded_files=excluded, audited_files=audit_summary['files_audited'])
         progress('complete', **result)
@@ -575,6 +578,10 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
     except Exception as original:
         # A second Cancel must not interrupt cleanup or replace the first failure.
         cancellation.deferred = True
+        if publication_succeeded:
+            raise BatchError(
+                'The completed output was published, but completion could not be confirmed. '
+                'Check the output folder before retrying.', output_published=True) from original
         if staging is not None:
             try:
                 remove_staging(staging, staging_identity)
@@ -712,6 +719,8 @@ def main():
         details = dict(message=str(exc), cancelled=exc.cancelled, cleanup_failed=exc.cleanup_failed)
         if exc.cleanup_failed:
             details['staging_path'] = exc.staging_path
+        if exc.output_published:
+            details['output_published'] = True
         emit('error', **details)
     except Exception:
         cancellation.deferred = True

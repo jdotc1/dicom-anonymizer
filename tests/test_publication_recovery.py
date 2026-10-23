@@ -155,6 +155,32 @@ class PublicationRecoveryTests(unittest.TestCase):
         emit.assert_called_once_with('error', message=str(error), cancelled=True, cleanup_failed=True, staging_path=error.staging_path)
         self.assertNotIn(str(self.root), str(error))
 
+    def test_postpublication_callback_failure_never_claims_output_absent(self):
+        def progress(event_name, **values):
+            if event_name == 'complete':
+                raise OSError('Synthetic completion transport failure')
+        with self.assertRaises(engine.BatchError) as failure:
+            self.run_batch(progress)
+        error = failure.exception
+        self.assertTrue(error.output_published)
+        self.assertFalse(error.cleanup_failed)
+        self.assertFalse(error.cancelled)
+        self.assertIn('completed output was published', str(error))
+        self.assertNotIn('no completed output', str(error).lower())
+        self.assertTrue(self.destination.is_dir())
+        self.assertEqual(list(self.root.glob('.dicom-batch-*')), [])
+
+    def test_main_postpublication_error_is_not_success_or_false_absence(self):
+        def progress(event_name, **values):
+            if event_name == 'complete':
+                raise OSError('Synthetic completion transport failure')
+        with self.assertRaises(engine.BatchError) as failure:
+            self.run_batch(progress)
+        with patch.object(sys, 'argv', ['engine', '--source', str(self.source), '--destination', str(self.destination)]), patch.object(engine.signal, 'signal'), patch.object(engine, 'run', side_effect=failure.exception), patch.object(engine, 'emit') as emit:
+            self.assertEqual(engine.main(), 1)
+        emit.assert_called_once_with('error', message=str(failure.exception), cancelled=False, cleanup_failed=False, output_published=True)
+        self.assertTrue(self.destination.is_dir())
+
     def test_main_late_signal_returns_zero_after_complete(self):
         def run(source, destination, *, cancellation):
             cancellation.begin_publication()
