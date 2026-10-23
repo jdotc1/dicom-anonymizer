@@ -18,7 +18,7 @@ Release assembly and provenance automation is now delivered. See [the delivery r
 
 ## Proposed next priorities
 
-1. **Show initial scan activity.** Add files/folders-examined feedback inside the existing progress area without inventing a total.
+1. **Initial scan activity is implemented locally, pending delivery.** Files/folders examined now appear in the existing progress area without a total; see [Scan progress](SCAN-PROGRESS.md).
 2. **Evaluate more precise space estimation.** Keep this separate from reporting improvements; establish the changed requirements and test only the affected behavior.
 3. **Resolve supported-input policy decisions separately.** Opaque payloads, unsupported structures, resource limits and conformance claims need explicit scope and approval before implementation.
 

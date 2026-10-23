@@ -120,6 +120,9 @@ final class BatchModel: ObservableObject {
     @Published var activePatient: String?
     @Published var busy = false
     @Published var scanning = false
+    @Published private(set) var examiningInput = false
+    @Published private(set) var scanFilesExamined = 0
+    @Published private(set) var scanFoldersExamined = 0
     @Published var ready = false
     @Published var status = "Choose a batch folder to begin."
     @Published var errorMessage: String?
@@ -236,6 +239,7 @@ final class BatchModel: ObservableObject {
 
     func beginRunState(isScan: Bool, output: URL?) {
         resetProcessingProgress()
+        examiningInput = true; scanFilesExamined = 0; scanFoldersExamined = 0
         activeOutput = output
         engineCancelled = false
         publishedWithoutConfirmation = false
@@ -259,7 +263,7 @@ final class BatchModel: ObservableObject {
     func finishRun(code: Int32, cancelled: Bool, isScan: Bool, output: URL?) {
         var outcomeUncertain = false
         let elapsed = runStarted.map { Date().timeIntervalSince($0) } ?? 0
-        busy = false; scanning = false; cancelling = false; runner = nil; activePatient = nil; runStarted = nil
+        busy = false; scanning = false; examiningInput = false; cancelling = false; runner = nil; activePatient = nil; runStarted = nil
         if code == 0 && !isScan && completeReceived, let output {
             completedOutput = output
             summary = CompletionSummary(patients: completedPatients ?? patients.count, files: processed,
@@ -314,9 +318,18 @@ final class BatchModel: ObservableObject {
     func receive(_ event: [String: Any]) {
         guard let name = event["event"] as? String else { return }
         switch name {
+        case "scan_progress":
+            guard busy, examiningInput, !scanReceived, !cancelling, errorMessage == nil,
+                  processingPhase == .writing,
+                  let files = eventCount(event["files_examined"]),
+                  let folders = eventCount(event["folders_examined"]),
+                  files >= scanFilesExamined, folders >= scanFoldersExamined else { return }
+            scanFilesExamined = files; scanFoldersExamined = folders
+            status = progressDetail
         case "scan":
             guard !cancelling, processingPhase == .writing else { return }
             resetProcessingProgress()
+            examiningInput = false
             patients = (event["patients"] as? [Any] ?? []).compactMap { item in
                 guard let row = item as? [String: Any], let id = row["id"] as? String, !id.isEmpty else { return nil }
                 return PatientRow(id: id, files: eventCount(row["files"]) ?? 0, series: eventCount(row["series"]) ?? 0)
@@ -488,10 +501,10 @@ final class BatchModel: ObservableObject {
     }
 
     var isFinalizing: Bool {
-        processingPhase == .finalizing || (processingPhase == .writing && total > 0 && processed >= total)
+        !examiningInput && (processingPhase == .finalizing || (processingPhase == .writing && total > 0 && processed >= total))
     }
     var progressFraction: Double? {
-        guard !cancelling, !isFinalizing else { return nil }
+        guard !cancelling, !examiningInput, !isFinalizing else { return nil }
         if processingPhase == .auditing {
             return auditTotalFiles > 0 ? Double(auditedFiles) / Double(auditTotalFiles) : nil
         }
@@ -499,11 +512,15 @@ final class BatchModel: ObservableObject {
     }
     var progressTitle: String {
         if cancelling { return "Cancelling" }
+        if examiningInput { return "Checking batch" }
         if processingPhase == .auditing { return "Checking output" }
         return isFinalizing ? "Finalizing batch" : processed == 0 ? "Preparing batch" : "Anonymizing"
     }
     var progressDetail: String {
         if cancelling { return "Waiting for the engine to stop or finish publication…" }
+        if examiningInput {
+            return String(localized: "\(scanFilesExamined) files · \(scanFoldersExamined) folders examined")
+        }
         if processingPhase == .auditing { return "\(auditedFiles) of \(auditTotalFiles) files checked" }
         if processingPhase == .finalizing { return "Checks passed. Preparing the report and publishing the batch…" }
         return isFinalizing ? "Writing is complete. Checking output and preparing the report…" :
@@ -774,7 +791,11 @@ struct BatchView: View {
                 if let summary = model.summary, !model.busy && !model.hasBlockingProblem {
                     CompletionView(summary: summary, reveal: model.revealOutput, openReport: model.openReport)
                 }
-                Text(model.status).id(model.status).accessibilityIdentifier("batchStatus").textSelection(.enabled)
+                // Preflight already shows the new scan counts inside BatchProgress.
+                // Initial scan still uses the existing spinner and this status line.
+                if !model.busy || !model.examiningInput || model.scanning || model.cancelling || model.errorMessage != nil {
+                    Text(model.status).id(model.status).accessibilityIdentifier("batchStatus").textSelection(.enabled)
+                }
             }
             HStack {
                 if model.busy { Button(model.cancelling ? "Cancelling…" : "Cancel", action: model.cancel).keyboardShortcut(.cancelAction).disabled(model.cancelling) }

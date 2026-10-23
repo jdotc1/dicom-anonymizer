@@ -213,3 +213,5 @@ reports use the private reporting route in [SECURITY.md](SECURITY.md).
 Receipt-driven packaging and explicit resumable distribution steps are documented in
 [Release automation](docs/RELEASE-AUTOMATION.md). Accepted application verification is reused;
 packaging fixtures cover only the new tooling.
+
+## Local scan-progress increment

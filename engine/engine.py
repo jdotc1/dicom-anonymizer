@@ -12,6 +12,7 @@ import signal
 import stat
 import sys
 import tempfile
+import time
 import warnings
 from dataclasses import dataclass
 
@@ -195,10 +196,26 @@ def claim_patient_frames(ds, patient, owners):
                 raise BatchError(FRAME_COLLISION)
 
 
-def scan(source):
+def scan(source, progress=None):
     source = Path(source).absolute()
     if source.is_symlink() or not source.is_dir():
         raise BatchError('Select an existing local batch folder, without symbolic links.')
+    files_examined, folders_examined = 0, 1
+    last_progress = None
+
+    def scan_progress(*, force=False):
+        nonlocal last_progress
+        if progress is None:
+            return
+        now = time.monotonic()
+        if force or last_progress is None or now - last_progress >= 0.1:
+            progress('scan_progress', files_examined=files_examined,
+                     folders_examined=folders_examined)
+            last_progress = now
+
+    # Counts describe traversal work already encountered, including excluded files.
+    # There is no known total while the single input walk is still in progress.
+    scan_progress(force=True)
     records, excluded, patients, seen_ids, seen_sops, seen_studies = [], 0, {}, {}, set(), {}
     frame_owners = {}
     def appledouble(path, header=None):
@@ -214,7 +231,11 @@ def scan(source):
         for patient in children:
             if patient.is_symlink():
                 raise BatchError('Symbolic links are not supported. Use a local copy of the input folders.')
-            if patient.is_file() and (patient.name == '.DS_Store' or appledouble(patient)):
+            root_file = patient.is_file()
+            if root_file:
+                files_examined += 1
+                scan_progress()
+            if root_file and (patient.name == '.DS_Store' or appledouble(patient)):
                 excluded += 1
                 continue
             if not patient.is_dir() or not re.fullmatch(r'[0-9]+', patient.name):
@@ -225,10 +246,14 @@ def scan(source):
             def walk_error(_):
                 raise BatchError('An input folder cannot be listed. Check read permissions and retry.')
             for root, dirs, files in os.walk(patient, followlinks=False, onerror=walk_error):
+                folders_examined += 1
+                scan_progress()
                 dirs.sort(); files.sort()
                 if any((Path(root) / d).is_symlink() for d in dirs):
                     raise BatchError('Symbolic links are not supported. Use a local copy of the input folders.')
                 for filename in files:
+                    files_examined += 1
+                    scan_progress()
                     path = Path(root) / filename
                     if path.is_symlink():
                         raise BatchError('Symbolic links are not supported. Use a local copy of the input folders.')
@@ -282,6 +307,7 @@ def scan(source):
         raise
     except OSError:
         raise BatchError('Input files cannot be read. Check permissions and available local storage.') from None
+    scan_progress(force=True)
     if not records:
         raise BatchError('No numeric patient folders containing DICOM data were found.')
     return records, list(patients.values()), excluded
@@ -543,7 +569,7 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
         raise BatchError('The output must be separate from the input folder, with neither inside the other.', output_issue='conflict')
     if not destination_operation(destination.parent.is_dir):
         raise BatchError('The output parent folder does not exist. Choose an existing location.', output_issue='unavailable')
-    records, patients, excluded = scan(source)
+    records, patients, excluded = scan(source, progress=progress)
     progress('scan', patients=patients, total_files=len(records), excluded_files=excluded)
     check_disk_space(records, destination.parent)
     staging = None
@@ -766,7 +792,7 @@ def main():
     signal.signal(signal.SIGINT, cancellation.cancel)
     try:
         if args.scan:
-            records, patients, excluded = scan(args.source)
+            records, patients, excluded = scan(args.source, progress=emit)
             emit('scan', patients=patients, total_files=len(records), excluded_files=excluded)
         else:
             run(args.source, args.destination, cancellation=cancellation)
