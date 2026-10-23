@@ -1,6 +1,14 @@
 # Source publication record
 
-## Current release — preview 12, build 16
+## Current release — preview 14, build 18
+
+The receipt-driven workflow delivered public Preview 14/app build 18 with accepted engine-source `80caae5` and reused native-source `b28a3df`. Release source: `e2f95de`. Apple accepted notarization `92ca3f7b-0e55-46b6-93f2-c3fceeed405e`; the new root signature, stapled ticket and Gatekeeper assessment passed once. Accepted estimate evidence (24 new checks and four affected existing checks per repository) and earlier unchanged policy, self-audit, UI/build, runtime, icon and nested-signature receipts were reused. Five new packaging fixtures per app profile passed for distinct native/engine provenance and vendor cache exclusion; source-only review found no blockers. No accepted test suite, native build, provenance hash or dependency-signature check was repeated. The standalone arm64 ZIP was published and its HTTPS delivery returned HTTP 200. The deployment target remains macOS 13, with bundled Python. See `SPACE-ESTIMATE.md`.
+
+## Preview 13 packaging withdrawal (historical)
+
+Preview 13 was briefly published during release finalization with locally generated vendor bytecode caches. Its downloadable asset was withdrawn, and its tag/release record remains. Preview 14 replaces it with those caches excluded; the metadata policy and native code are unchanged. See `SPACE-ESTIMATE.md` for correction history.
+
+## Preview 12 delivery (historical) — preview 12, build 16
 
 The receipt-driven workflow delivered public Preview 12/app build 16 from accepted app-source `b28a3df`, with release merge `be40e72`. Apple accepted notarization `a90b6f26-e197-4512-962e-626a565ac180`; the new root signature, stapled ticket and Gatekeeper assessment passed once. Accepted optimized product, eight new focused engine telemetry checks, eleven new model checks and scoped native progress/cancellation review were reused. Earlier unchanged engine-policy, self-audit, runtime, icon, UI and nested-signature evidence remains reused. No accepted test suite, build, provenance hash or dependency-signature check was repeated. The standalone arm64 ZIP was published and its HTTPS delivery returned HTTP 200. The deployment target remains macOS 13, with bundled Python. See `SCAN-PROGRESS.md`.
 
@@ -40,7 +48,7 @@ Before preview 5 was prepared on 2026-10-14, `v2.0.0-preview.4` was the only dow
 
 ## Destination and scope
 
-The owner authorized public publication under the personal GitHub profile `jdotc1`. The publication destination is [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). This is a fresh source-only repository, separate from private development history. The initial source-only release is `v2.0.0-preview.1`. The current standalone macOS binary preview is `v2.0.0-preview.12`; it bundles Python and its focused acceptance is recorded in `RUNTIME-ACCEPTANCE.md`.
+The owner authorized public publication under the personal GitHub profile `jdotc1`. The publication destination is [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). This is a fresh source-only repository, separate from private development history. The initial source-only release is `v2.0.0-preview.1`. The current standalone macOS binary preview is `v2.0.0-preview.14`; it bundles Python and its focused acceptance is recorded in `RUNTIME-ACCEPTANCE.md`.
 
 ## Publication controls
 
