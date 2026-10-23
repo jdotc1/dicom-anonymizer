@@ -33,3 +33,9 @@ Twenty-seven new engine checks passed per repository, plus the one existing publ
 An independent source-only model review found no blocking issue and recommended requiring the active operation destination for storage routing; that guard was included before the successful builds and new model checks.
 
 ## Delivery boundary
+
+## Public Preview 10 delivery
+
+Delivered on 2026-10-23 from accepted app-source `35c967c` with release merge `7e78c05`. Apple accepted notarization `37d2468f-33cf-4a91-94c2-0be59e6bc79c`. The first changed root signature, stapled ticket and Gatekeeper assessment passed. Public Preview 10 is app version 2.0/build 14, delivered as the standalone arm64 macOS ZIP. GitHub asset metadata and public HTTP access were checked; earlier preview tags and acceptance records remain historical.
+
+See [Visual development roadmap](ROADMAP-VISUAL.md) for delivered milestones, the current release and proposed next priorities.

@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="960" viewBox="0 0 1200 960" role="img" aria-labelledby="title desc">
+<title id="title">DICOM Anonymizer development roadmap</title>
+<desc id="desc">Seven delivered milestones, current storage-recovery release, and proposed next priorities. Future policy decisions are separate.</desc>
+<style>text{font-family:Arial;font-size:10pt;fill:#182b3c}.bold{font-weight:700}.muted{fill:#526477}.smallcaps{font-weight:700;letter-spacing:1px}</style>
+<rect width="1200" height="960" fill="#f5f8fc"/>
+<text x="36" y="37" class="bold">DICOM ANONYMIZER — DEVELOPMENT ROADMAP</text>
+<text x="36" y="62" class="muted">Public macOS app • 23 October 2026</text>
+<text x="36" y="91" class="smallcaps">DELIVERED MILESTONES</text>
+<text x="760" y="91" class="smallcaps">CURRENT POSITION AND NEXT PRIORITIES</text>
+<path d="M52 135 V771" stroke="#c0d2df" stroke-width="3"/>
+<circle cx="52" cy="133" r="9" fill="#66849a"/>
+<text x="48" y="138" style="fill:#ffffff">1</text>
+<rect x="76" y="111" width="650" height="88" rx="12" fill="#ffffff" stroke="#d9e3ee"/>
+<text x="92" y="131" class="bold" style="fill:#526477">Foundation</text>
+<text x="92" y="151" class="bold">Source foundation</text>
+<text x="92" y="170" class="muted">Preview 1</text>
+<text x="92" y="189">Numeric patient folders, generated filenames and consistent UID mapping.</text>
+<circle cx="52" cy="232" r="9" fill="#66849a"/>
+<text x="48" y="237" style="fill:#ffffff">2</text>
+<rect x="76" y="210" width="650" height="88" rx="12" fill="#ffffff" stroke="#d9e3ee"/>
+<text x="92" y="230" class="bold" style="fill:#526477">Policy and audit</text>
+<text x="92" y="250" class="bold">Metadata hardening + self-audit</text>
+<text x="92" y="269" class="muted">Preview 2</text>
+<text x="92" y="288">Approved retained labels and references; staged output checked before publication.</text>
+<circle cx="52" cy="331" r="9" fill="#66849a"/>
+<text x="48" y="336" style="fill:#ffffff">3</text>
+<rect x="76" y="309" width="650" height="88" rx="12" fill="#ffffff" stroke="#d9e3ee"/>
+<text x="92" y="329" class="bold" style="fill:#526477">Standalone delivery</text>
+<text x="92" y="349" class="bold">Bundled Python + app icon</text>
+<text x="92" y="368" class="muted">Previews 3–4</text>
+<text x="92" y="387">Standalone macOS downloads; signing and notarization.</text>
+<circle cx="52" cy="430" r="9" fill="#66849a"/>
+<text x="48" y="435" style="fill:#ffffff">4</text>
+<rect x="76" y="408" width="650" height="88" rx="12" fill="#ffffff" stroke="#d9e3ee"/>
+<text x="92" y="428" class="bold" style="fill:#526477">Workflow recovery</text>
+<text x="92" y="448" class="bold">Workflow polish + error recovery</text>
+<text x="92" y="467" class="muted">Previews 5–6</text>
+<text x="92" y="486">Stale input, output replacement, report recovery and busy-action guards.</text>
+<circle cx="52" cy="529" r="9" fill="#66849a"/>
+<text x="48" y="534" style="fill:#ffffff">5</text>
+<rect x="76" y="507" width="650" height="88" rx="12" fill="#ffffff" stroke="#d9e3ee"/>
+<text x="92" y="527" class="bold" style="fill:#526477">Visible progress</text>
+<text x="92" y="547" class="bold">UI refinement + explicit audit progress</text>
+<text x="92" y="566" class="muted">Previews 7–8</text>
+<text x="92" y="585">Checked-file counts and clear finalization; accepted interfaces retained.</text>
+<circle cx="52" cy="628" r="9" fill="#66849a"/>
+<text x="48" y="633" style="fill:#ffffff">6</text>
+<rect x="76" y="606" width="650" height="88" rx="12" fill="#ffffff" stroke="#d9e3ee"/>
+<text x="92" y="626" class="bold" style="fill:#526477">Reliable outcomes</text>
+<text x="92" y="646" class="bold">Cancellation, publication + failed cleanup</text>
+<text x="92" y="665" class="muted">Preview 9 / app build 13</text>
+<text x="92" y="684">Late cancellation preserves completion; incomplete cleanup stays visible.</text>
+<circle cx="52" cy="727" r="9" fill="#007f79"/>
+<text x="48" y="732" style="fill:#ffffff">7</text>
+<rect x="76" y="705" width="650" height="88" rx="12" fill="#e5f6f2" stroke="#007f79"/>
+<text x="92" y="725" class="bold" style="fill:#00756f">CURRENT RELEASE</text>
+<text x="92" y="745" class="bold">Disk-space + output-location recovery</text>
+<text x="92" y="764" class="muted">Preview 10 / app build 14</text>
+<text x="92" y="783">Estimated need/available space, specific failures and preview-preserving recovery.</text>
+<rect x="750" y="111" width="414" height="142" rx="12" fill="#e5f6f2" stroke="#007f79"/>
+<text x="770" y="136" class="bold" style="fill:#00756f">YOU ARE HERE</text>
+<text x="770" y="160" class="bold">Shipped standalone macOS app; iterative hardening.</text>
+<text x="770" y="184" class="bold">Public Preview 10 / app build 14</text>
+<text x="770" y="207">Current focus: accurate recovery from storage failures.</text>
+<text x="770" y="230">Metadata policy and existing interfaces are retained.</text>
+<text x="750" y="285" class="bold">PROPOSED NEXT WORK — NO DATES COMMITTED</text>
+<rect x="750" y="303" width="414" height="88" rx="12" fill="#ffffff" stroke="#cbd9e7"/>
+<text x="770" y="327" class="bold">1. Release automation</text>
+<text x="770" y="350" class="muted">Consolidate accepted products, source metadata and</text>
+<text x="770" y="370" class="muted">receipt selection into a repeatable release manifest.</text>
+<rect x="750" y="405" width="414" height="88" rx="12" fill="#ffffff" stroke="#cbd9e7"/>
+<text x="770" y="429" class="bold">2. Initial folder-scan progress</text>
+<text x="770" y="452" class="muted">Show files/folders examined in the current progress</text>
+<text x="770" y="472" class="muted">area, without a guessed percentage.</text>
+<rect x="750" y="507" width="414" height="88" rx="12" fill="#ffffff" stroke="#cbd9e7"/>
+<text x="770" y="531" class="bold">3. More precise space estimates</text>
+<text x="770" y="554" class="muted">Evaluate improvements to the current source-size</text>
+<text x="770" y="574" class="muted">estimate with bounded, changed-input evidence.</text>
+<rect x="750" y="625" width="414" height="155" rx="12" fill="#fff7e8" stroke="#e8ca8d"/>
+<text x="770" y="651" class="bold" style="fill:#805b12">SEPARATE PRODUCT / POLICY DECISIONS</text>
+<text x="770" y="676">Further supported-input and opaque-payload handling</text>
+<text x="770" y="697">needs explicit requirements and owner approval.</text>
+<text x="770" y="724">Resource limits and conformance claims are separate</text>
+<text x="770" y="745">workstreams; this release does not expand them.</text>
+<rect x="36" y="824" width="1128" height="104" rx="12" fill="#ffffff" stroke="#d9e3ee"/>
+<text x="56" y="850" class="bold">HOW PROGRESS IS ACCEPTED</text>
+<text x="56" y="875">Build and test the changed behavior; carry forward valid receipts for unchanged policy, runtime, icon and UI inputs.</text>
+<text x="56" y="899">Current increment: 27 new engine cases + 1 changed regression; 11 new model checks; focused native recovery review.</text>
+</svg>
