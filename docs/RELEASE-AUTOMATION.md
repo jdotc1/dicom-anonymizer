@@ -120,3 +120,19 @@ metadata rejection, symlink safety, assembly rollback, locking, cached completio
 and interrupted-submission reconciliation. They qualify the tooling logic, not a
 real notarized release. Existing app, engine, policy, UI, Python, and icon acceptance
 remain reused rather than repeated.
+
+## Engine-only updates with accepted native products
+
+When native sources and resources are unchanged, reuse their accepted product.
+The integration receipt may supply `builds.native_source_commits`, keyed by app
+variant. Its native source must match the accepted metadata's explicit
+`native_source_commit`; a distinct source cannot be inferred silently. Both
+commits must resolve locally. `source_commit` remains the integrated acceptance
+checkpoint selected for the engine. `engine_source_commit` records that identity,
+while `native_source_commit` records where the reused native product was built.
+`release_source_commit` separately records the release tooling tree. The actual
+compiler metadata is reused from that native product; no rebuild is implied.
+Receipts predating this distinction default both component sources to their
+single accepted source. Four new isolated fixtures per app profile cover distinct
+sources, missing/mismatched native metadata, and legacy selection; existing
+packaging fixtures remain reused.

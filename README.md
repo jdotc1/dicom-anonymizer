@@ -220,3 +220,5 @@ Initial scan/preflight examined-file and examined-folder feedback is delivered.
 It stays inside the existing progress area and remains indeterminate. See
 [Scan progress](docs/SCAN-PROGRESS.md) for changed-input evidence and accepted
 verification reuse.
+
+## Local disk-space estimate increment
