@@ -20,7 +20,7 @@ Initial scan activity is now delivered: files/folders examined appear without a 
 
 ## Proposed next priorities
 
-1. **Evaluate more precise space estimation.** Keep this separate from reporting improvements; establish the changed requirements and test only the affected behavior.
+1. **More precise space estimation is implemented locally, pending delivery.** Allocation-aware file, metadata, folder and report budgets retain the existing interface and policy; see [Disk-space estimate](SPACE-ESTIMATE.md).
 2. **Resolve supported-input policy decisions separately.** Opaque payloads, unsupported structures, resource limits and conformance claims need explicit scope and approval before implementation.
 
 These priorities are proposals, not scheduled commitments. The graphic separates delivered work from future work and decision-dependent scope. Its editable source is SVG, with Arial 10 pt text throughout; the PNG is a rendered copy.
