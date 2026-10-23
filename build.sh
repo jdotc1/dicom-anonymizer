@@ -39,7 +39,7 @@ info = {
  'CFBundleExecutable':'DICOMAnonymizer2',
  'CFBundleIdentifier':'io.github.jdotc1.dicom-anonymizer', 'CFBundleInfoDictionaryVersion':'6.0',
  'CFBundleName':'DICOM Anonymizer 2.0', 'CFBundlePackageType':'APPL',
- 'CFBundleShortVersionString':'2.0', 'CFBundleVersion':'12', 'LSMinimumSystemVersion':'13.0',
+ 'CFBundleShortVersionString':'2.0', 'CFBundleVersion':'13', 'LSMinimumSystemVersion':'13.0',
  'NSHighResolutionCapable':True, 'NSPrincipalClass':'NSApplication',
 }
 with (app / 'Contents/Info.plist').open('wb') as f: plistlib.dump(info, f)
