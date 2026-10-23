@@ -26,4 +26,6 @@ This increment follows Preview 7. That delivered app retains its own source and 
 
 ## Preview 8 delivery
 
-Preview 8 is app version 2.0/build 12, using accepted source `0509442` with release metadata updated in `448b324`. Apple accepted notarization `565f11a0-5c0c-4764-b370-e33f73186246`; the new root signature, stapled ticket and Gatekeeper checks passed. The accepted optimized executable, focused test and native presentation evidence, and nested runtime signatures were reused. No unchanged engine, model, runtime, dependency or icon verification was repeated. Earlier preview tags and their acceptance records remain historical.
+Preview 8 is app version 2.0/build 12, using accepted source `0509442` with release metadata updated in `448b324`. Apple accepted notarization `b326bfb9-63fe-4d5d-8aac-c38e25267f6a`; the new root signature, stapled ticket and Gatekeeper checks passed. The accepted optimized executable, focused test and native presentation evidence, and nested runtime signatures were reused. No unchanged engine, model, runtime, dependency or icon verification was repeated. Earlier preview tags and their acceptance records remain historical.
+
+The final archive corrects inherited BuildInfo provenance to the accepted audit-progress source and actual compiler build. Only the changed metadata/root signature was reissued and notarized; accepted executable, test, runtime and UI evidence remained reusable. Superseded packaging receipts are retained locally.
