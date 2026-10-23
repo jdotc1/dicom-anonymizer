@@ -1,6 +1,16 @@
 # macOS release acceptance
 
-## Current release — preview 6, build 10
+## Current release — preview 7, build 11
+
+`v2.0.0-preview.7` delivers compact recovery presentation from `96b1205` using
+the accepted optimized executable. Long error text scrolls while the affected
+path and recovery controls remain visible; blocking problems hide stale
+completion details, and report warnings retain the completed result. The app
+retains its existing SwiftUI interface, macOS 13 target, bundled Python and icon.
+See `RECOVERY-PRESENTATION-PARITY.md` for the focused build/native presentation
+evidence and reused verification. Distribution checks cover only the new bundle.
+
+## Preview 6 delivery (historical) — preview 6, build 10
 
 `v2.0.0-preview.6` delivers focused error recovery from `4e08049` using the accepted optimized executable. It retains the independent SwiftUI interface, macOS 13 target, bundled Python and approved icon. See `ERROR-RECOVERY.md` for new focused evidence and verification reuse. Previous releases and their acceptance records remain historical.
 
