@@ -213,3 +213,9 @@ components, and other dependencies retain their own terms. Preserve the complete
 notices described in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) when
 redistributing them. No patient datasets, private development history, previous
 build artifacts, or internal evidence archives are included in this repository.
+
+## Release tooling
+
+Receipt-driven packaging and explicit resumable distribution steps are documented in
+[Release automation](docs/RELEASE-AUTOMATION.md). Accepted application verification is reused;
+packaging fixtures cover only the new tooling.

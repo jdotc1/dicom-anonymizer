@@ -1,0 +1,7 @@
+{
+  "variant": "public",
+  "bundle_identifier": "io.github.jdotc1.dicom-anonymizer",
+  "deployment_target": "13.0",
+  "source_pointer": "/public_commit",
+  "product_pointer": "/builds/products/1"
+}
