@@ -535,12 +535,13 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
     cancellation = cancellation or Cancellation()
     source = Path(source).absolute()
     destination = Path(destination).absolute()
-    if destination.exists() or destination.is_symlink():
+    if destination_operation(destination.exists) or destination_operation(destination.is_symlink):
         raise BatchError('The output folder already exists. Choose a new output folder.', output_issue='conflict')
-    src_real, dst_real = source.resolve(), destination.resolve()
+    src_real = source.resolve()
+    dst_real = destination_operation(destination.resolve)
     if src_real == dst_real or src_real in dst_real.parents or dst_real in src_real.parents:
         raise BatchError('The output must be separate from the input folder, with neither inside the other.', output_issue='conflict')
-    if not destination.parent.is_dir():
+    if not destination_operation(destination.parent.is_dir):
         raise BatchError('The output parent folder does not exist. Choose an existing location.', output_issue='unavailable')
     records, patients, excluded = scan(source)
     progress('scan', patients=patients, total_files=len(records), excluded_files=excluded)
@@ -602,7 +603,7 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
                   'self_audit': audit_summary}
         destination_operation((staging / 'anonymization-report.json').write_text, json.dumps(report, indent=2) + '\n')
         # Recheck before publication; rename is atomic. macOS exclusive rename prevents races.
-        if destination.exists() or destination.is_symlink():
+        if destination_operation(destination.exists) or destination_operation(destination.is_symlink):
             raise BatchError('The output folder appeared during processing. Choose another output folder.', output_issue='conflict')
         cancellation.begin_publication()
         if sys.platform == 'darwin':

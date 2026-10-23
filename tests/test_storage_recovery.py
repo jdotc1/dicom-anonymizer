@@ -221,6 +221,47 @@ class StorageRecoveryTests(unittest.TestCase):
         self.assertIsNone(failure.exception.required_bytes)
         self.assertNotIn('/private', str(failure.exception))
 
+    def test_destination_precheck_errors_are_classified(self):
+        for method, target in [('exists', self.destination), ('is_symlink', self.destination),
+                               ('resolve', self.destination), ('is_dir', self.destination.parent)]:
+            original = getattr(Path, method)
+            def check(path, *args, **kwargs):
+                if path == target:
+                    raise OSError(errno.EACCES, '/private/output')
+                return original(path, *args, **kwargs)
+            with self.subTest(method=method), patch.object(Path, method, check):
+                with self.assertRaises(engine.BatchError) as failure:
+                    self.run_batch()
+                self.assertEqual(failure.exception.output_issue, 'permissions')
+                self.assertNotIn('/private', str(failure.exception))
+
+    def test_publication_recheck_error_is_classified_and_cleans_staging(self):
+        original = Path.exists
+        count = 0
+        def exists(path):
+            nonlocal count
+            if path == self.destination:
+                count += 1
+                if count == 2:
+                    raise OSError(errno.EIO, '/private/output')
+            return original(path)
+        with patch.object(Path, 'exists', exists):
+            with self.assertRaises(engine.BatchError) as failure:
+                self.run_batch()
+        self.assertEqual(failure.exception.output_issue, 'unavailable')
+        self.assertEqual(list(self.root.glob('.dicom-batch-*')), [])
+
+    def test_source_resolve_error_remains_unclassified(self):
+        original = Path.resolve
+        def resolve(path, *args, **kwargs):
+            if path == self.source:
+                raise OSError(errno.EIO, '/private/input')
+            return original(path, *args, **kwargs)
+        with patch.object(Path, 'resolve', resolve):
+            with self.assertRaises(OSError) as failure:
+                self.run_batch()
+        self.assertNotIsInstance(failure.exception, engine.BatchError)
+
     def emit_error(self, error):
         with patch.object(sys, 'argv', ['engine', '--source', str(self.source), '--destination', str(self.destination)]), patch.object(engine.signal, 'signal'), patch.object(engine, 'run', side_effect=error), patch.object(engine, 'emit') as emit:
             self.assertEqual(engine.main(), 1)
