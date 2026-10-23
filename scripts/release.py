@@ -127,7 +127,14 @@ def assemble(manifest_path, output, repository):
     stage = Path(tempfile.mkdtemp(prefix='.release-', dir=output.parent))
     try:
         app = stage / 'DICOM Anonymizer 2.0.app'
-        shutil.copytree(p['baseline'], app, symlinks=True)
+        vendor = Path(p['baseline']) / 'Contents/Resources/vendor'
+        def ignore_vendor_bytecode(directory, names):
+            if Path(directory).is_relative_to(vendor):
+                return {name for name in names if name == '__pycache__' or name.endswith(('.pyc', '.pyo'))}
+            return set()
+        # Local test/import caches are derived artifacts, not accepted vendor
+        # sources. Preserve the bundled interpreter/runtime resources separately.
+        shutil.copytree(p['baseline'], app, symlinks=True, ignore=ignore_vendor_bytecode)
         # A copied ancestor symlink must never redirect writes into the baseline.
         for relative in ('Contents', 'Contents/MacOS', 'Contents/Resources',
                          'Contents/Info.plist', 'Contents/MacOS/DICOMAnonymizer2',

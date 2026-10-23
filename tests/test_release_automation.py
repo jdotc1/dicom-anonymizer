@@ -120,6 +120,20 @@ class AssemblyTests(unittest.TestCase):
         self.assertEqual(info['native_source_commit'],self.commit)
         self.assertEqual(info['engine_source_commit'],self.commit)
 
+    def test_vendor_import_caches_excluded_without_changing_runtime(self):
+        resources=self.app/'Contents/Resources'
+        for name in ('vendor/pydicom/__init__.py','vendor/pydicom/__pycache__/local.pyc',
+                     'vendor/pydicom/stray.pyc','vendor/pydicom/old.pyo','python/lib/__pycache__/accepted.pyc'):
+            path=resources/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(b'fixture')
+        self.assemble()
+        copied=self.output/'DICOM Anonymizer 2.0.app/Contents/Resources'
+        self.assertEqual((copied/'vendor/pydicom/__init__.py').read_bytes(),b'fixture')
+        self.assertFalse((copied/'vendor/pydicom/__pycache__').exists())
+        self.assertFalse((copied/'vendor/pydicom/stray.pyc').exists())
+        self.assertFalse((copied/'vendor/pydicom/old.pyo').exists())
+        self.assertEqual((copied/'python/lib/__pycache__/accepted.pyc').read_bytes(),b'fixture')
+        self.assertTrue((resources/'vendor/pydicom/__pycache__/local.pyc').exists())
+
     def test_rejects_variant_swap(self):
         self.manifest['variant'] = 'other'
         with self.assertRaises(ValueError): self.assemble()
