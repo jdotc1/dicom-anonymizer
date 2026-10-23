@@ -102,6 +102,7 @@ final class EngineRunner: @unchecked Sendable {
 }
 
 enum BatchProblem { case input, output, processing, report }
+enum OutputIssue: String { case space, permissions, unavailable, conflict, unknown }
 enum BatchProcessingPhase { case writing, auditing, finalizing }
 
 @MainActor
@@ -126,6 +127,7 @@ final class BatchModel: ObservableObject {
     @Published var problemURL: URL?
     @Published private(set) var cancelling = false
     @Published private(set) var cleanupIncomplete = false
+    @Published private(set) var outputIssue: OutputIssue?
     @Published var completedOutput: URL?
     @Published var runStarted: Date?
     @Published var summary: CompletionSummary?
@@ -154,7 +156,10 @@ final class BatchModel: ObservableObject {
 
     @discardableResult private func validateOutput(_ url: URL) -> Bool {
         guard isDirectory(url) else {
-            presentProblem(.output, message: "The output location is no longer an accessible folder.", url: url)
+            if !cleanupIncomplete {
+                outputIssue = .unavailable
+                presentProblem(.output, message: "The output location is no longer an accessible folder.", url: url)
+            }
             return false
         }
         return true
@@ -267,6 +272,11 @@ final class BatchModel: ObservableObject {
             status = "Cancelled. No completed batch was published."
             clearProblem()
             if isScan { ready = false }
+        } else if problem == .output, outputIssue != nil {
+            // Keep an accepted preview for output replacement. The engine always
+            // scans again before writing when the user retries the batch.
+            ready = ready || (scanReceived && !patients.isEmpty && total > 0)
+            status = problemTitle + "."
         } else if code == 0 && isScan && scanReceived {
             ready = true
             status = "Ready · \(patients.count) patients and \(total) DICOM files."
@@ -343,12 +353,17 @@ final class BatchModel: ObservableObject {
             if let value = eventCount(event["excluded_files"]) { excluded = value }
             completeReceived = true
         case "error":
+            outputIssue = nil
             engineCancelled = event["cancelled"] as? Bool == true
             publishedWithoutConfirmation = event["output_published"] as? Bool == true
             let message = (event["message"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "The batch could not be processed."
             if busy, !scanning, event["cleanup_failed"] as? Bool == true {
                 cleanupIncomplete = true
                 presentProblem(.output, message: message, url: cleanupLocation(event["staging_path"]))
+            } else if busy, !scanning, !publishedWithoutConfirmation, let activeOutput,
+                      let value = event["output_issue"] as? String, let issue = OutputIssue(rawValue: value) {
+                outputIssue = issue
+                presentProblem(.output, message: message, url: activeOutput.deletingLastPathComponent())
             } else {
                 presentProblem(.processing, message: message, url: publishedWithoutConfirmation ? activeOutput : nil)
             }
@@ -389,10 +404,17 @@ final class BatchModel: ObservableObject {
 
     var problemTitle: String {
         switch problem {
-        case .input: "Choose a batch folder"
-        case .output: cleanupIncomplete ? "Incomplete output needs attention" : "Output location unavailable"
-        case .processing: "Batch needs attention"
-        case .report: "Report unavailable"
+        case .input: return "Choose a batch folder"
+        case .output:
+            if cleanupIncomplete { return "Incomplete output needs attention" }
+            switch outputIssue {
+            case .space: return "Not enough disk space"
+            case .permissions: return "Output location is not writable"
+            case .conflict: return "Choose another output location"
+            default: return "Output location unavailable"
+            }
+        case .processing: return "Batch needs attention"
+        case .report: return "Report unavailable"
         }
     }
     var recoveryMessage: String {
@@ -404,7 +426,18 @@ final class BatchModel: ObservableObject {
                     ? "Reconnect the output volume and inspect it for incomplete staging from this run. Its folder could not be identified safely here. Choose an output location, then check the batch again. Source files were not changed."
                     : "Reconnect the output volume and remove only the incomplete staging folder shown here. Choose an output location, then check the batch again. Source files were not changed."
             }
-            return "Reconnect the output volume or choose another existing folder, then try again."
+            switch outputIssue {
+            case .space:
+                return "Free space at this location or choose another output folder, then try again. The space estimate is approximate; available space can change while processing."
+            case .permissions:
+                return "Choose a writable output folder, or restore write access to this location, then choose it again and retry."
+            case .conflict:
+                return "Choose an output location and try again. Each run creates a new batch folder; existing output is never overwritten."
+            case .unknown:
+                return "Check the output volume and choose another writable location, then try again."
+            default:
+                return "Reconnect the output volume or choose another existing folder, then try again."
+            }
         case .processing: return "Correct the reported problem, then check again. You can change the batch folder or output location."
         case .report: return "Reveal the output location to look for the report, or dismiss this message. The completed-batch record is kept."
         }
@@ -433,7 +466,7 @@ final class BatchModel: ObservableObject {
         return ready ? "Ready · \(patients.count) patients and \(total) DICOM files." : "Choose a batch folder to begin."
     }
     private func clearProblem() {
-        errorMessage = nil; problemURL = nil; problem = .processing; cleanupIncomplete = false
+        errorMessage = nil; problemURL = nil; problem = .processing; cleanupIncomplete = false; outputIssue = nil
     }
     private func presentProblem(_ kind: BatchProblem, message: String, url: URL? = nil) {
         problem = kind; problemURL = url; errorMessage = message

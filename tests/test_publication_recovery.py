@@ -94,8 +94,11 @@ class PublicationRecoveryTests(unittest.TestCase):
 
     def test_rename_failure_removes_staging_and_keeps_original_error(self):
         with patch.object(engine.sys, 'platform', 'publication-test'), patch.object(engine.os, 'rename', side_effect=OSError('synthetic publication failure')):
-            with self.assertRaisesRegex(OSError, 'synthetic publication failure'):
+            with self.assertRaises(engine.BatchError) as failure:
                 self.run_batch()
+        self.assertEqual(failure.exception.output_issue, 'unknown')
+        self.assertNotIn('synthetic publication failure', str(failure.exception))
+        self.assertIn('output location', str(failure.exception))
         self.assertFalse(self.destination.exists())
         self.assertEqual(list(self.root.glob('.dicom-batch-*')), [])
 
