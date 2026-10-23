@@ -139,6 +139,34 @@ def fingerprint(path):
     return (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns)
 
 
+INPUT_CHANGED = 'The input changed during scanning or processing. Keep input files unchanged and retry.'
+
+
+def require_stable_input(path, signature):
+    """Detect ordinary concurrent changes; this is not an atomic filesystem snapshot."""
+    try:
+        stable = not path.is_symlink() and fingerprint(path) == signature
+    except OSError:
+        stable = False
+    if not stable:
+        raise BatchError(INPUT_CHANGED)
+
+
+def stable_read(path, signature):
+    require_stable_input(path, signature)
+    try:
+        ds = checked_read(path)
+    except Exception as error:
+        if isinstance(error, BatchError) and error.cancelled:
+            raise
+        # Prefer actionable recovery when a concurrent change caused the read failure.
+        # Preserve the original failure (including cancellation) if identity is stable.
+        require_stable_input(path, signature)
+        raise
+    require_stable_input(path, signature)
+    return ds
+
+
 def checked_read(path):
     if path.is_symlink():
         raise BatchError('Symbolic links are not supported. Use a local copy of the input folders.')
@@ -260,6 +288,7 @@ def scan(source, progress=None):
                         raise BatchError('Symbolic links are not supported. Use a local copy of the input folders.')
                     if not stat.S_ISREG(path.stat(follow_symlinks=False).st_mode):
                         raise BatchError('Input files cannot be read. Check permissions and available local storage.')
+                    signature = fingerprint(path)
                     with path.open('rb') as stream:
                         header = stream.read(132)
                     if appledouble(path, header):
@@ -277,7 +306,7 @@ def scan(source, progress=None):
                         if not candidate:
                             excluded += 1
                             continue
-                    ds = checked_read(path)
+                    ds = stable_read(path, signature)
                     validate(ds)
                     name = str(ds.get('PatientName', '')).strip()
                     if name:
@@ -293,7 +322,7 @@ def scan(source, progress=None):
                     if seen_studies.setdefault(study, patient.name) != patient.name:
                         raise BatchError('The same study occurs in multiple patient folders. Resolve the folder assignments before retrying.')
                     claim_patient_frames(ds, patient.name, frame_owners)
-                    record = Record(path, patient.name, (str(ds.StudyInstanceUID), str(ds.SeriesInstanceUID)), sop, identity, fingerprint(path))
+                    record = Record(path, patient.name, (str(ds.StudyInstanceUID), str(ds.SeriesInstanceUID)), sop, identity, signature)
                     record.estimated_output_bytes = estimate_output_bytes(ds, record.signature[2], patient.name)
                     local.append(record)
             if not local:
@@ -590,9 +619,7 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
         uid_map, series_map, counters = {}, {}, {}
         forbidden_uids, written = set(), []
         for index, record in enumerate(records, 1):
-            if record.path.is_symlink() or fingerprint(record.path) != record.signature:
-                raise BatchError('The input changed during processing. Keep input files unchanged and retry.')
-            ds = checked_read(record.path)
+            ds = stable_read(record.path, record.signature)
             validate(ds)
             if str(ds.SOPInstanceUID) != record.sop or str(ds.get('PatientID', '')).strip() != record.identity:
                 raise BatchError('The input changed during processing. Keep input files unchanged and retry.')
