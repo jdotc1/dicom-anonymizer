@@ -73,6 +73,22 @@ class ScanProgressTests(unittest.TestCase):
             engine.scan(self.root / 'missing', self.progress)
         self.assertEqual(self.events, [])
 
+    def test_root_symlink_is_rejected_before_file_probe(self):
+        link = self.source / '000'
+        link.symlink_to(self.root / 'never-read-target')
+        original_is_file = Path.is_file
+
+        def file_probe(path):
+            if path == link:
+                self.fail('Root symlink target must not be probed as a file')
+            return original_is_file(path)
+
+        with patch.object(Path, 'is_file', file_probe):
+            with self.assertRaisesRegex(engine.BatchError, 'Symbolic links are not supported'):
+                engine.scan(self.source, self.progress)
+        self.assertEqual(self.events, [
+            ('scan_progress', {'files_examined': 0, 'folders_examined': 1})])
+
     def test_cli_scan_passes_emitter_and_retains_completed_event(self):
         with patch.object(sys, 'argv', ['engine', '--source', str(self.source), '--scan']), \
              patch.object(engine.signal, 'signal'), \
