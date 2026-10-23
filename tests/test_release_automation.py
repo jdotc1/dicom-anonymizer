@@ -80,6 +80,46 @@ class AssemblyTests(unittest.TestCase):
         self.assertNotIn(str(self.root), (resources / 'ReleaseInfo.json').read_text())
         self.assertEqual((self.app / 'Contents/MacOS/DICOMAnonymizer2').read_bytes(), b'old product')
 
+    def select_engine_only(self):
+        native = self.commit
+        (self.repo/'engine/worker.py').write_text('new accepted engine\n')
+        self.git('add','engine/worker.py')
+        self.git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','engine update')
+        engine_source=self.git('rev-parse','HEAD').strip()
+        self.receipt[self.profile['source_pointer'][1:]]=engine_source
+        self.receipt['builds']['native_source_commits']={self.profile['variant']:native}
+        r.write(self.root/'receipt.json',self.receipt)
+        self.metadata.update(source_commit=engine_source,native_source_commit=native)
+        r.write(self.app/'Contents/Resources/BuildInfo.json',self.metadata)
+        return native,engine_source
+
+    def test_engine_only_release_retains_distinct_native_and_engine_sources(self):
+        native,engine_source=self.select_engine_only()
+        self.assemble()
+        resources=self.output/'DICOM Anonymizer 2.0.app/Contents/Resources'
+        info=r.read(resources/'BuildInfo.json')
+        self.assertEqual(info['native_source_commit'],native)
+        self.assertEqual(info['engine_source_commit'],engine_source)
+        self.assertEqual(info['source_commit'],engine_source)
+        self.assertEqual((resources/'engine/worker.py').read_text(),'new accepted engine\n')
+        self.assertEqual((resources.parent/'MacOS/DICOMAnonymizer2').read_bytes(),b'accepted product')
+        self.assertEqual(r.read(resources/'ReleaseInfo.json')['native_source_commit'],native)
+
+    def test_engine_only_release_requires_explicit_native_metadata(self):
+        self.select_engine_only();self.metadata.pop('native_source_commit')
+        r.write(self.app/'Contents/Resources/BuildInfo.json',self.metadata)
+        with self.assertRaises(ValueError): self.assemble()
+
+    def test_engine_only_release_rejects_mismatched_native_source(self):
+        self.select_engine_only();self.metadata['native_source_commit']='0'*40
+        r.write(self.app/'Contents/Resources/BuildInfo.json',self.metadata)
+        with self.assertRaises(ValueError): self.assemble()
+
+    def test_legacy_selection_records_same_native_and_engine_sources(self):
+        info=self.assemble()
+        self.assertEqual(info['native_source_commit'],self.commit)
+        self.assertEqual(info['engine_source_commit'],self.commit)
+
     def test_rejects_variant_swap(self):
         self.manifest['variant'] = 'other'
         with self.assertRaises(ValueError): self.assemble()

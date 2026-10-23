@@ -99,10 +99,19 @@ def plan(manifest_path, repository):
             raise ValueError('Missing or invalid ' + key)
     if '/' in m['evidence_label'] or '\\' in m['evidence_label']:
         raise ValueError('Evidence label must not disclose a local path')
+    native_sources = receipt.get('builds', {}).get('native_source_commits', {})
+    if not isinstance(native_sources, dict):
+        raise ValueError('Native product source selection must be an object')
+    native_source = native_sources.get(m['variant'], source)
+    if (not isinstance(native_source, str) or not re.fullmatch('[0-9a-f]{40}', native_source)
+            or metadata.get('native_source_commit', metadata['source_commit']) != native_source):
+        raise ValueError('Accepted native product source does not match its metadata')
+    if native_source != source:
+        run(['git', '-C', str(repository), 'rev-parse', native_source + '^{commit}'])
     commit = run(['git', '-C', str(repository), 'rev-parse', source + '^{commit}']).strip()
     release_commit = run(['git', '-C', str(repository), 'rev-parse', 'HEAD']).strip()
     return dict(manifest=m, baseline=str(baseline), product=str(product), source_commit=commit,
-                release_source_commit=release_commit, metadata=metadata, profile=profile)
+                release_source_commit=release_commit, native_source_commit=native_source, metadata=metadata, profile=profile)
 
 
 def assemble(manifest_path, output, repository):
@@ -146,7 +155,8 @@ def assemble(manifest_path, output, repository):
         provenance = {key: p['metadata'][key] for key in
                       ('xcode', 'swift', 'macos_sdk', 'swift_language_mode', 'deployment_target',
                        'architecture', 'bundled_python')}
-        provenance.update(source_commit=p['source_commit'], release_source_commit=p['release_source_commit'],
+        provenance.update(source_commit=p['source_commit'], engine_source_commit=p['source_commit'],
+                          native_source_commit=p['native_source_commit'], release_source_commit=p['release_source_commit'],
                           release=m['release'], bundle_build=str(m['build']))
         evidence = dict(schema=1, variant=m['variant'], **provenance,
                         accepted_evidence=m['evidence_label'], verification='Accepted verification reused; no tests rerun',
