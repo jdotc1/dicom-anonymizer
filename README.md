@@ -31,7 +31,7 @@ source is [MIT-licensed](LICENSE).
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
 Current source also adds explicit output self-audit progress and checked-file
-counts. This increment follows the Preview 7 download; see
+counts. This increment is included in the Preview 8 download; see
 [Audit progress](docs/AUDIT-PROGRESS.md) for its contract and focused evidence.
 
 ## The batch workflow
@@ -65,8 +65,8 @@ complete validity of every MR/CT/RTSTRUCT object.
 3. Open the app, choose the input batch and an output location, inspect the scan
    summary, and process the batch.
 
-The [preview 7 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.7)
-is app version 2.0, build 11. Its app is Developer ID signed and Apple notarized,
+The [preview 8 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.8)
+is app version 2.0, build 12. Its app is Developer ID signed and Apple notarized,
 with a stapled ticket. It includes **CPython 3.13.16 and pydicom 3.0.2** and uses
 its bundled interpreter wherever the app is moved. No Homebrew, separate Python
 installation, launch-time runtime download, or package installation is needed.
