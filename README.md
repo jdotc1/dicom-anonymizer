@@ -207,3 +207,9 @@ Use minimal synthetic examples in [issues](https://github.com/jdotc1/dicom-anony
 and pull requests. Do not post patient files, original filenames, identifiers,
 or unredacted logs. Follow [CONTRIBUTING.md](CONTRIBUTING.md); security-sensitive
 reports use the private reporting route in [SECURITY.md](SECURITY.md).
+
+## Release tooling
+
+Receipt-driven packaging and explicit resumable distribution steps are documented in
+[Release automation](docs/RELEASE-AUTOMATION.md). Accepted application verification is reused;
+packaging fixtures cover only the new tooling.
