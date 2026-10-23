@@ -25,3 +25,7 @@ An independent read-only review found no blocking issues. A displayed staging pa
 ## Reused evidence and delivery boundary
 
 Reuse the accepted audit-progress evidence in `AUDIT-PROGRESS.md`, earlier recovery/presentation receipts, metadata-policy/self-audit policy checks, standalone Python, runtime, icon and dependency evidence for unchanged inputs. No unchanged suite, corpus processing, provenance hash or dependency/signature verification was repeated. Native synthetic evidence is not a fresh end-to-end DICOM batch run.
+
+## Public Preview 9 delivery
+
+Delivered on 2026-10-23 using accepted app-source `41594fa` and release source `376613d`. Apple accepted notarization `43c80b7e-5dd6-4ce0-a063-1c9d0a86f229`. The new distribution root signature, stapled ticket and Gatekeeper assessment passed. Public Preview 9 is app version 2.0/build 13, distributed as the standalone arm64 macOS ZIP. Earlier preview tags and acceptance records remain historical.
