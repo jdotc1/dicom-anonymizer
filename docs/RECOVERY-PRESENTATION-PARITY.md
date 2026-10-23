@@ -24,10 +24,20 @@ evidence. After the guard adjustment, the real optimized target compiled with
 exit code 0 under Apple Swift 6.4.2, targeting arm64/macOS 13 with warnings treated
 as errors.
 
-Focused native presentation review: **pending**. Record the actual candidate
-identity, compact-window observations, recovery behavior and any remaining
-limitations here after that review. Compilation alone does not establish that
-long messages scroll correctly or that the recovery actions remain visible.
+Focused native presentation review completed on 2026-10-23 using synthetic
+states and the actual changed model/view source from `96b1205`. At 700 × 655
+content points in light and dark, a ten-section conflict report scrolled to its
+final suggested fix while the path, recovery buttons and Copy Details remained
+visible. The footer showed no duplicate Check Again action. A rejected input
+after a synthetic completion hid the old success summary. A report warning kept
+the completion summary, and Dismiss removed the warning without clearing the
+completed result. No engine processing was started for these checks.
+
+The real optimized local candidate also launched and displayed its native window.
+Startup logs retained macOS preferences/AppIntents service-registration and
+BaseBoard errors; no crash or hang was observed. Both isolated local apps were
+quit after inspection. The presentation harness and logs are retained outside
+source control. They are UI evidence, not installed-app or processing acceptance.
 
 Existing preview-6/build-10 delivery records and accepted engine, runtime, icon
 and unchanged recovery evidence remain historical evidence for their original
