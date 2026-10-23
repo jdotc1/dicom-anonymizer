@@ -1,6 +1,6 @@
 # Input-stability recovery
 
-Implemented locally on 2026-10-23; not yet packaged or released.
+Delivered on 2026-10-23: public Preview 15 (app build 19), signed, notarized and published.
 
 ## Behavior
 
@@ -25,4 +25,10 @@ Evidence: `/Users/jeff/Developer/Codex/DICOM-Input-Stability-20261023/` (`privat
 - Existing cancellation/publication/cleanup acceptance: `DICOM-Publication-Recovery-20261023`.
 - Shipped package/runtime distribution: `DICOM-Space-Release-Corrected-20261023/delivery-receipt.json` (applies to the already shipped versions only).
 
-No unchanged suites, dependency checks, hashes, signing or notarization checks were repeated. No native sources changed, so no native build was needed. No GUI use or app launch occurred. New source has not been signed, notarized, published or installed.
+No unchanged suites, dependency checks, hashes, signing or notarization checks were repeated. No native sources changed, so no native build was needed. No GUI use or app launch occurred. New package root signature, Apple notarization (b0807bd6-bd00-4f1f-b479-d9a89b363e30), stapling, ticket validation and Gatekeeper assessment passed once for this changed assembly. No app was launched or installed. The public update is Preview 15.
+
+## Distribution provenance
+
+Engine source: `8f536c93a7fa840d8f79cc909b17428020fbb2c0`. Reused native source: `b28a3df90d4cd762bc71644451e7df210f0aa0fc`. Release source: `8f536c93a7fa840d8f79cc909b17428020fbb2c0`. Only the new assembly/distribution outputs received fresh checks; unchanged nested signatures and dependencies were reused.
+
+Release: https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.15
