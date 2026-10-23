@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Local bulk DICOM pseudonymization. Source data is never modified."""
 import argparse
+import errno
 import json
 import logging
 import os
@@ -31,17 +32,56 @@ POLICY = {
 }
 
 class BatchError(Exception):
-    def __init__(self, message, *, cancelled=False, cleanup_failed=False, staging_path=None, output_published=False):
+    def __init__(self, message, *, cancelled=False, cleanup_failed=False, staging_path=None, output_published=False,
+                 output_issue=None, required_bytes=None, available_bytes=None):
         super().__init__(message)
         self.cancelled = cancelled
         self.cleanup_failed = cleanup_failed
         self.staging_path = staging_path
         self.output_published = output_published
+        self.output_issue = output_issue
+        self.required_bytes = required_bytes
+        self.available_bytes = available_bytes
 
 
 CANCELLED = 'Processing was cancelled. No completed output was published.'
 PROCESSING_FAILURE = ('Processing failed. Check input integrity, output permissions and available '
                       'disk space; no completed output was published.')
+
+
+def output_error(error):
+    """Classify only errors from a known destination operation; never source reads."""
+    if error.errno in {errno.ENOSPC, errno.EDQUOT}:
+        issue = 'space'
+        message = 'The output location ran out of available space or its storage quota was reached. Free space or choose another output location, then retry.'
+    elif error.errno in {errno.EACCES, errno.EPERM, errno.EROFS}:
+        issue = 'permissions'
+        message = 'The output location cannot be written to. Check its permissions or choose another writable output location, then retry.'
+    elif error.errno in {errno.ENOENT, errno.ENOTDIR, errno.ENODEV, errno.ENXIO, errno.ESTALE, errno.EIO}:
+        issue = 'unavailable'
+        message = 'The output location could not be accessed. Check that it is available or choose another output location, then retry.'
+    elif error.errno == errno.EEXIST:
+        issue = 'conflict'
+        message = 'The output folder already exists. Choose a new output folder, then retry.'
+    else:
+        issue = 'unknown'
+        message = 'The output location could not be used. Check the location or choose another writable output location, then retry.'
+    return BatchError(message + ' No completed output was published.', output_issue=issue)
+
+
+def destination_operation(operation, *args, **kwargs):
+    try:
+        return operation(*args, **kwargs)
+    except OSError as error:
+        raise output_error(error) from None
+
+
+def approximate_storage(value):
+    # Use a human-readable estimate; events retain the original byte counts.
+    for unit, scale in [('TiB', 1024 ** 4), ('GiB', 1024 ** 3), ('MiB', 1024 ** 2)]:
+        if value >= scale:
+            return f'{value / scale:.1f} {unit}'
+    return f'{value} bytes'
 
 
 class Cancellation:
@@ -498,12 +538,12 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
     source = Path(source).absolute()
     destination = Path(destination).absolute()
     if destination.exists() or destination.is_symlink():
-        raise BatchError('The output folder already exists. Choose a new output folder.')
+        raise BatchError('The output folder already exists. Choose a new output folder.', output_issue='conflict')
     src_real, dst_real = source.resolve(), destination.resolve()
     if src_real == dst_real or src_real in dst_real.parents or dst_real in src_real.parents:
-        raise BatchError('The output must be separate from the input folder, with neither inside the other.')
+        raise BatchError('The output must be separate from the input folder, with neither inside the other.', output_issue='conflict')
     if not destination.parent.is_dir():
-        raise BatchError('The output parent folder does not exist. Choose an existing location.')
+        raise BatchError('The output parent folder does not exist. Choose an existing location.', output_issue='unavailable')
     records, patients, excluded = scan(source)
     progress('scan', patients=patients, total_files=len(records), excluded_files=excluded)
     check_disk_space(records, destination.parent)
@@ -513,8 +553,8 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
     try:
         # Capture ownership before honoring a signal delivered during allocation.
         cancellation.deferred = True
-        staging = Path(tempfile.mkdtemp(prefix='.dicom-batch-', dir=destination.parent))
-        created = staging.lstat()
+        staging = Path(destination_operation(tempfile.mkdtemp, prefix='.dicom-batch-', dir=destination.parent))
+        created = destination_operation(staging.lstat)
         staging_identity = (created.st_dev, created.st_ino)
         cancellation.deferred = False
         if cancellation.requested:
@@ -550,9 +590,9 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
             key = (record.patient, series_number)
             counters[key] = counters.get(key, 0) + 1
             folder = staging / record.patient / f'Series_{series_number:04d}'
-            folder.mkdir(parents=True, exist_ok=True)
+            destination_operation(folder.mkdir, parents=True, exist_ok=True)
             out_path = folder / f'Image_{counters[key]:06d}.dcm'
-            ds.save_as(out_path, enforce_file_format=True)
+            destination_operation(ds.save_as, out_path, enforce_file_format=True)
             written.append((out_path, record.patient))
             if index % 10 == 0 or index == len(records):
                 progress('progress', patient_id=record.patient, processed=index, total_files=len(records))
@@ -562,18 +602,18 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
         report = {'policy': POLICY, 'software': environment_info(), 'patients': patients,
                   'patient_count': len(patients), 'total_files': len(records), 'excluded_files': excluded,
                   'self_audit': audit_summary}
-        (staging / 'anonymization-report.json').write_text(json.dumps(report, indent=2) + '\n')
+        destination_operation((staging / 'anonymization-report.json').write_text, json.dumps(report, indent=2) + '\n')
         # Recheck before publication; rename is atomic. macOS exclusive rename prevents races.
         if destination.exists() or destination.is_symlink():
-            raise BatchError('The output folder appeared during processing. Choose another output folder.')
+            raise BatchError('The output folder appeared during processing. Choose another output folder.', output_issue='conflict')
         cancellation.begin_publication()
         if sys.platform == 'darwin':
             import ctypes
             libc = ctypes.CDLL(None, use_errno=True)
             if libc.renamex_np(os.fsencode(staging), os.fsencode(destination), 4) != 0:
-                raise BatchError('The output could not be published without overwriting. Choose a new writable location.')
+                raise output_error(OSError(ctypes.get_errno(), 'Output publication failed.')) from None
         else:
-            os.rename(staging, destination)
+            destination_operation(os.rename, staging, destination)
         publication_succeeded = True
         staging = None
         result = dict(processed=len(records), total_files=len(records), patients=len(patients), excluded_files=excluded, audited_files=audit_summary['files_audited'])
@@ -590,8 +630,10 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
             try:
                 remove_staging(staging, staging_identity)
             except OSError as cleanup_error:
-                owned_path = None if isinstance(cleanup_error, StagingOwnershipError) else str(staging)
+                owned_path = None if staging_identity is None or isinstance(cleanup_error, StagingOwnershipError) else str(staging)
                 recovery = (
+                    ' The staging folder ownership could not be confirmed. Inspect the output location before retrying.'
+                    if staging_identity is None else
                     ' The staging location changed and could not be cleaned safely. Inspect the output location before retrying.'
                     if owned_path is None else
                     ' Incomplete output could not be removed. Remove the staging folder before retrying.')
@@ -599,7 +641,10 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
                 raise BatchError(
                     message + recovery,
                     cancelled=isinstance(original, BatchError) and original.cancelled,
-                    cleanup_failed=True, staging_path=owned_path) from original
+                    cleanup_failed=True, staging_path=owned_path,
+                    output_issue=getattr(original, 'output_issue', None),
+                    required_bytes=getattr(original, 'required_bytes', None),
+                    available_bytes=getattr(original, 'available_bytes', None)) from original
         raise
 
 
@@ -624,10 +669,14 @@ def check_disk_space(records, destination_parent):
     required = int(sum(r.signature[2] for r in records) * 1.1) + DISK_MARGIN_BYTES
     try:
         free = shutil.disk_usage(destination_parent).free
-    except OSError:
-        raise BatchError('Available space at the output location could not be determined. Choose a local writable location.') from None
+    except OSError as error:
+        raise output_error(error) from None
     if free < required:
-        raise BatchError('Not enough free disk space at the output location for this batch. Free space or choose another location, then retry.')
+        raise BatchError(
+            f'Not enough free disk space at the output location. Estimated need: {approximate_storage(required)}; '
+            f'available: {approximate_storage(free)}. This estimate is not a guarantee. '
+            'Free space or choose another output location, then retry.',
+            output_issue='space', required_bytes=required, available_bytes=free)
     return required
 
 
@@ -730,6 +779,12 @@ def main():
             details['staging_path'] = exc.staging_path
         if exc.output_published:
             details['output_published'] = True
+        elif exc.output_issue in {'space', 'permissions', 'unavailable', 'conflict', 'unknown'}:
+            details['output_issue'] = exc.output_issue
+            if (exc.output_issue == 'space' and type(exc.required_bytes) is int and
+                    type(exc.available_bytes) is int and exc.required_bytes > exc.available_bytes >= 0):
+                details['required_bytes'] = exc.required_bytes
+                details['available_bytes'] = exc.available_bytes
         emit('error', **details)
     except Exception:
         cancellation.deferred = True
