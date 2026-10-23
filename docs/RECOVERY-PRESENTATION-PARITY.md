@@ -1,13 +1,12 @@
 # Recovery presentation in compact windows
 
-## Local source change
+## Preview 7 source change
 
 Commit `96b120585fd4a8ae1059033a3e158b9badae420c` on
 `codex/recovery-presentation-parity` improves recovery presentation in the public
-app's existing SwiftUI interface. This is an unshipped local source change.
-The published preview 6/build 10 remains the historical release described in
-`docs/ERROR-RECOVERY.md`; this work does not establish a new release or the
-current installed version.
+app's existing SwiftUI interface. Preview 7/build 11 ships this accepted source.
+Preview 6/build 10 remains the historical release described in
+`docs/ERROR-RECOVERY.md`; no older acceptance record is rewritten.
 
 ## Behavior
 
@@ -55,4 +54,24 @@ Existing preview-6/build-10 delivery records and accepted engine, runtime, icon
 and unchanged recovery evidence remain historical evidence for their original
 inputs. No unchanged tests, engine processing, signing/dependency checks,
 provenance hashes or corpus passes are required by this documentation update.
-No source push, installation or release publication is part of this local lane.
+The source branch is merged with history preserved. Preview 7 packages the
+accepted executable with build 11 metadata; its distribution receipt below
+records the new signature and notarization. The public app is not installed as
+part of this release.
+
+## Distribution receipt — 2026-10-23
+
+Preview 7 is app version 2.0/build 11. The shipping bundle reuses the accepted
+optimized executable, engine, standalone Python runtime, dependency notices and
+compiled icon. Packaging updates the bundle version and records the accepted
+Swift 6.4.2 compiler/source checkpoint in BuildInfo. Existing nested Python code
+signatures are retained; the changed app root is signed with Developer ID and
+passed its first strict signature check.
+
+Apple accepted notarization submission
+`2727d76d-d4fc-4ab4-b214-db9dc05e2aa2`. The ticket was stapled and validated;
+Gatekeeper accepted the new package as Notarized Developer ID. The final ZIP
+contains that stapled app. Build-script syntax was checked for the build-number
+change. Existing optimized-build, native presentation, model, engine, self-audit,
+standalone-runtime, dependency and icon verification was reused; no unchanged
+suite, source hash or dependency/signature verification was repeated.

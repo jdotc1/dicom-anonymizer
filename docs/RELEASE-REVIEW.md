@@ -18,7 +18,7 @@ Copyright: DICOM Anonymizer Project contributors. Source commit metadata uses th
 
 Focused acceptance of previously unexecuted build-5 regressions and public-export changes is complete. The ten focused tests, real Swift 6.4 build, native model integration and signed-app six-file workflow passed. See `RUNTIME-ACCEPTANCE.md` for exact checks and limits. Earlier evidence was reused; unchanged full suites, corpus passes and provenance/dependency checks were not repeated.
 
-The standalone release ZIP targets Apple Silicon and includes CPython 3.13.16. No Homebrew or separate Python installation is required. It bundles pydicom and its complete distribution notices, along with the project MIT license and third-party notice. Python and compiled-dependency license texts are retained. The app identifier is `io.github.jdotc1.dicom-anonymizer` and the build number is 9. GitHub release metadata records final signing/notarization and download status.
+The standalone release ZIP targets Apple Silicon and includes CPython 3.13.16. No Homebrew or separate Python installation is required. It bundles pydicom and its complete distribution notices, along with the project MIT license and third-party notice. Python and compiled-dependency license texts are retained. The app identifier is `io.github.jdotc1.dicom-anonymizer` and the build number is 11. GitHub release metadata records final signing/notarization and download status.
 
 ## Release designation
 
@@ -35,3 +35,15 @@ The optimized executable accepted in `438fccb` is reused. The update improves pr
 ## Focused recovery delta — preview 6
 
 The accepted optimized executable from `4e08049` is reused. Source and binary changes are limited to recovery/model action guards and existing-interface error presentation; engine policy, standalone runtime and compiled icon are unchanged. `ERROR-RECOVERY.md` records the new model/layout/native presentation checks. Distribution uses new metadata (app 2.0/build 10), root signing and notarization. No unchanged engine, self-audit, UI, runtime or dependency checks are repeated.
+
+## Compact recovery presentation delta — preview 7
+
+The accepted optimized executable from `96b1205` is reused. New presentation
+checks at 700 × 655 content points in light and dark cover long-error scrolling,
+fixed paths/actions, stale-completion suppression for blocking errors, and
+completion retention for report warnings. Source, synthetic presentation and
+startup evidence are recorded in `RECOVERY-PRESENTATION-PARITY.md`. The package
+uses app 2.0/build 11 and retains accepted Python dependencies, engine, notices
+and compiled icon. Only the changed package receives new root signing,
+notarization, ticket validation and Gatekeeper assessment. No rebuild or
+unchanged suite, dependency check or provenance hash is repeated.

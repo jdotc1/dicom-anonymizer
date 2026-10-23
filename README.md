@@ -61,8 +61,8 @@ complete validity of every MR/CT/RTSTRUCT object.
 3. Open the app, choose the input batch and an output location, inspect the scan
    summary, and process the batch.
 
-The [preview 6 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.6)
-is app version 2.0, build 10. Its app is Developer ID signed and Apple notarized,
+The [preview 7 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.7)
+is app version 2.0, build 11. Its app is Developer ID signed and Apple notarized,
 with a stapled ticket. It includes **CPython 3.13.16 and pydicom 3.0.2** and uses
 its bundled interpreter wherever the app is moved. No Homebrew, separate Python
 installation, launch-time runtime download, or package installation is needed.
@@ -73,8 +73,10 @@ target is not a claim of runtime acceptance on every newer OS release.
 
 ### Recover from a problem
 
-Preview 6 adds focused recovery while retaining the existing interface and engine
-policy:
+Preview 7 keeps long recovery messages scrollable while the affected path and
+recovery actions remain visible. Blocking problems hide stale completion details;
+report warnings preserve the completed result. The existing recovery behaviors
+from preview 6 remain:
 
 | Problem | App behavior |
 | --- | --- |
@@ -83,8 +85,9 @@ policy:
 | Missing or unopenable report | Keeps the completed-batch summary. Reveal Output locates the result; Dismiss returns to the completed state. |
 | Cancellation or pending error | Keeps action availability consistent while the worker stops, ignores late progress, and disables repeated cancellation. |
 
-See [error recovery](docs/ERROR-RECOVERY.md) for behavior and focused evidence, and
-[workflow polish](docs/WORKFLOW-POLISH.md) for the preceding interface changes.
+See [compact recovery presentation](docs/RECOVERY-PRESENTATION-PARITY.md) for the
+new focused evidence, [error recovery](docs/ERROR-RECOVERY.md) for the preceding
+behavior, and [workflow polish](docs/WORKFLOW-POLISH.md) for earlier interface changes.
 
 ## Try it with synthetic data
 
