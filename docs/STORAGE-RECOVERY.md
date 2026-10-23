@@ -42,4 +42,10 @@ An independent source-only model review found no blocking issue and recommended 
 
 ## Delivery boundary
 
-This source increment is committed on local `codex/storage-recovery` branches. Private build 14 and Public Preview 9/build 13 remain the delivered versions, with their own notarization and installation receipts. This increment has not been pushed, merged to main, Developer ID signed, notarized, published or installed. No unchanged acceptance, corpus pass, provenance hash or signing/dependency verification was repeated.
+## Public Preview 10 delivery
+
+Delivered on 2026-10-23 from accepted app-source `35c967c` with release merge `7e78c05`. Apple accepted notarization `37d2468f-33cf-4a91-94c2-0be59e6bc79c`. The first changed root signature, stapled ticket and Gatekeeper assessment passed. Public Preview 10 is app version 2.0/build 14, delivered as the standalone arm64 macOS ZIP. GitHub asset metadata and public HTTP access were checked; earlier preview tags and acceptance records remain historical.
+
+Accepted optimized executable, 27 new focused engine storage cases plus the one modified publication regression, 11 model checks and native storage/output-replacement evidence were reused. Unchanged nested runtime signatures and earlier policy/runtime/icon acceptance were retained. No unchanged acceptance, rebuild, corpus pass, provenance hash or dependency/signature check was repeated. Earlier private build 14 and Public Preview 9 retain their own receipts.
+
+See [Visual development roadmap](ROADMAP-VISUAL.md) for delivered milestones, the current release and proposed next priorities.
