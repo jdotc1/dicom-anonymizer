@@ -1,0 +1,267 @@
+#!/usr/bin/env python3
+"""Receipt-driven app assembly and explicit, resumable distribution steps (stdlib only)."""
+import argparse
+from contextlib import contextmanager
+import io
+import json
+import os
+from pathlib import Path
+import plistlib
+import re
+import shutil
+import subprocess
+import tarfile
+import tempfile
+
+
+def read(path):
+    return json.loads(Path(path).read_text())
+
+
+def write(path, value):
+    path = Path(path)
+    descriptor, name = tempfile.mkstemp(prefix='.' + path.name + '-', dir=path.parent)
+    temporary = Path(name)
+    try:
+        with os.fdopen(descriptor, 'w') as stream:
+            json.dump(value, stream, indent=2, sort_keys=True)
+            stream.write('\n')
+            stream.flush()
+            os.fsync(stream.fileno())
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+
+def run(argv):
+    return subprocess.run(argv, check=True, capture_output=True, text=True).stdout
+
+
+def pointer(value, selector):
+    if not selector.startswith('/'):
+        raise ValueError('Receipt selector must be a JSON pointer')
+    for part in selector[1:].split('/'):
+        part = part.replace('~1', '/').replace('~0', '~')
+        value = value[int(part)] if isinstance(value, list) else value[part]
+    if not isinstance(value, str) or not value:
+        raise ValueError('Receipt selection must be a nonempty string')
+    return value
+
+
+def resolve(base, value):
+    return (base / value).resolve()
+
+
+def plan(manifest_path, repository):
+    manifest_path = Path(manifest_path).resolve()
+    m = read(manifest_path)
+    profile = read(repository / 'scripts/release-profile.json')
+    if run(['git', '-C', str(repository), 'status', '--porcelain', '--untracked-files=all', '--',
+            'scripts/release.py', 'scripts/release-profile.json']).strip():
+        raise ValueError('Commit release tooling and profile before selecting release provenance')
+    if m['schema'] != 1 or m['variant'] != profile['variant']:
+        raise ValueError('Manifest schema or app variant mismatch')
+    receipt_path = resolve(manifest_path.parent, m['accepted']['receipt'])
+    receipt = read(receipt_path)
+    for key in ('source_pointer', 'product_pointer'):
+        if m['accepted'][key] != profile[key]:
+            raise ValueError('Receipt selector belongs to a different app variant')
+    # Acceptance is an explicit selection by the release owner, never inferred
+    # from a successful compiler exit or a signature.
+    if m['accepted']['reuse_accepted_verification'] is not True:
+        raise ValueError('An accepted verification selection is required')
+    source = pointer(receipt, m['accepted']['source_pointer'])
+    if not re.fullmatch('[0-9a-f]{40}', source):
+        raise ValueError('Accepted source must be a full immutable Git commit')
+    product = resolve(receipt_path.parent, pointer(receipt, m['accepted']['product_pointer']))
+    baseline = resolve(manifest_path.parent, m['baseline_app'])
+    metadata = read(resolve(manifest_path.parent, m['accepted']['build_metadata']))
+    for key in ('xcode', 'swift', 'macos_sdk', 'swift_language_mode', 'deployment_target', 'architecture'):
+        if not isinstance(metadata.get(key), str) or not metadata[key].strip():
+            raise ValueError('Invalid accepted build metadata: ' + key)
+    runtime = metadata.get('bundled_python')
+    if not isinstance(runtime, dict) or any(not isinstance(runtime.get(key), str) or not runtime[key].strip()
+                                           for key in ('version', 'distribution', 'release', 'target')):
+        raise ValueError('Incomplete accepted Python runtime metadata')
+    info = plistlib.loads((baseline / 'Contents/Info.plist').read_bytes())
+    if (info['CFBundleIdentifier'] != profile['bundle_identifier'] or
+            info['LSMinimumSystemVersion'] != profile['deployment_target'] or
+            metadata['deployment_target'] != profile['deployment_target'] or
+            metadata['architecture'] != 'arm64' or metadata['source_commit'] != source):
+        raise ValueError('Accepted product metadata or baseline identity mismatch')
+    if info['CFBundleExecutable'] != 'DICOMAnonymizer2' or not product.is_file():
+        raise ValueError('Missing accepted executable or unexpected app executable')
+    if not re.fullmatch('[1-9][0-9]*', str(m['build'])) or int(m['build']) <= int(info['CFBundleVersion']):
+        raise ValueError('Build number must increase from the accepted baseline')
+    for key in ('release', 'version', 'evidence_label'):
+        if not isinstance(m[key], str) or not m[key].strip() or '\n' in m[key]:
+            raise ValueError('Missing or invalid ' + key)
+    if '/' in m['evidence_label'] or '\\' in m['evidence_label']:
+        raise ValueError('Evidence label must not disclose a local path')
+    commit = run(['git', '-C', str(repository), 'rev-parse', source + '^{commit}']).strip()
+    release_commit = run(['git', '-C', str(repository), 'rev-parse', 'HEAD']).strip()
+    return dict(manifest=m, baseline=str(baseline), product=str(product), source_commit=commit,
+                release_source_commit=release_commit, metadata=metadata, profile=profile)
+
+
+def assemble(manifest_path, output, repository):
+    p = plan(manifest_path, repository)
+    output = Path(output).absolute()
+    if output.exists() or output.is_symlink():
+        raise ValueError('Output must be new; existing artifacts are never overwritten')
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output = output.parent.resolve() / output.name
+    for protected in (repository.resolve(), Path(p['baseline']), Path(p['product']).parent):
+        if output == protected or protected in output.parents or output in protected.parents:
+            raise ValueError('Output must be separate from repository and accepted inputs')
+    stage = Path(tempfile.mkdtemp(prefix='.release-', dir=output.parent))
+    try:
+        app = stage / 'DICOM Anonymizer 2.0.app'
+        shutil.copytree(p['baseline'], app, symlinks=True)
+        # A copied ancestor symlink must never redirect writes into the baseline.
+        for relative in ('Contents', 'Contents/MacOS', 'Contents/Resources',
+                         'Contents/Info.plist', 'Contents/MacOS/DICOMAnonymizer2',
+                         'Contents/Resources/BuildInfo.json', 'Contents/Resources/ReleaseInfo.json',
+                         'Contents/Resources/engine', 'Contents/_CodeSignature'):
+            if (app / relative).is_symlink():
+                raise ValueError('Unsafe mutable bundle path: ' + relative)
+        shutil.copy2(p['product'], app / 'Contents/MacOS/DICOMAnonymizer2')
+        engine = app / 'Contents/Resources/engine'
+        if engine.exists():
+            shutil.rmtree(engine)
+        archive = subprocess.run(['git', '-C', str(repository), 'archive', p['source_commit'], 'engine'],
+                                 check=True, capture_output=True).stdout
+        with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+            for member in tar.getmembers():
+                parts = Path(member.name).parts
+                if not parts or parts[0] != 'engine' or '..' in parts or not (member.isdir() or member.isfile()):
+                    raise ValueError('Unsafe engine archive entry')
+            tar.extractall(app / 'Contents/Resources', filter='data')
+        m = p['manifest']
+        info_path = app / 'Contents/Info.plist'
+        info = plistlib.loads(info_path.read_bytes())
+        info.update(CFBundleVersion=str(m['build']), CFBundleShortVersionString=m['version'])
+        info_path.write_bytes(plistlib.dumps(info))
+        provenance = {key: p['metadata'][key] for key in
+                      ('xcode', 'swift', 'macos_sdk', 'swift_language_mode', 'deployment_target',
+                       'architecture', 'bundled_python')}
+        provenance.update(source_commit=p['source_commit'], release_source_commit=p['release_source_commit'],
+                          release=m['release'], bundle_build=str(m['build']))
+        evidence = dict(schema=1, variant=m['variant'], **provenance,
+                        accepted_evidence=m['evidence_label'], verification='Accepted verification reused; no tests rerun',
+                        nested_signatures='Preserved; unchanged dependencies not reverified',
+                        packaging='Unsigned assembly; signing and notarization are separate stages')
+        write(app / 'Contents/Resources/BuildInfo.json', provenance)
+        write(app / 'Contents/Resources/ReleaseInfo.json', evidence)
+        signature = app / 'Contents/_CodeSignature'
+        if signature.exists():
+            shutil.rmtree(signature)
+        write(stage / 'assembly.json', evidence)
+        write(stage / 'state.json', dict(schema=1, app=app.name, steps={}))
+        # Retain private input paths outside the distributed app for local audit.
+        write(stage / 'selection.json', p)
+        stage.rename(output)
+    except BaseException:
+        shutil.rmtree(stage)
+        raise
+    return read(output / 'assembly.json')
+
+
+@contextmanager
+def locked(root):
+    lock = root / '.release.lock'
+    fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    try:
+        yield
+    finally:
+        os.close(fd)
+        lock.unlink()
+
+
+def step(root, state, name, command, runner=None):
+    runner = runner or run
+    previous = state['steps'].get(name)
+    if previous:
+        if previous['status'] == 'completed':
+            if previous['command'] != command:
+                raise ValueError(name + ' already completed with different arguments')
+            return previous['output']
+        raise ValueError(name + ' has an uncertain prior outcome; reconcile it before proceeding')
+    state['steps'][name] = dict(status='started', command=command)
+    write(root / 'state.json', state)
+    result = runner(command)
+    state['steps'][name].update(status='completed', output=result)
+    write(root / 'state.json', state)
+    return result
+
+
+def distribute(root, action, identity=None, profile=None, submission_id=None):
+    root = Path(root).resolve()
+    with locked(root):
+        state = read(root / 'state.json')
+        app = root / state['app']
+        if action == 'sign':
+            if not identity or not identity.startswith('Developer ID Application:'):
+                raise ValueError('Explicit Developer ID Application identity required')
+            step(root, state, 'sign', ['/usr/bin/codesign', '--force', '--options', 'runtime', '--timestamp', '--sign', identity, str(app)])
+            step(root, state, 'signature', ['/usr/bin/codesign', '--verify', '--strict', str(app)])
+        elif action == 'notarize':
+            if state['steps'].get('signature', {}).get('status') != 'completed' or not profile:
+                raise ValueError('Completed signature and explicit keychain profile required')
+            upload = root / 'notarization-upload.zip'
+            step(root, state, 'upload_archive', ['/usr/bin/ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(app), str(upload)])
+            if submission_id:
+                if not re.fullmatch('[0-9a-fA-F-]{36}', submission_id):
+                    raise ValueError('Invalid existing submission ID')
+                previous = state.get('submission_id')
+                if previous and previous != submission_id:
+                    raise ValueError('Cannot replace an existing notarization submission')
+                state['submission_id'] = submission_id
+                write(root / 'state.json', state)
+            if 'submission_id' not in state:
+                result = json.loads(step(root, state, 'submit', ['xcrun', 'notarytool', 'submit', str(upload), '--keychain-profile', profile, '--output-format', 'json']))
+                state['submission_id'] = result['id']
+                write(root / 'state.json', state)
+            if state.get('notarization', {}).get('status') in ('Invalid', 'Rejected'):
+                raise ValueError('Notarization rejected; inspect the existing submission, do not resubmit')
+            if state.get('notarization', {}).get('status') != 'Accepted':
+                state['notarization'] = json.loads(run(['xcrun', 'notarytool', 'info', state['submission_id'], '--keychain-profile', profile, '--output-format', 'json']))
+                write(root / 'state.json', state)
+        elif action == 'finalize':
+            if state.get('notarization', {}).get('status') != 'Accepted':
+                raise ValueError('Accepted notarization required')
+            step(root, state, 'staple', ['xcrun', 'stapler', 'staple', str(app)])
+            step(root, state, 'staple_validation', ['xcrun', 'stapler', 'validate', str(app)])
+            step(root, state, 'gatekeeper', ['/usr/sbin/spctl', '--assess', '--type', 'execute', '--verbose=2', str(app)])
+            step(root, state, 'download', ['/usr/bin/ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(app), str(root / 'download.zip')])
+        return state
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action', choices=('plan', 'assemble', 'sign', 'notarize', 'finalize', 'status'))
+    parser.add_argument('--manifest', type=Path)
+    parser.add_argument('--output', type=Path, help='New assembly directory, or existing directory for later stages')
+    parser.add_argument('--identity')
+    parser.add_argument('--keychain-profile')
+    parser.add_argument('--submission-id', help='Reconcile an interrupted submission; never resubmit blindly')
+    args = parser.parse_args()
+    repo = Path(__file__).resolve().parents[1]
+    try:
+        if args.action == 'plan':
+            result = plan(args.manifest, repo)
+        elif args.action == 'assemble':
+            result = assemble(args.manifest, args.output, repo)
+        elif args.action == 'status':
+            result = read(args.output / 'state.json')
+        else:
+            result = distribute(args.output, args.action, args.identity, args.keychain_profile, args.submission_id)
+        print(json.dumps(result, indent=2))
+    except (ValueError, KeyError, IndexError, TypeError, OSError, subprocess.CalledProcessError) as exc:
+        detail = (exc.stderr or exc.stdout or '') if isinstance(exc, subprocess.CalledProcessError) else ''
+        parser.exit(1, str(exc) + '\n' + detail)
+
+
+if __name__ == '__main__':
+    main()
