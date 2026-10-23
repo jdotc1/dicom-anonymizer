@@ -102,6 +102,7 @@ final class EngineRunner: @unchecked Sendable {
 }
 
 enum BatchProblem { case input, output, processing, report }
+enum BatchProcessingPhase { case writing, auditing, finalizing }
 
 @MainActor
 final class BatchModel: ObservableObject {
@@ -111,6 +112,9 @@ final class BatchModel: ObservableObject {
     @Published var patients: [PatientRow] = []
     @Published var total = 0
     @Published var processed = 0
+    @Published private(set) var processingPhase: BatchProcessingPhase = .writing
+    @Published private(set) var auditedFiles = 0
+    @Published private(set) var auditTotalFiles = 0
     @Published var excluded = 0
     @Published var activePatient: String?
     @Published var busy = false
@@ -222,6 +226,7 @@ final class BatchModel: ObservableObject {
     }
 
     private func launch(arguments: [String], isScan: Bool, output: URL?) {
+        resetProcessingProgress()
         busy = true; scanning = isScan; cancelling = false; clearProblem()
         scanReceived = false; completeReceived = false
         runStarted = isScan ? nil : Date()
@@ -262,6 +267,8 @@ final class BatchModel: ObservableObject {
         guard let name = event["event"] as? String else { return }
         switch name {
         case "scan":
+            guard processingPhase == .writing else { return }
+            resetProcessingProgress()
             patients = (event["patients"] as? [Any] ?? []).compactMap { item in
                 guard let row = item as? [String: Any], let id = row["id"] as? String, !id.isEmpty else { return nil }
                 return PatientRow(id: id, files: eventCount(row["files"]) ?? 0, series: eventCount(row["series"]) ?? 0)
@@ -271,10 +278,26 @@ final class BatchModel: ObservableObject {
             completedPatients = nil
             scanReceived = true
         case "progress":
-            guard !cancelling else { return }
+            guard !cancelling, processingPhase == .writing else { return }
             if let reported = eventCount(event["total_files"]), reported > 0 { total = reported }
             processed = min(eventCount(event["processed"]) ?? processed, max(total, processed))
             if let patient = event["patient_id"] as? String, !patient.isEmpty { activePatient = patient }
+            status = progressDetail
+        case "audit_progress":
+            guard busy, !scanning, !cancelling, processingPhase != .finalizing,
+                  let audited = eventCount(event["audited_files"]),
+                  let auditTotal = eventCount(event["total_files"]),
+                  total > 0, processed >= total, auditTotal == total, audited <= auditTotal else { return }
+            if processingPhase == .auditing {
+                guard auditTotal == auditTotalFiles, audited >= auditedFiles else { return }
+            }
+            processingPhase = .auditing
+            auditedFiles = audited; auditTotalFiles = auditTotal; activePatient = nil
+            status = progressDetail
+        case "phase":
+            guard busy, !scanning, !cancelling, event["name"] as? String == "finalizing",
+                  processingPhase == .auditing, auditTotalFiles > 0, auditedFiles == auditTotalFiles else { return }
+            processingPhase = .finalizing; activePatient = nil
             status = progressDetail
         case "complete":
             processed = eventCount(event["processed"]) ?? total
@@ -366,6 +389,7 @@ final class BatchModel: ObservableObject {
         if kind != .report { status = problemTitle + "." }
     }
     private func rejectSource(_ url: URL?, message: String) {
+        resetProcessingProgress()
         source = nil; ready = false; patients = []; total = 0; processed = 0; excluded = 0; activePatient = nil
         presentProblem(.input, message: message, url: url)
     }
@@ -374,12 +398,30 @@ final class BatchModel: ObservableObject {
         clearProblem(); status = idleStatus
     }
 
-    var isFinalizing: Bool { total > 0 && processed >= total }
+    func resetProcessingProgress() {
+        processingPhase = .writing; auditedFiles = 0; auditTotalFiles = 0; activePatient = nil
+    }
+
+    var isFinalizing: Bool {
+        processingPhase == .finalizing || (processingPhase == .writing && total > 0 && processed >= total)
+    }
+    var progressFraction: Double? {
+        guard !cancelling, !isFinalizing else { return nil }
+        if processingPhase == .auditing {
+            return auditTotalFiles > 0 ? Double(auditedFiles) / Double(auditTotalFiles) : nil
+        }
+        return processed > 0 && total > 0 ? Double(processed) / Double(total) : nil
+    }
     var progressTitle: String {
-        cancelling ? "Cancelling" : isFinalizing ? "Finalizing batch" : processed == 0 ? "Preparing batch" : "Anonymizing"
+        if cancelling { return "Cancelling" }
+        if processingPhase == .auditing { return "Checking output" }
+        return isFinalizing ? "Finalizing batch" : processed == 0 ? "Preparing batch" : "Anonymizing"
     }
     var progressDetail: String {
-        cancelling ? "Stopping and removing incomplete output…" : isFinalizing ? "Writing is complete. Checking output and preparing the report…" :
+        if cancelling { return "Stopping and removing incomplete output…" }
+        if processingPhase == .auditing { return "\(auditedFiles) of \(auditTotalFiles) files checked" }
+        if processingPhase == .finalizing { return "Checks passed. Preparing the report and publishing the batch…" }
+        return isFinalizing ? "Writing is complete. Checking output and preparing the report…" :
             processed == 0 ? "Checking the batch before writing files…" :
             "Anonymizing patient \(activePatient ?? "—") · \(processed) of \(total) files"
     }
@@ -517,27 +559,26 @@ struct OutputSection: View {
 }
 
 struct BatchProgress: View {
-    let processed: Int
-    let total: Int
-    let activePatient: String?
+    let title: String
+    let detail: String
+    let fraction: Double?
     let started: Date?
-    let cancelling: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            if cancelling || processed == 0 || (total > 0 && processed >= total) {
+            if let fraction {
+                Text(title).bold()
+                ProgressView(value: fraction)
+                    .accessibilityLabel("Anonymization progress")
+                    .accessibilityValue(detail)
+            } else {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text(cancelling ? "Cancelling" : processed == 0 ? "Preparing batch" : "Finalizing batch").bold()
+                    Text(title).bold()
                 }
                 .accessibilityElement(children: .combine)
-            } else {
-                ProgressView(value: Double(processed), total: Double(max(1, total)))
-                    .accessibilityLabel("Anonymization progress")
-                    .accessibilityValue("\(processed) of \(total) files")
             }
             HStack {
-                Text("\(processed) of \(total) files")
-                if let activePatient { Text("· Patient \(activePatient)").foregroundStyle(.tint) }
+                Text(detail)
                 Spacer()
                 if let started {
                     TimelineView(.periodic(from: started, by: 1)) { context in
@@ -643,7 +684,7 @@ struct BatchView: View {
             VStack(alignment: .leading, spacing: 8) {
                 if model.busy && model.errorMessage == nil {
                     if model.scanning { ProgressView().controlSize(.small).accessibilityLabel(model.cancelling ? "Cancelling" : "Checking batch") }
-                    else { BatchProgress(processed: model.processed, total: model.total, activePatient: model.activePatient, started: model.runStarted, cancelling: model.cancelling) }
+                    else { BatchProgress(title: model.progressTitle, detail: model.progressDetail, fraction: model.progressFraction, started: model.runStarted) }
                 }
                 if let summary = model.summary, !model.busy && !model.hasBlockingProblem {
                     CompletionView(summary: summary, reveal: model.revealOutput, openReport: model.openReport)
