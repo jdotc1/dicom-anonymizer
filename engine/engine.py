@@ -229,12 +229,13 @@ def scan(source, progress=None):
     try:
         children = sorted(source.iterdir(), key=lambda p: p.name)
         for patient in children:
-            if patient.is_file():
-                files_examined += 1
-                scan_progress()
             if patient.is_symlink():
                 raise BatchError('Symbolic links are not supported. Use a local copy of the input folders.')
-            if patient.is_file() and (patient.name == '.DS_Store' or appledouble(patient)):
+            root_file = patient.is_file()
+            if root_file:
+                files_examined += 1
+                scan_progress()
+            if root_file and (patient.name == '.DS_Store' or appledouble(patient)):
                 excluded += 1
                 continue
             if not patient.is_dir() or not re.fullmatch(r'[0-9]+', patient.name):
