@@ -1,5 +1,11 @@
 # Allocation-aware disk-space estimate
 
+Status: merged into `main` with history preserved and delivered on 2026-10-23.
+
+The receipt-driven workflow delivered public Preview 14/app build 18 with accepted engine-source `80caae5` and reused native-source `b28a3df`. Release source: `e2f95de`. Apple accepted notarization `92ca3f7b-0e55-46b6-93f2-c3fceeed405e`; the new root signature, stapled ticket and Gatekeeper assessment passed once. Accepted estimate evidence (24 new checks and four affected existing checks per repository) and earlier unchanged policy, self-audit, UI/build, runtime, icon and nested-signature receipts were reused. Five new packaging fixtures per app profile passed for distinct native/engine provenance and vendor cache exclusion; source-only review found no blockers. No accepted test suite, native build, provenance hash or dependency-signature check was repeated. The standalone arm64 ZIP was published and its HTTPS delivery returned HTTP 200. The deployment target remains macOS 13, with bundled Python. This increment changes the output-capacity estimate,
+not the metadata policy, supported inputs, writer, audit, report schema, recovery
+interface, or native view/model code.
+
 ## Calculation
 
 The former check used 110% of aggregate source sizes plus a 32 MiB reserve. The
@@ -66,4 +72,6 @@ found no further blocker. Source and fixtures preserve the two engines' distinct
 scan policies. No accepted policy/audit suite, real-data processing, native build,
 UI test, provenance hash, dependency/signature check, signing or notarization was
 repeated. Native sources did not change, so their accepted build and presentation
-evidence remains reused. No push, merge, release or installation was performed.
+evidence remains reused. At the initial source-only checkpoint, no push, merge, release or installation had been performed. The subsequent authorized delivery is recorded above.
+
+## Packaging correction history

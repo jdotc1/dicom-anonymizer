@@ -30,7 +30,7 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: Preview 12 (app build 16).** The existing progress area shows files and folders examined during initial scan and processing preflight, without inventing a total. See [Scan progress](docs/SCAN-PROGRESS.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
+**Current download: Preview 14 (app build 18).** Allocation-aware disk-space estimates account for metadata growth, destination allocation, output folders and the report while preserving the interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 
 Output self-audit progress and checked-file counts, introduced in Preview 8, remain included. See [Audit progress](docs/AUDIT-PROGRESS.md) for that contract and reused evidence.
 
@@ -221,4 +221,8 @@ It stays inside the existing progress area and remains indeterminate. See
 [Scan progress](docs/SCAN-PROGRESS.md) for changed-input evidence and accepted
 verification reuse.
 
-## Local disk-space estimate increment
+## Allocation-aware disk-space estimate
+
+Allocation-aware output-space estimation is delivered. It accounts for metadata
+growth, destination allocation, directories and the report while preserving the
+existing interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md).

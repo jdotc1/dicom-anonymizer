@@ -141,3 +141,5 @@ Vendor `__pycache__`, `.pyc` and `.pyo` import caches are excluded during assemb
 They are generated locally and can contain local compiler paths. Vendor sources
 and the separately accepted interpreter/runtime resources remain preserved. A new
 focused fixture covers this boundary without rerunning unchanged packaging checks.
+
+Use `PYTHONDONTWRITEBYTECODE=1` when focused tests import accepted vendor sources. Do not generate import caches inside a sealed/accepted app bundle.
