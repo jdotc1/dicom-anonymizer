@@ -34,6 +34,8 @@ source is [MIT-licensed](LICENSE).
 
 Output self-audit progress and checked-file counts, introduced in Preview 8, remain included. See [Audit progress](docs/AUDIT-PROGRESS.md) for that contract and reused evidence.
 
+Local source adds disk-space and output-location recovery in the existing error area. The Preview 9 download retains its original acceptance and delivery; see [Storage recovery](docs/STORAGE-RECOVERY.md) for this later source increment.
+
 ## The batch workflow
 
 Arrange the input as a batch folder whose immediate child folders are numeric
