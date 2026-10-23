@@ -30,6 +30,10 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
+Current source also adds explicit output self-audit progress and checked-file
+counts. This increment follows the Preview 7 download; see
+[Audit progress](docs/AUDIT-PROGRESS.md) for its contract and focused evidence.
+
 ## The batch workflow
 
 Arrange the input as a batch folder whose immediate child folders are numeric
