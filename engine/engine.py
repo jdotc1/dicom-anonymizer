@@ -505,9 +505,14 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
     staging = None
     staging_identity = None
     try:
+        # Capture ownership before honoring a signal delivered during allocation.
+        cancellation.deferred = True
         staging = Path(tempfile.mkdtemp(prefix='.dicom-batch-', dir=destination.parent))
         created = staging.lstat()
         staging_identity = (created.st_dev, created.st_ino)
+        cancellation.deferred = False
+        if cancellation.requested:
+            cancellation.cancel()
         uid_map, series_map, counters = {}, {}, {}
         forbidden_uids, written = set(), []
         for index, record in enumerate(records, 1):
