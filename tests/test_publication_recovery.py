@@ -48,6 +48,19 @@ class PublicationRecoveryTests(unittest.TestCase):
         self.assertEqual(list(self.root.glob('.dicom-batch-*')), [])
         self.assertNotIn('complete', [name for name, _ in self.events])
 
+    def test_cancel_during_staging_allocation_cleans_owned_directory(self):
+        allocate = engine.tempfile.mkdtemp
+        def create(**kwargs):
+            path = allocate(**kwargs)
+            self.cancellation.cancel()
+            return path
+        with patch.object(engine.tempfile, 'mkdtemp', side_effect=create):
+            with self.assertRaises(engine.BatchError) as failure:
+                self.run_batch()
+        self.assertTrue(failure.exception.cancelled)
+        self.assertFalse(self.destination.exists())
+        self.assertEqual(list(self.root.glob('.dicom-batch-*')), [])
+
     def test_pending_cancel_is_checked_at_publication_entry(self):
         def progress(event_name, **values):
             if event_name == 'phase':
