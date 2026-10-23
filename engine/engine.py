@@ -501,7 +501,8 @@ def run(source, destination, progress=emit, audit=True):
             written.append((out_path, record.patient))
             if index % 10 == 0 or index == len(records):
                 progress('progress', patient_id=record.patient, processed=index, total_files=len(records))
-        audit_summary = self_audit(staging, written, forbidden_uids) if audit else {'result': 'skipped', 'files_audited': 0}
+        audit_summary = self_audit(staging, written, forbidden_uids, progress=progress) if audit else {'result': 'skipped', 'files_audited': 0}
+        progress('phase', name='finalizing')
         forbidden_uids = None
         report = {'policy': POLICY, 'software': environment_info(), 'patients': patients,
                   'patient_count': len(patients), 'total_files': len(records), 'excluded_files': excluded,
@@ -597,15 +598,18 @@ def audit_dataset(ds, patient, forbidden_uids):
             raise BatchError(AUDIT_FAILURE)
 
 
-def self_audit(staging, written, forbidden_uids):
+def self_audit(staging, written, forbidden_uids, progress=None):
     """Re-read each entire staged DICOM, including metadata after Pixel Data, before publication."""
+    total = len(written)
+    if progress is not None:
+        progress('audit_progress', audited_files=0, total_files=total)
     staged = {path for path, _ in written}
     for root, _dirs, files in os.walk(staging):
         for filename in files:
             path = Path(root) / filename
             if path.suffix == '.dcm' and path not in staged:
                 raise BatchError(AUDIT_FAILURE)
-    for path, patient in written:
+    for index, (path, patient) in enumerate(written, 1):
         try:
             ds = checked_read(path)
             validate(ds)
@@ -614,6 +618,8 @@ def self_audit(staging, written, forbidden_uids):
         except Exception:
             raise BatchError('A staged output file could not be re-read for the self-audit. No output was published.') from None
         audit_dataset(ds, patient, forbidden_uids)
+        if progress is not None and (index % 10 == 0 or index == total):
+            progress('audit_progress', audited_files=index, total_files=total)
     return {'result': 'passed', 'files_audited': len(written),
             'checks': ['entire staged file decoded', 'removed attributes and curve groups absent',
                        'cleared policy attributes and free text empty', 'no uninterpreted UN attributes', 'no private tags', 'PatientName/PatientID equal folder identifier', 'no other person names',
