@@ -199,10 +199,13 @@ class StorageRecoveryTests(unittest.TestCase):
             engine.run(self.source, self.root / 'missing' / 'output', self.progress)
         self.assertEqual(failure.exception.output_issue, 'unavailable')
 
-    def test_preflight_shortage_retains_formula_and_estimate(self):
+    def test_preflight_shortage_reports_allocation_aware_estimate(self):
         records = [SimpleNamespace(signature=(0, 0, 1000, 0))]
-        expected = int(1000 * 1.1) + engine.DISK_MARGIN_BYTES
-        with patch.object(engine.shutil, 'disk_usage', return_value=SimpleNamespace(free=1024)):
+        # One legacy record: 8KiB file, 3 directory blocks, one entry
+        # allowance block, 68KiB report and the unchanged 32MiB reserve.
+        expected = 8*1024 + 3*4096 + 4096 + 68*1024 + engine.DISK_MARGIN_BYTES
+        with patch.object(engine.shutil, 'disk_usage', return_value=SimpleNamespace(free=1024)), \
+             patch.object(engine, 'allocation_unit', return_value=4096):
             with self.assertRaises(engine.BatchError) as failure:
                 self.check_space(records, self.root)
         error = failure.exception

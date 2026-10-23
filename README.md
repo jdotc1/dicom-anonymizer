@@ -226,3 +226,11 @@ Initial scan/preflight examined-file and examined-folder feedback is delivered.
 It stays inside the existing progress area and remains indeterminate. See
 [Scan progress](docs/SCAN-PROGRESS.md) for changed-input evidence and accepted
 verification reuse.
+
+## Local disk-space estimate increment
+
+Allocation-aware output-space estimation is implemented on `codex/space-estimate`,
+pending merge and distribution. It accounts for metadata growth, destination
+allocation, directories and the report while preserving the existing interface
+and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md). The shipped
+release listed above has not been replaced by this source work.

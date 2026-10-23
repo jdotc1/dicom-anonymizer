@@ -25,15 +25,15 @@ class ScanProgressTests(unittest.TestCase):
         (self.source / '.DS_Store').write_bytes(b'metadata')
         (self.source / '001' / 'one.dcm').write_bytes(b'fixture')
         (self.source / '001' / 'nested' / 'two.dcm').write_bytes(b'fixture')
-        self.ds = SimpleNamespace(StudyInstanceUID='1', SeriesInstanceUID='2', SOPInstanceUID='3', get=lambda key, default='': default)
-        for name, value in [('checked_read', self.ds), ('validate', None), ('claim_patient_frames', None), ('fingerprint', None)]:
+        self.ds = SimpleNamespace(StudyInstanceUID='1', SeriesInstanceUID='2', SOPInstanceUID='3', get=lambda key, default='': default, iterall=lambda: iter(()))
+        for name, value in [('checked_read', self.ds), ('validate', None), ('claim_patient_frames', None), ('fingerprint', (0, 0, 7, 0))]:
             mocker = patch.object(engine, name, return_value=value)
             mocker.start()
             self.addCleanup(mocker.stop)
         # Public scan's identity checks stay intact; synthetic reads have unique UIDs.
         engine.checked_read.side_effect = lambda path: SimpleNamespace(
             StudyInstanceUID='1', SeriesInstanceUID='2', SOPInstanceUID=path.name,
-            get=lambda key, default='': default)
+            get=lambda key, default='': default, iterall=lambda: iter(()))
         self.events = []
 
     def progress(self, event, **values):
@@ -46,6 +46,12 @@ class ScanProgressTests(unittest.TestCase):
             ('scan_progress', {'files_examined': 0, 'folders_examined': 1}),
             ('scan_progress', {'files_examined': 3, 'folders_examined': 3})])
         self.assertEqual((len(records), patients[0]['files'], excluded), (2, 2, 1))
+
+    def test_scan_attaches_estimate_using_actual_folder_identifier(self):
+        with patch.object(engine, 'estimate_output_bytes', wraps=engine.estimate_output_bytes) as estimate:
+            records, _, _ = engine.scan(self.source, self.progress)
+        self.assertEqual([call.args[2] for call in estimate.call_args_list], ['001', '001'])
+        self.assertTrue(all(record.estimated_output_bytes == 4104 for record in records))
 
     def test_time_throttle_and_final_snapshot(self):
         with patch.object(engine.time, 'monotonic', side_effect=[0, .02, .04, .06, .15, .16, .17]):

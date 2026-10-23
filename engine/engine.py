@@ -127,6 +127,7 @@ class Record:
     sop: str
     identity: str
     signature: tuple
+    estimated_output_bytes: int | None = None
 
 
 def emit(event, **values):
@@ -292,7 +293,9 @@ def scan(source, progress=None):
                     if seen_studies.setdefault(study, patient.name) != patient.name:
                         raise BatchError('The same study occurs in multiple patient folders. Resolve the folder assignments before retrying.')
                     claim_patient_frames(ds, patient.name, frame_owners)
-                    local.append(Record(path, patient.name, (str(ds.StudyInstanceUID), str(ds.SeriesInstanceUID)), sop, identity, fingerprint(path)))
+                    record = Record(path, patient.name, (str(ds.StudyInstanceUID), str(ds.SeriesInstanceUID)), sop, identity, fingerprint(path))
+                    record.estimated_output_bytes = estimate_output_bytes(ds, record.signature[2], patient.name)
+                    local.append(record)
             if not local:
                 raise BatchError('A patient folder contains no readable DICOM files.')
             if len(identities) > 1 or len(names) > 1:
@@ -692,8 +695,88 @@ def source_uids(ds, found):
     return found
 
 
+# Additive allowances avoid charging pixel payloads an arbitrary growth percentage.
+FILE_METADATA_ALLOWANCE = 4096
+REPORT_BASE_ALLOWANCE = 64 * 1024
+REPORT_PATIENT_ALLOWANCE = 512
+DIRECTORY_ENTRY_ALLOWANCE = 256
+DEFAULT_ALLOCATION_UNIT = 4096
+DEFLATED_TRANSFER_SYNTAX = '1.2.840.10008.1.2.1.99'
+
+
+def estimate_output_bytes(ds, source_bytes, patient=None):
+    """Estimate encoded growth from an already-decoded scan dataset, without cleaning it.
+
+    All UI values are counted conservatively, even preserved/removed ones. This
+    does not duplicate the metadata policy or create replacement UIDs. Pixel
+    payloads are neither decoded nor serialized for this estimate.
+    """
+    growth = 0
+    for element in ds.iterall():
+        # These existing replacements also occur in nested datasets. Original
+        # character count is a conservative lower bound on encoded text bytes;
+        # source character sets need not be UTF-8. Targets are ASCII.
+        replacement = None
+        if element.keyword in ('PatientName', 'PatientID'):
+            replacement = patient if patient is not None else '0' * 64
+        elif element.keyword == 'StructureSetLabel':
+            replacement = 'Structures'
+        if replacement is not None:
+            values = element.value if element.VM > 1 else [element.value]
+            original = sum(len(str(value)) if value is not None else 0 for value in values) + max(0, len(values) - 1)
+            growth += max(0, ((len(replacement) + 1) // 2 - (original + 1) // 2) * 2)
+        if element.VR != 'UI':
+            continue
+        values = element.value if element.VM > 1 else [element.value]
+        lengths = [len(str(value).encode('utf-8')) if value is not None else 0 for value in values]
+        original = sum(lengths) + max(0, len(lengths) - 1)
+        projected = sum(max(64, length) for length in lengths) + max(0, len(lengths) - 1)
+        # DICOM pads the entire value field to an even number of bytes.
+        growth += ((projected + 1) // 2 - (original + 1) // 2) * 2
+    transfer = str(getattr(getattr(ds, 'file_meta', None), 'TransferSyntaxUID', ''))
+    # Recompressing a deflated dataset can change its ratio. Preserve the former
+    # percentage allowance in this uncertain case; it is still not a bound.
+    base = (source_bytes * 11 + 9) // 10 if transfer in ('', DEFLATED_TRANSFER_SYNTAX) else source_bytes
+    return base + growth + FILE_METADATA_ALLOWANCE
+
+
+def allocation_unit(destination_parent):
+    try:
+        geometry = os.statvfs(destination_parent)
+        for size in (geometry.f_frsize, geometry.f_bsize):
+            if type(size) is int and size > 0:
+                return size
+    except (OSError, AttributeError, NotImplementedError):
+        pass
+    # Geometry is advisory; inability to query it does not change access policy.
+    return DEFAULT_ALLOCATION_UNIT
+
+
+def estimate_disk_space(records, unit):
+    """Budget encoded files, allocation rounding, output directories and report."""
+    def allocated(size):
+        return ((size + unit - 1) // unit) * unit
+    files = 0
+    patients, series = set(), set()
+    for index, record in enumerate(records):
+        estimate = getattr(record, 'estimated_output_bytes', None)
+        if type(estimate) is not int or estimate < record.signature[2]:
+            # Compatibility for records constructed outside the scanner. Never
+            # silently treat absent scan metadata as zero or discount source data.
+            estimate = (record.signature[2] * 11 + 9) // 10 + FILE_METADATA_ALLOWANCE
+        files += allocated(estimate)
+        patient = getattr(record, 'patient', ('unknown', index))
+        patients.add(patient)
+        series.add((patient, getattr(record, 'series', ('unknown', index))))
+    directory_count = 1 + len(patients) + len(series)
+    directories = directory_count * unit + allocated(
+        (len(records) + directory_count + 1) * DIRECTORY_ENTRY_ALLOWANCE)
+    report = allocated(REPORT_BASE_ALLOWANCE + REPORT_PATIENT_ALLOWANCE * len(patients))
+    return files + directories + report + DISK_MARGIN_BYTES
+
+
 def check_disk_space(records, destination_parent):
-    required = int(sum(r.signature[2] for r in records) * 1.1) + DISK_MARGIN_BYTES
+    required = estimate_disk_space(records, allocation_unit(destination_parent))
     try:
         free = shutil.disk_usage(destination_parent).free
     except OSError as error:
