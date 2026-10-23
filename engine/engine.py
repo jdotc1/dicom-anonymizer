@@ -31,7 +31,52 @@ POLICY = {
 }
 
 class BatchError(Exception):
+    def __init__(self, message, *, cancelled=False, cleanup_failed=False, staging_path=None, output_published=False):
+        super().__init__(message)
+        self.cancelled = cancelled
+        self.cleanup_failed = cleanup_failed
+        self.staging_path = staging_path
+        self.output_published = output_published
+
+
+CANCELLED = 'Processing was cancelled. No completed output was published.'
+PROCESSING_FAILURE = ('Processing failed. Check input integrity, output permissions and available '
+                      'disk space; no completed output was published.')
+
+
+class Cancellation:
+    """Defer cancellation across atomic publication and while recovering a failed batch."""
+    def __init__(self):
+        self.deferred = False
+        self.requested = False
+
+    def cancel(self, _signum=None, _frame=None):
+        self.requested = True
+        if not self.deferred:
+            raise BatchError(CANCELLED, cancelled=True)
+
+    def begin_publication(self):
+        # The boundary starts before rename: an interrupt cannot split a successful
+        # rename from its complete event. A request already received still cancels.
+        self.deferred = True
+        if self.requested:
+            raise BatchError(CANCELLED, cancelled=True)
+
+
+class StagingOwnershipError(OSError):
     pass
+
+
+def remove_staging(staging, identity):
+    """Remove only the directory created by this operation, never a replacement."""
+    try:
+        current = staging.lstat()
+    except FileNotFoundError:
+        return
+    if (current.st_dev, current.st_ino) != identity or not stat.S_ISDIR(current.st_mode):
+        raise StagingOwnershipError('The staging directory was replaced.')
+    shutil.rmtree(staging)
+
 
 @dataclass
 class Record:
@@ -448,7 +493,8 @@ def clean(ds, patient, uid_map):
             element.value = [remap(v) for v in element.value] if element.VM > 1 else remap(element.value)
 
 
-def run(source, destination, progress=emit, audit=True):
+def run(source, destination, progress=emit, audit=True, *, cancellation=None):
+    cancellation = cancellation or Cancellation()
     source = Path(source).absolute()
     destination = Path(destination).absolute()
     if destination.exists() or destination.is_symlink():
@@ -462,8 +508,17 @@ def run(source, destination, progress=emit, audit=True):
     progress('scan', patients=patients, total_files=len(records), excluded_files=excluded)
     check_disk_space(records, destination.parent)
     staging = None
+    staging_identity = None
+    publication_succeeded = False
     try:
+        # Capture ownership before honoring a signal delivered during allocation.
+        cancellation.deferred = True
         staging = Path(tempfile.mkdtemp(prefix='.dicom-batch-', dir=destination.parent))
+        created = staging.lstat()
+        staging_identity = (created.st_dev, created.st_ino)
+        cancellation.deferred = False
+        if cancellation.requested:
+            cancellation.cancel()
         uid_map, series_map, counters = {}, {}, {}
         forbidden_uids, written = set(), []
         for index, record in enumerate(records, 1):
@@ -511,6 +566,7 @@ def run(source, destination, progress=emit, audit=True):
         # Recheck before publication; rename is atomic. macOS exclusive rename prevents races.
         if destination.exists() or destination.is_symlink():
             raise BatchError('The output folder appeared during processing. Choose another output folder.')
+        cancellation.begin_publication()
         if sys.platform == 'darwin':
             import ctypes
             libc = ctypes.CDLL(None, use_errno=True)
@@ -518,13 +574,33 @@ def run(source, destination, progress=emit, audit=True):
                 raise BatchError('The output could not be published without overwriting. Choose a new writable location.')
         else:
             os.rename(staging, destination)
+        publication_succeeded = True
         staging = None
         result = dict(processed=len(records), total_files=len(records), patients=len(patients), excluded_files=excluded, audited_files=audit_summary['files_audited'])
         progress('complete', **result)
         return result
-    finally:
+    except Exception as original:
+        # A second Cancel must not interrupt cleanup or replace the first failure.
+        cancellation.deferred = True
+        if publication_succeeded:
+            raise BatchError(
+                'The completed output was published, but completion could not be confirmed. '
+                'Check the output folder before retrying.', output_published=True) from original
         if staging is not None:
-            shutil.rmtree(staging, ignore_errors=True)
+            try:
+                remove_staging(staging, staging_identity)
+            except OSError as cleanup_error:
+                owned_path = None if isinstance(cleanup_error, StagingOwnershipError) else str(staging)
+                recovery = (
+                    ' The staging location changed and could not be cleaned safely. Inspect the output location before retrying.'
+                    if owned_path is None else
+                    ' Incomplete output could not be removed. Remove the staging folder before retrying.')
+                message = str(original) if isinstance(original, BatchError) else PROCESSING_FAILURE
+                raise BatchError(
+                    message + recovery,
+                    cancelled=isinstance(original, BatchError) and original.cancelled,
+                    cleanup_failed=True, staging_path=owned_path) from original
+        raise
 
 
 AUDIT_FAILURE = 'The pre-publication self-audit found retained identifying metadata. No output was published.'
@@ -637,21 +713,27 @@ def main():
     group.add_argument('--scan', action='store_true')
     group.add_argument('--destination')
     args = parser.parse_args()
-    def cancel(_signum, _frame):
-        raise BatchError('Processing was cancelled. No completed output was published.')
-    signal.signal(signal.SIGTERM, cancel)
-    signal.signal(signal.SIGINT, cancel)
+    cancellation = Cancellation()
+    signal.signal(signal.SIGTERM, cancellation.cancel)
+    signal.signal(signal.SIGINT, cancellation.cancel)
     try:
         if args.scan:
             records, patients, excluded = scan(args.source)
             emit('scan', patients=patients, total_files=len(records), excluded_files=excluded)
         else:
-            run(args.source, args.destination)
+            run(args.source, args.destination, cancellation=cancellation)
         return 0
     except BatchError as exc:
-        emit('error', message=str(exc))
+        cancellation.deferred = True
+        details = dict(message=str(exc), cancelled=exc.cancelled, cleanup_failed=exc.cleanup_failed)
+        if exc.cleanup_failed and exc.staging_path is not None:
+            details['staging_path'] = exc.staging_path
+        if exc.output_published:
+            details['output_published'] = True
+        emit('error', **details)
     except Exception:
-        emit('error', message='Processing failed. Check input integrity, output permissions and available disk space; no completed output was published.')
+        cancellation.deferred = True
+        emit('error', message=PROCESSING_FAILURE, cancelled=False, cleanup_failed=False)
     return 1
 
 if __name__ == '__main__':

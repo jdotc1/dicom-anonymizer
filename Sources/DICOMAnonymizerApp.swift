@@ -125,6 +125,7 @@ final class BatchModel: ObservableObject {
     @Published var problem: BatchProblem = .processing
     @Published var problemURL: URL?
     @Published private(set) var cancelling = false
+    @Published private(set) var cleanupIncomplete = false
     @Published var completedOutput: URL?
     @Published var runStarted: Date?
     @Published var summary: CompletionSummary?
@@ -167,7 +168,10 @@ final class BatchModel: ObservableObject {
     }
     private var scanReceived = false
     private var completeReceived = false
-    private var terminationReply: (() -> Void)?
+    private var terminationReply: ((Bool) -> Void)?
+    private var activeOutput: URL?
+    private var engineCancelled = false
+    private var publishedWithoutConfirmation = false
     private var openPanel: NSOpenPanel?
 
     func selectSource(_ url: URL) {
@@ -225,38 +229,72 @@ final class BatchModel: ObservableObject {
         launch(arguments: ["--source", source.path, "--destination", output.path], isScan: false, output: output)
     }
 
-    private func launch(arguments: [String], isScan: Bool, output: URL?) {
+    func beginRunState(isScan: Bool, output: URL?) {
         resetProcessingProgress()
+        activeOutput = output
+        engineCancelled = false
+        publishedWithoutConfirmation = false
         busy = true; scanning = isScan; cancelling = false; clearProblem()
         scanReceived = false; completeReceived = false
         runStarted = isScan ? nil : Date()
         status = isScan ? "Checking patient folders and DICOM metadata…" : "Checking the batch before processing…"
+    }
+
+    private func launch(arguments: [String], isScan: Bool, output: URL?) {
+        beginRunState(isScan: isScan, output: output)
         let worker = EngineRunner(); runner = worker
         worker.start(arguments: arguments, event: { [weak self] event in
             self?.receive(event)
         }, finished: { [weak self] code, cancelled in
-            guard let self else { return }
-            let elapsed = self.runStarted.map { Date().timeIntervalSince($0) } ?? 0
-            self.busy = false; self.scanning = false; self.cancelling = false; self.runner = nil; self.activePatient = nil; self.runStarted = nil
-            if code == 0 && !isScan && self.completeReceived, let output {
-                self.completedOutput = output
-                self.summary = CompletionSummary(patients: self.completedPatients ?? self.patients.count, files: self.processed,
-                                                 excluded: self.excluded, output: output, elapsed: elapsed)
-                self.status = "Complete · \(self.processed) DICOM files across \(self.completedPatients ?? self.patients.count) patients in \(elapsedText(elapsed))."
-            } else if cancelled {
-                self.status = "Cancelled. No completed batch was published."
-                self.clearProblem()
-                if isScan { self.ready = false }
-            } else if code == 0 && isScan && self.scanReceived {
-                self.ready = true
-                self.status = "Ready · \(self.patients.count) patients and \(self.total) DICOM files."
-            } else {
-                self.ready = false
-                self.status = "Batch needs attention."
-                if self.errorMessage == nil { self.presentProblem(.processing, message: "The engine stopped before completing the batch. No completed batch was published.") }
-            }
-            self.terminationReply?(); self.terminationReply = nil
+            self?.finishRun(code: code, cancelled: cancelled, isScan: isScan, output: output)
         })
+    }
+
+    // Engine events and process exit are reduced in one place, including quit replies.
+    func finishRun(code: Int32, cancelled: Bool, isScan: Bool, output: URL?) {
+        var outcomeUncertain = false
+        let elapsed = runStarted.map { Date().timeIntervalSince($0) } ?? 0
+        busy = false; scanning = false; cancelling = false; runner = nil; activePatient = nil; runStarted = nil
+        if code == 0 && !isScan && completeReceived, let output {
+            completedOutput = output
+            summary = CompletionSummary(patients: completedPatients ?? patients.count, files: processed,
+                                             excluded: excluded, output: output, elapsed: elapsed)
+            status = "Complete · \(processed) DICOM files across \(completedPatients ?? patients.count) patients in \(elapsedText(elapsed))."
+        } else if cleanupIncomplete {
+            ready = false
+            status = "Incomplete output needs attention."
+        } else if engineCancelled || (cancelled && code == 130 && errorMessage == nil) {
+            status = "Cancelled. No completed batch was published."
+            clearProblem()
+            if isScan { ready = false }
+        } else if code == 0 && isScan && scanReceived {
+            ready = true
+            status = "Ready · \(patients.count) patients and \(total) DICOM files."
+        } else {
+            ready = false
+            status = "Batch needs attention."
+            if errorMessage == nil {
+                if isScan {
+                    presentProblem(.processing, message: "Folder checking stopped before it could be completed. Check the batch again.")
+                } else {
+                    outcomeUncertain = true
+                    presentProblem(.processing, message: "The engine stopped before completion could be confirmed. Check the output location before retrying; a completed batch may already be present.", url: output)
+                }
+            }
+        }
+        activeOutput = nil
+        let reply = terminationReply; terminationReply = nil
+        reply?(!cleanupIncomplete && !outcomeUncertain && !publishedWithoutConfirmation)
+    }
+
+    private func cleanupLocation(_ value: Any?) -> URL? {
+        guard let path = value as? String, path.hasPrefix("/"), let activeOutput else { return nil }
+        let location = URL(fileURLWithPath: path, isDirectory: true).standardizedFileURL
+        guard location != activeOutput.standardizedFileURL, location != source?.standardizedFileURL,
+              location.deletingLastPathComponent() == activeOutput.deletingLastPathComponent().standardizedFileURL,
+              location.lastPathComponent.hasPrefix(".dicom-batch-"),
+              location.lastPathComponent.count > ".dicom-batch-".count else { return nil }
+        return location
     }
 
     private var completedPatients: Int?
@@ -305,7 +343,15 @@ final class BatchModel: ObservableObject {
             if let value = eventCount(event["excluded_files"]) { excluded = value }
             completeReceived = true
         case "error":
-            presentProblem(.processing, message: (event["message"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "The batch could not be processed.")
+            engineCancelled = event["cancelled"] as? Bool == true
+            publishedWithoutConfirmation = event["output_published"] as? Bool == true
+            let message = (event["message"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "The batch could not be processed."
+            if busy, !scanning, event["cleanup_failed"] as? Bool == true {
+                cleanupIncomplete = true
+                presentProblem(.output, message: message, url: cleanupLocation(event["staging_path"]))
+            } else {
+                presentProblem(.processing, message: message, url: publishedWithoutConfirmation ? activeOutput : nil)
+            }
         default: break
         }
     }
@@ -344,17 +390,23 @@ final class BatchModel: ObservableObject {
     var problemTitle: String {
         switch problem {
         case .input: "Choose a batch folder"
-        case .output: "Output location unavailable"
+        case .output: cleanupIncomplete ? "Incomplete output needs attention" : "Output location unavailable"
         case .processing: "Batch needs attention"
         case .report: "Report unavailable"
         }
     }
     var recoveryMessage: String {
         switch problem {
-        case .input: "Choose the parent folder containing numerical patient subfolders, such as 00001."
-        case .output: "Reconnect the output volume or choose another existing folder, then try again."
-        case .processing: "Correct the reported problem, then check again. You can change the batch folder or output location."
-        case .report: "Reveal the output location to look for the report, or dismiss this message. The completed-batch record is kept."
+        case .input: return "Choose the parent folder containing numerical patient subfolders, such as 00001."
+        case .output:
+            if cleanupIncomplete {
+                return problemURL == nil
+                    ? "Reconnect the output volume and inspect it for incomplete staging from this run. Its folder could not be identified safely here. Choose an output location, then check the batch again. Source files were not changed."
+                    : "Reconnect the output volume and remove only the incomplete staging folder shown here. Choose an output location, then check the batch again. Source files were not changed."
+            }
+            return "Reconnect the output volume or choose another existing folder, then try again."
+        case .processing: return "Correct the reported problem, then check again. You can change the batch folder or output location."
+        case .report: return "Reveal the output location to look for the report, or dismiss this message. The completed-batch record is kept."
         }
     }
     var recoveryTitle: String {
@@ -381,7 +433,7 @@ final class BatchModel: ObservableObject {
         return ready ? "Ready · \(patients.count) patients and \(total) DICOM files." : "Choose a batch folder to begin."
     }
     private func clearProblem() {
-        errorMessage = nil; problemURL = nil; problem = .processing
+        errorMessage = nil; problemURL = nil; problem = .processing; cleanupIncomplete = false
     }
     private func presentProblem(_ kind: BatchProblem, message: String, url: URL? = nil) {
         problem = kind; problemURL = url; errorMessage = message
@@ -418,7 +470,7 @@ final class BatchModel: ObservableObject {
         return isFinalizing ? "Finalizing batch" : processed == 0 ? "Preparing batch" : "Anonymizing"
     }
     var progressDetail: String {
-        if cancelling { return "Stopping and removing incomplete output…" }
+        if cancelling { return "Waiting for the engine to stop or finish publication…" }
         if processingPhase == .auditing { return "\(auditedFiles) of \(auditTotalFiles) files checked" }
         if processingPhase == .finalizing { return "Checks passed. Preparing the report and publishing the batch…" }
         return isFinalizing ? "Writing is complete. Checking output and preparing the report…" :
@@ -428,10 +480,10 @@ final class BatchModel: ObservableObject {
 
     func cancel() {
         guard busy, !cancelling else { return }
-        cancelling = true; status = "Cancelling and removing incomplete output…"; runner?.cancel()
+        cancelling = true; status = "Cancellation requested. Waiting for the engine…"; runner?.cancel()
     }
 
-    func prepareToQuit(completion: @escaping () -> Void) {
+    func prepareToQuit(completion: @escaping (Bool) -> Void) {
         terminationReply = completion
         cancel()
     }
@@ -730,7 +782,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let model, model.busy else { return .terminateNow }
-        model.prepareToQuit { sender.reply(toApplicationShouldTerminate: true) }
+        model.prepareToQuit { mayQuit in sender.reply(toApplicationShouldTerminate: mayQuit) }
         return .terminateLater
     }
 }
