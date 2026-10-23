@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "variant": "public",
+  "baseline_app": "accepted-baseline/DICOM Anonymizer 2.0.app",
+  "build": "15",
+  "version": "2.0.0",
+  "release": "v2.0.0-preview.11",
+  "evidence_label": "accepted-runtime-receipt",
+  "accepted": {
+    "receipt": "accepted/integration-receipt.json",
+    "source_pointer": "/public_commit",
+    "product_pointer": "/builds/products/1",
+    "build_metadata": "accepted/BuildInfo.json",
+    "reuse_accepted_verification": true
+  }
+}
