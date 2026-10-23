@@ -1,7 +1,8 @@
 # Initial scan-progress feedback
 
-Status: implemented locally on `codex/scan-progress`; not yet merged, published,
-or installed. The existing shipped app remains unchanged by this increment.
+Status: merged into `main` with history preserved and delivered on 2026-10-23.
+
+The receipt-driven workflow delivered public Preview 12/app build 16 from accepted app-source `b28a3df`, with release merge `be40e72`. Apple accepted notarization `a90b6f26-e197-4512-962e-626a565ac180`; the new root signature, stapled ticket and Gatekeeper assessment passed once. Accepted optimized product, eight new focused engine telemetry checks, eleven new model checks and scoped native progress/cancellation review were reused. Earlier unchanged engine-policy, self-audit, runtime, icon, UI and nested-signature evidence remains reused. No accepted test suite, build, provenance hash or dependency-signature check was repeated. The standalone arm64 ZIP was published and its HTTPS delivery returned HTTP 200. The deployment target remains macOS 13, with bundled Python.
 
 The existing progress area shows files and folders examined during the initial
 folder check and the scan repeated before processing. Progress remains
@@ -71,5 +72,5 @@ writing/audit/finalization flow. Examined counts never overwrite accepted totals
 Accepted engine policy, self-audit, report/publication/storage recovery, runtime,
 icon, and unchanged UI/dependency evidence is reused. No accepted suite, corpus,
 provenance hash, dependency signature check, signing or notarization was repeated.
-No merge/push, GitHub release, or installation was performed for this source increment.
+At the initial source-only checkpoint, no merge/push, GitHub release, or installation had been performed. The subsequent authorized distribution is recorded above.
 The detailed local integration receipt records source checkpoints and product paths.

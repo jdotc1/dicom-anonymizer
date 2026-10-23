@@ -30,7 +30,7 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: Preview 11 (app build 15).** Repeatable release assembly and provenance retain the accepted application behavior, bundled Python and icon. See [Release automation delivery](docs/RELEASE-AUTOMATION-DELIVERY.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
+**Current download: Preview 12 (app build 16).** The existing progress area shows files and folders examined during initial scan and processing preflight, without inventing a total. See [Scan progress](docs/SCAN-PROGRESS.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 
 Output self-audit progress and checked-file counts, introduced in Preview 8, remain included. See [Audit progress](docs/AUDIT-PROGRESS.md) for that contract and reused evidence.
 
@@ -220,10 +220,9 @@ Receipt-driven packaging and explicit resumable distribution steps are documente
 [Release automation](docs/RELEASE-AUTOMATION.md). Accepted application verification is reused;
 packaging fixtures cover only the new tooling.
 
-## Local scan-progress increment
+## Scan-progress feedback
 
-Initial scan/preflight examined-file and examined-folder feedback is implemented on
-`codex/scan-progress`, pending merge and distribution. It stays inside the existing
-progress area and remains indeterminate. See [Scan progress](docs/SCAN-PROGRESS.md)
-for changed-input evidence and accepted verification reuse. The current download
-and installed release listed above have not been replaced by this source work.
+Initial scan/preflight examined-file and examined-folder feedback is delivered.
+It stays inside the existing progress area and remains indeterminate. See
+[Scan progress](docs/SCAN-PROGRESS.md) for changed-input evidence and accepted
+verification reuse.
