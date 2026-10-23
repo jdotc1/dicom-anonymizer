@@ -12,4 +12,10 @@ After all checks pass, the engine emits `phase` with `name: "finalizing"` before
 
 Malformed, regressing, mismatched, premature, and post-cancellation audit events are ignored. Writing and scan events cannot rewind an established audit/finalization phase. New operations reset the phase and counts. An older engine without the new events retains the existing generic finalization display after writing completes.
 
+The app keeps its existing interface and macOS 13 minimum.
+
 ## Evidence and delivery
+
+The final optimized public Swift target compiled with Swift 6.4.2, warnings as errors, and the arm64/macOS 13 target. All six new synthetic model checks passed. Native presentation at 700 × 655 content points showed audit counts and indeterminate finalization in light and dark, audit zero and full counts without a completion summary, and Cancel changing to the stopping state. The actual app model/views were driven by synthetic events; no DICOM batch was processed in this review. An earlier public compile predates final event guards and is not acceptance of the final source.
+
+This increment follows Preview 7. That delivered app retains its own source and notarization receipt. Updating source on main does not replace the downloadable app.
