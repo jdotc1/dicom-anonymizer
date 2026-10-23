@@ -72,8 +72,9 @@ the finalized `download.zip` and a deliberately sanitized release description.
 ## Explicit distribution stages
 
 These commands perform real distribution operations and require release-specific
-authorization. Assembly never invokes them automatically. The current source-only
-implementation work did not run them against real apps.
+authorization. Assembly never invokes them automatically. The initial source-only
+implementation did not run them against real apps. The subsequent authorized
+use is recorded in [Release automation delivery](RELEASE-AUTOMATION-DELIVERY.md).
 
 ```sh
 python3 scripts/release.py sign --output /release-workspace/candidate --identity 'Developer ID Application: Your Name (TEAMID)'

@@ -30,7 +30,7 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: Preview 10 (app build 14).** Disk-space messages show estimated need and available capacity, output failures receive specific recovery guidance, and a valid replacement output folder preserves the accepted batch preview. The existing interface and metadata policy are retained. See [Storage recovery](docs/STORAGE-RECOVERY.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
+**Current download: Preview 11 (app build 15).** Repeatable release assembly and provenance retain the accepted application behavior, bundled Python and icon. See [Release automation delivery](docs/RELEASE-AUTOMATION-DELIVERY.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 
 Output self-audit progress and checked-file counts, introduced in Preview 8, remain included. See [Audit progress](docs/AUDIT-PROGRESS.md) for that contract and reused evidence.
 

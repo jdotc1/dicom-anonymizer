@@ -2,7 +2,7 @@
 
 This source-only increment adds receipt-driven assembly and explicit resumable
 signing, notarization, and final archive steps. It does not change application
-interfaces or engine policy. It has not been used to produce a new real release.
+interfaces or engine policy. At that source-only checkpoint it had not been used to produce a real release.
 
 Focused verification covered 16 assembly fixture cases with each app profile and
 10 shared distribution-stage cases. Evidence is composite: successful unchanged
@@ -24,3 +24,7 @@ self-audit, runtime, icon, UI, dependency, or signing verification was repeated.
 No real build, sign, notarize, publish, or install operation ran for this increment.
 Local tooling logs and the detailed tooling-receipt.json are retained in the
 release-automation workspace. App release versions remain unchanged.
+
+## Subsequent authorized distribution
+
+The receipt-driven workflow assembled public Preview 11/app build 15 from accepted app-source `35c967c`, with release-tooling merge `546640d`. Apple accepted notarization `6d2d57f0-5b5b-48d7-91a2-2a9f345de687`. The new root signature, stapled ticket and Gatekeeper assessment passed once. Accepted executable, engine, policy, UI, Python, icon and nested-signature evidence was reused; no unchanged suite, build, provenance hash or dependency check was repeated. The existing interface and engine policy are unchanged. The standalone arm64 ZIP was published and its HTTPS delivery returned HTTP 200. This is macOS 13+ and requires no external Python installation.
