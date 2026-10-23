@@ -10,7 +10,7 @@ SDK_PATH="$(/usr/bin/xcrun --sdk macosx --show-sdk-path)"
 export BUILD_SWIFT_VERSION="$("$SWIFT_COMPILER" --version)"
 export BUILD_XCODE_VERSION="$(/usr/bin/xcodebuild -version)"
 export BUILD_SDK_VERSION="$(/usr/bin/xcrun --sdk macosx --show-sdk-version)"
-if [[ "$BUILD_SWIFT_VERSION" != *'Apple Swift version 6.4 '* ]]; then
+if [[ "$BUILD_SWIFT_VERSION" != *'Apple Swift version 6.4 '* && "$BUILD_SWIFT_VERSION" != *'Apple Swift version 6.4.'* ]]; then
   echo "This build requires Apple Swift 6.4 from Xcode. Selected compiler: $BUILD_SWIFT_VERSION" >&2
   exit 1
 fi
