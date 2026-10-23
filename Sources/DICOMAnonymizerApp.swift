@@ -615,9 +615,15 @@ struct BatchView: View {
             if model.errorMessage == nil { PolicySummary() }
             if let error = model.errorMessage {
                 VStack(alignment: .leading, spacing: 6) {
-                    Label(model.problemTitle, systemImage: "exclamationmark.triangle.fill").bold().foregroundStyle(.red)
-                    Text(error).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                    Text(model.recoveryMessage).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    ViewThatFits(in: .vertical) {
+                        recoveryText(error)
+                        ScrollView { recoveryText(error) }.scrollIndicators(.visible)
+                    }
+                    .frame(minHeight: 30, maxHeight: .infinity, alignment: .topLeading)
+                    if let location = model.problemURL ?? (model.problem == .output ? model.outputParent : model.source) {
+                        Text("\(model.problem == .output ? "Location" : "Folder"): \(location.path)")
+                            .lineLimit(2).truncationMode(.middle).textSelection(.enabled).help(location.path)
+                    }
                     HStack {
                         Button(model.recoveryTitle, action: model.recover).disabled(model.busy)
                         if model.problem == .report {
@@ -632,20 +638,21 @@ struct BatchView: View {
                     }
                 }
                 .accessibilityIdentifier("batchError")
+                .layoutPriority(1)
             }
             VStack(alignment: .leading, spacing: 8) {
                 if model.busy && model.errorMessage == nil {
                     if model.scanning { ProgressView().controlSize(.small).accessibilityLabel(model.cancelling ? "Cancelling" : "Checking batch") }
                     else { BatchProgress(processed: model.processed, total: model.total, activePatient: model.activePatient, started: model.runStarted, cancelling: model.cancelling) }
                 }
-                if let summary = model.summary, !model.busy {
+                if let summary = model.summary, !model.busy && !model.hasBlockingProblem {
                     CompletionView(summary: summary, reveal: model.revealOutput, openReport: model.openReport)
                 }
                 Text(model.status).id(model.status).accessibilityIdentifier("batchStatus").textSelection(.enabled)
             }
             HStack {
                 if model.busy { Button(model.cancelling ? "Cancelling…" : "Cancel", action: model.cancel).keyboardShortcut(.cancelAction).disabled(model.cancelling) }
-                else { Button("Check Again", action: model.scan).disabled(!model.canScan) }
+                else if model.errorMessage == nil { Button("Check Again", action: model.scan).disabled(!model.canScan) }
                 Spacer()
                 if let output = model.completedOutput {
                     Button("Open Output") { NSWorkspace.shared.open(output) }.disabled(!model.canInspectOutput)
@@ -663,6 +670,16 @@ struct BatchView: View {
         .frame(minWidth: 700, idealWidth: 780, minHeight: 655, idealHeight: 720)
         .background(Color(nsColor: .windowBackgroundColor))
         .onDrop(of: [.fileURL], isTargeted: nil, perform: model.acceptDrop)
+    }
+
+    private func recoveryText(_ error: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(model.problemTitle, systemImage: "exclamationmark.triangle.fill").bold().foregroundStyle(.red)
+            Text(error).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+            Text(model.recoveryMessage).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 
