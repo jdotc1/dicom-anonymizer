@@ -589,7 +589,41 @@ def clean(ds, patient, uid_map):
             element.value = [remap(v) for v in element.value] if element.VM > 1 else remap(element.value)
 
 
-def run(source, destination, progress=emit, audit=True, *, cancellation=None):
+def _sidecar_call(operation, *args, **kwargs):
+    # The app bootstrap puts the engine directory on the isolated runtime path.
+    # Import only for explicit opt-in; legacy DICOM-only execution is unchanged.
+    import sidecar_deid
+    try:
+        return operation(*args, **kwargs)
+    except sidecar_deid.SidecarError as error:
+        raise BatchError(str(error)) from None
+    except OSError:
+        raise BatchError('JSON sidecar files cannot be read or checked. Keep input unchanged and retry.') from None
+
+
+def _sidecar_output_operation(operation, *args):
+    import sidecar_deid
+    try:
+        return operation(*args)
+    except OSError as error:
+        raise output_error(error) from None
+    except sidecar_deid.SidecarError as error:
+        if isinstance(error.__cause__, OSError):
+            raise output_error(error.__cause__) from None
+        raise
+
+
+def _sidecar_scan(source, cancellation):
+    import sidecar_deid
+    return _sidecar_call(sidecar_deid.scan_sidecars, source, cancel_check=lambda: _sidecar_cancel(cancellation))
+
+
+def _sidecar_cancel(cancellation):
+    if cancellation.requested:
+        cancellation.cancel()
+
+
+def run(source, destination, progress=emit, audit=True, *, cancellation=None, clean_json_sidecars=False):
     cancellation = cancellation or Cancellation()
     source = Path(source).absolute()
     destination = Path(destination).absolute()
@@ -602,8 +636,14 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
     if not destination_operation(destination.parent.is_dir):
         raise BatchError('The output parent folder does not exist. Choose an existing location.', output_issue='unavailable')
     records, patients, excluded = scan(source, progress=progress)
-    progress('scan', patients=patients, total_files=len(records), excluded_files=excluded)
-    check_disk_space(records, destination.parent)
+    sidecars = _sidecar_scan(source, cancellation) if clean_json_sidecars else []
+    if clean_json_sidecars:
+        excluded = max(0, excluded - len(sidecars))
+        progress('scan', patients=patients, total_files=len(records), excluded_files=excluded, sidecar_files=len(sidecars))
+        check_disk_space(records, destination.parent, sidecars=sidecars)
+    else:
+        progress('scan', patients=patients, total_files=len(records), excluded_files=excluded)
+        check_disk_space(records, destination.parent)
     staging = None
     staging_identity = None
     publication_succeeded = False
@@ -651,13 +691,34 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
             written.append((out_path, record.patient))
             if index % 10 == 0 or index == len(records):
                 progress('progress', patient_id=record.patient, processed=index, total_files=len(records))
+        sidecar_written = []
+        if clean_json_sidecars:
+            import sidecar_deid
+            sidecar_written, sidecar_summary = _sidecar_call(
+                sidecar_deid.clean_sidecars_to_staging, sidecars, staging,
+                progress=progress, cancel_check=lambda: _sidecar_cancel(cancellation),
+                output_operation=_sidecar_output_operation)
         audit_summary = self_audit(staging, written, forbidden_uids, progress=progress) if audit else {'result': 'skipped', 'files_audited': 0}
+        if clean_json_sidecars:
+            sidecar_audit = _sidecar_call(sidecar_deid.audit_sidecars, staging, sidecar_written,
+                                        progress=progress, cancel_check=lambda: _sidecar_cancel(cancellation))
+            sidecar_summary = sidecar_summary.with_audit(sidecar_audit.files_audited)
         progress('phase', name='finalizing')
         forbidden_uids = None
         report = {'policy': POLICY, 'software': environment_info(), 'patients': patients,
                   'patient_count': len(patients), 'total_files': len(records), 'excluded_files': excluded,
                   'self_audit': audit_summary}
-        destination_operation((staging / 'anonymization-report.json').write_text, json.dumps(report, indent=2) + '\n')
+        if clean_json_sidecars:
+            report['excluded_files'] = excluded
+            report['json_sidecars'] = sidecar_deid.sidecar_report(sidecar_summary)
+        report_path = staging / 'anonymization-report.json'
+        destination_operation(report_path.write_text, json.dumps(report, indent=2) + '\n')
+        if clean_json_sidecars:
+            _sidecar_call(sidecar_deid.seal_staging_inventory, staging,
+                          dicom_paths=[path for path, _patient in written],
+                          sidecar_paths=[item.output for item in sidecar_written], report_path=report_path,
+                          sidecar_expectations=sidecar_written,
+                          cancel_check=lambda: _sidecar_cancel(cancellation))
         # Recheck before publication; rename is atomic. macOS exclusive rename prevents races.
         if destination_operation(destination.exists) or destination_operation(destination.is_symlink):
             raise BatchError('The output folder appeared during processing. Choose another output folder.', output_issue='conflict')
@@ -672,6 +733,8 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
         publication_succeeded = True
         staging = None
         result = dict(processed=len(records), total_files=len(records), patients=len(patients), excluded_files=excluded, audited_files=audit_summary['files_audited'])
+        if clean_json_sidecars:
+            result.update(sidecar_files=sidecar_summary.files_written, sidecar_audited_files=sidecar_summary.files_audited)
         progress('complete', **result)
         return result
     except Exception as original:
@@ -777,7 +840,7 @@ def allocation_unit(destination_parent):
     return DEFAULT_ALLOCATION_UNIT
 
 
-def estimate_disk_space(records, unit):
+def estimate_disk_space(records, unit, *, sidecars=()):
     """Budget encoded files, allocation rounding, output directories and report."""
     def allocated(size):
         return ((size + unit - 1) // unit) * unit
@@ -793,15 +856,26 @@ def estimate_disk_space(records, unit):
         patient = getattr(record, 'patient', ('unknown', index))
         patients.add(patient)
         series.add((patient, getattr(record, 'series', ('unknown', index))))
-    directory_count = 1 + len(patients) + len(series)
+    if sidecars:
+        import sidecar_deid
+        for record in sidecars:
+            estimate = record.estimated_output_bytes
+            files += allocated(estimate if type(estimate) is int and estimate > 0 else sidecar_deid.BatchLimits.max_output_bytes)
+            patients.add(record.patient)
+        sidecar_directories = len({record.patient for record in sidecars})
+    else:
+        sidecar_directories = 0
+    directory_count = 1 + len(patients) + len(series) + sidecar_directories
     directories = directory_count * unit + allocated(
-        (len(records) + directory_count + 1) * DIRECTORY_ENTRY_ALLOWANCE)
+        (len(records) + len(sidecars) + directory_count + 1) * DIRECTORY_ENTRY_ALLOWANCE)
     report = allocated(REPORT_BASE_ALLOWANCE + REPORT_PATIENT_ALLOWANCE * len(patients))
+    if sidecars:
+        report += allocated(4096)
     return files + directories + report + DISK_MARGIN_BYTES
 
 
-def check_disk_space(records, destination_parent):
-    required = estimate_disk_space(records, allocation_unit(destination_parent))
+def check_disk_space(records, destination_parent, *, sidecars=()):
+    required = estimate_disk_space(records, allocation_unit(destination_parent), sidecars=sidecars)
     try:
         free = shutil.disk_usage(destination_parent).free
     except OSError as error:
@@ -893,6 +967,7 @@ def environment_info():
 def main():
     parser = argparse.ArgumentParser(description='Bulk local DICOM pseudonymization')
     parser.add_argument('--source', required=True)
+    parser.add_argument('--clean-json-sidecars', action='store_true', help='Write cleaned MRI JSON sidecar copies using mri-physical-v1')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--scan', action='store_true')
     group.add_argument('--destination')
@@ -903,9 +978,13 @@ def main():
     try:
         if args.scan:
             records, patients, excluded = scan(args.source, progress=emit)
-            emit('scan', patients=patients, total_files=len(records), excluded_files=excluded)
+            if args.clean_json_sidecars:
+                sidecars = _sidecar_scan(args.source, cancellation)
+                emit('scan', patients=patients, total_files=len(records), excluded_files=max(0, excluded - len(sidecars)), sidecar_files=len(sidecars))
+            else:
+                emit('scan', patients=patients, total_files=len(records), excluded_files=excluded)
         else:
-            run(args.source, args.destination, cancellation=cancellation)
+            run(args.source, args.destination, cancellation=cancellation, clean_json_sidecars=args.clean_json_sidecars)
         return 0
     except BatchError as exc:
         cancellation.deferred = True

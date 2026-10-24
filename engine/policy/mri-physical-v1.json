@@ -1,0 +1,338 @@
+{
+  "policy_id": "mri-physical-v1",
+  "policy_version": "1.0.0",
+  "catalog_revision": "2026-10-24.1",
+  "description": "Fail-closed top-level allowlist for MRI acquisition, encoding, geometry, scanner-physics, and conversion metadata. Patient, institution, device-instance, dates/times, paths, free text, and unknown fields are omitted.",
+  "default_action": "drop",
+  "known_field_wrong_shape_action": "reject_file",
+  "output_naming": "<numeric-patient>/Sidecars/Sidecar_<ordinal:06d>.json",
+  "fields": {
+    "AcquisitionDuration": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "AcquisitionMatrixPE": {
+      "shape": "integer",
+      "category": "acquisition",
+      "minimum": "0",
+      "maximum": "1000000"
+    },
+    "ArterialSpinLabelingType": {
+      "shape": "string",
+      "category": "acquisition",
+      "allowed_values": [
+        "CASL",
+        "PASL",
+        "PCASL"
+      ]
+    },
+    "DelayTime": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "DerivedVendorReportedEchoSpacing": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "DwellTime": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "EchoNumber": {
+      "shape": "integer",
+      "category": "acquisition",
+      "minimum": "0",
+      "maximum": "1000000"
+    },
+    "EchoTime": {
+      "shape": "number_or_array",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400",
+      "max_items": 1024
+    },
+    "EchoTrainLength": {
+      "shape": "integer",
+      "category": "acquisition",
+      "minimum": "0",
+      "maximum": "1000000"
+    },
+    "EffectiveEchoSpacing": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "EstimatedEffectiveEchoSpacing": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "EstimatedTotalReadoutTime": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "FlipAngle": {
+      "shape": "number_or_array",
+      "category": "acquisition",
+      "unit": "deg",
+      "minimum": "0",
+      "maximum": "360",
+      "max_items": 1024
+    },
+    "ImageOrientationPatientDICOM": {
+      "shape": "number_array",
+      "category": "geometry",
+      "minimum": "-1",
+      "maximum": "1",
+      "min_items": 6,
+      "max_items": 6
+    },
+    "ImagingFrequency": {
+      "shape": "number",
+      "category": "scanner",
+      "unit": "MHz",
+      "minimum": "0",
+      "maximum": "100000"
+    },
+    "InPlanePhaseEncodingDirectionDICOM": {
+      "shape": "string",
+      "category": "encoding",
+      "allowed_values": [
+        "COL",
+        "ROW"
+      ]
+    },
+    "InversionTime": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "MRAcquisitionType": {
+      "shape": "string",
+      "category": "acquisition",
+      "allowed_values": [
+        "2D",
+        "3D"
+      ]
+    },
+    "MagneticFieldStrength": {
+      "shape": "number",
+      "category": "scanner",
+      "unit": "T",
+      "minimum": "0",
+      "maximum": "100"
+    },
+    "Modality": {
+      "shape": "string",
+      "category": "acquisition",
+      "allowed_values": [
+        "MR"
+      ]
+    },
+    "MultibandAccelerationFactor": {
+      "shape": "number",
+      "category": "acquisition",
+      "minimum": "0",
+      "maximum": "100"
+    },
+    "NonlinearGradientCorrection": {
+      "shape": "boolean",
+      "category": "acquisition"
+    },
+    "NumberOfAverages": {
+      "shape": "number",
+      "category": "acquisition",
+      "minimum": "0",
+      "maximum": "1000000"
+    },
+    "ParallelReductionFactorInPlane": {
+      "shape": "number",
+      "category": "acquisition",
+      "minimum": "0",
+      "maximum": "100"
+    },
+    "PartialFourier": {
+      "shape": "number",
+      "category": "acquisition",
+      "minimum": "0",
+      "maximum": "1"
+    },
+    "PatientPosition": {
+      "shape": "string",
+      "category": "geometry",
+      "allowed_values": [
+        "FFDL",
+        "FFDR",
+        "FFP",
+        "FFS",
+        "HFDL",
+        "HFDR",
+        "HFP",
+        "HFS"
+      ]
+    },
+    "PhaseEncodingDirection": {
+      "shape": "string",
+      "category": "encoding",
+      "pattern": "[ijk]-?"
+    },
+    "PixelBandwidth": {
+      "shape": "number",
+      "category": "encoding",
+      "unit": "Hz",
+      "minimum": "0",
+      "maximum": "1000000000"
+    },
+    "PostLabelingDelay": {
+      "shape": "number_or_array",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400",
+      "max_items": 1024
+    },
+    "ReconMatrixPE": {
+      "shape": "integer",
+      "category": "acquisition",
+      "minimum": "0",
+      "maximum": "1000000"
+    },
+    "RepetitionTime": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "RepetitionTimeExcitation": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "RepetitionTimeInversion": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "RepetitionTimePreparation": {
+      "shape": "number_or_array",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400",
+      "max_items": 1024
+    },
+    "ScanOptions": {
+      "shape": "string_or_array",
+      "category": "acquisition",
+      "allowed_values": [
+        "CG",
+        "FC",
+        "FS",
+        "PER",
+        "PFF",
+        "PFP",
+        "PPG",
+        "RG",
+        "SP"
+      ]
+    },
+    "ScanningSequence": {
+      "shape": "string_or_array",
+      "category": "acquisition",
+      "allowed_values": [
+        "EP",
+        "GR",
+        "IR",
+        "RM",
+        "SE"
+      ]
+    },
+    "SequenceVariant": {
+      "shape": "string_or_array",
+      "category": "acquisition",
+      "allowed_values": [
+        "MP",
+        "MTC",
+        "NONE",
+        "OSP",
+        "SK",
+        "SP",
+        "SS",
+        "TRSS"
+      ]
+    },
+    "SliceEncodingDirection": {
+      "shape": "string",
+      "category": "encoding",
+      "pattern": "[ijk]-?"
+    },
+    "SliceThickness": {
+      "shape": "number",
+      "category": "geometry",
+      "unit": "mm",
+      "minimum": "0",
+      "maximum": "10000"
+    },
+    "SliceTiming": {
+      "shape": "number_array",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400",
+      "max_items": 10000
+    },
+    "SpacingBetweenSlices": {
+      "shape": "number",
+      "category": "geometry",
+      "unit": "mm",
+      "minimum": "0",
+      "maximum": "10000"
+    },
+    "SpoilingState": {
+      "shape": "boolean",
+      "category": "acquisition"
+    },
+    "TotalReadoutTime": {
+      "shape": "number",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400"
+    },
+    "VolumeTiming": {
+      "shape": "number_array",
+      "category": "timing",
+      "unit": "s",
+      "minimum": "0",
+      "maximum": "86400",
+      "max_items": 10000
+    }
+  }
+}
