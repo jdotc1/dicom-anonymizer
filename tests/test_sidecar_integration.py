@@ -145,11 +145,13 @@ class SidecarIntegrationTests(unittest.TestCase):
         original=sidecar.seal_staging_inventory
         def seal(*args,**kwargs):
             def walk(*args,**kwargs):
-                kwargs['onerror'](PermissionError('/private/sensitive'))
+                kwargs['onerror'](PermissionError(errno.EACCES, '/private/sensitive'))
                 return iter(())
             with patch.object(sidecar.os,'walk',side_effect=walk):return original(*args,**kwargs)
         with patch.object(sidecar,'seal_staging_inventory',side_effect=seal):
-            with self.assertRaisesRegex(engine.BatchError,'fully inspected'):self.run_batch()
+            with self.assertRaises(engine.BatchError) as caught:self.run_batch()
+        self.assertEqual(caught.exception.output_issue, 'permissions')
+        self.assertNotIn('/private', str(caught.exception))
         self.assert_not_published()
 
     def test_enabled_zero_sidecars_is_explicit_and_audited(self):
