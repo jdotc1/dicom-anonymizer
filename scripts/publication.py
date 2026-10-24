@@ -132,14 +132,15 @@ def publish(root, title, notes, authorize=False, retry_absent=False, api=gh):
         mutation('create', [], True)
         endpoint = base + f"/releases/{item['id']}"
         # Separate paginated assets endpoint: embedded assets may be incomplete.
-        assets = []
-        for page in range(1, 101):
-            batch = api([endpoint + f'/assets?per_page=100&page={page}'])
-            assets.extend(batch)
-            if len(batch) < 100:
-                break
-        else:
+        def list_assets():
+            assets = []
+            for page in range(1, 101):
+                batch = api([endpoint + f'/assets?per_page=100&page={page}'])
+                assets.extend(batch)
+                if len(batch) < 100:
+                    return assets
             raise ValueError('Asset listing too large')
+        assets = list_assets()
         exact = [a for a in assets if a['name'] == bound['asset']]
         if len(exact) > 1 or (exact and (exact[0]['size'] != bound['identity'][2] or exact[0]['state'] != 'uploaded' or exact[0].get('label') != state['asset_label'])):
             raise ValueError('Existing asset conflicts; never overwrite or delete it')
@@ -147,10 +148,10 @@ def publish(root, title, notes, authorize=False, retry_absent=False, api=gh):
             raise ValueError('Published release is missing the selected asset; manual reconciliation required')
         if identity(Path(bound['archive'])) != bound['identity']:
             raise ValueError('Selected archive changed')
-        mutation('upload', [endpoint + '/assets?name=' + bound['asset'] + '&label=' + state['asset_label'], '--hostname', 'uploads.github.com',
+        mutation('upload', ['https://uploads.github.com/' + endpoint + '/assets?name=' + bound['asset'] + '&label=' + state['asset_label'], '--hostname', 'github.com',
                            '--method', 'POST', '-H', 'Content-Type: application/zip', '--input', bound['archive']], bool(exact))
         # Always read back after upload; do not publish from a successful response alone.
-        confirmed = api([endpoint + '/assets?per_page=100'])
+        confirmed = list_assets()
         if not any(a['name'] == bound['asset'] and a['size'] == bound['identity'][2] and a['state'] == 'uploaded' and a.get('label') == state['asset_label'] for a in confirmed):
             raise ValueError('Upload not confirmed; resume to reconcile')
         mutation('upload', [], True)

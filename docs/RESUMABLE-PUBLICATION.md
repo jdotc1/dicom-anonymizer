@@ -50,3 +50,16 @@ The new mocked tests cover completion/resume, lost create/upload/publish
 responses, uncertain absence requiring explicit retry, archive replacement,
 unfinalized packages, missing authority, conflicting assets, wrong tags,
 unowned drafts and remote failures. No GitHub call or real archive was used.
+
+## Upload transport
+
+The upload uses an absolute, fixed `https://uploads.github.com/repos/...` API
+endpoint with `--hostname github.com` and the selected archive as `--input`.
+This avoids Enterprise-style REST prefixes for an uploads-host relative URL.
+GitHub CLI's auth transport normalizes `*.github.com` to `github.com` before
+looking up credentials; it does not require separate uploads-host credentials.
+Source references: [absolute URL handling](https://github.com/cli/cli/blob/trunk/pkg/cmd/api/http.go),
+[auth transport](https://github.com/cli/cli/blob/trunk/api/http_client.go), and
+[hostname normalization](https://github.com/cli/go-gh/blob/trunk/pkg/auth/auth.go).
+No credentials were printed or copied. Both initial and post-upload asset lists
+are paginated, including when the selected asset is beyond the first 100.

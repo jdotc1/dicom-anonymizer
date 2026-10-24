@@ -126,6 +126,22 @@ class PublicationTests(unittest.TestCase):
             self.invoke()
         self.invoke(retry_absent=True)
 
+    def test_upload_absolute_url_and_paginated_confirmation(self):
+        unrelated = [dict(name='other-' + str(i)) for i in range(100)]
+        def api(args):
+            if '/assets?' in args[0] and '--method' not in args:
+                page = int(args[0].rsplit('page=', 1)[1])
+                self.calls.append(args)
+                return unrelated if page == 1 else self.assets
+            if '/assets?' in args[0] and '--method' in args:
+                self.assertTrue(args[0].startswith('https://uploads.github.com/repos/jdotc1/dicom-anonymizer/releases/1/assets?'))
+                self.assertEqual(args[args.index('--hostname') + 1], 'github.com')
+                self.assertEqual(args[args.index('--input') + 1], str(self.root / 'download.zip'))
+            return self.api(args)
+        self.invoke_with_api = publication.publish(self.root, 'Preview', 'Notes', authorize=True, api=api)
+        self.assertFalse(self.item['draft'])
+        self.assertEqual(2, sum('/assets?per_page=100&page=2' in c[0] for c in self.calls))
+
     def test_tag_changed_during_upload_blocks_publication(self):
         def api(args):
             result = self.api(args)
