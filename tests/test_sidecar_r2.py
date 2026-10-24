@@ -15,8 +15,8 @@ class SidecarR2Tests(unittest.TestCase):
         second=self.file.with_name('second.json');second.write_bytes(self.file.read_bytes())
         one=sidecar.scan_sidecars(self.source)[0].estimated_output_bytes
         limits=sidecar.BatchLimits(max_total_output_bytes=one*2-1)
-        def scan(source,cancellation):
-            return engine._sidecar_call(sidecar.scan_sidecars,source,limits=limits)
+        def scan(source,cancellation,progress=None):
+            return engine._sidecar_call(sidecar.scan_sidecars,source,limits=limits,progress=progress)
         with patch.object(engine,'_sidecar_scan',side_effect=scan),patch.object(engine.tempfile,'mkdtemp',side_effect=AssertionError('staging allocated')):
             with self.assertRaisesRegex(engine.BatchError,'output byte limit'):self.run_batch()
         self.assert_not_published()

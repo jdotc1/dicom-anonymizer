@@ -1223,9 +1223,9 @@ def _sidecar_output_operation(operation, *args):
         raise
 
 
-def _sidecar_scan(source, cancellation):
+def _sidecar_scan(source, cancellation, progress=None):
     import sidecar_deid
-    return _sidecar_call(sidecar_deid.scan_sidecars, source, cancel_check=lambda: _sidecar_cancel(cancellation))
+    return _sidecar_call(sidecar_deid.scan_sidecars, source, cancel_check=lambda: _sidecar_cancel(cancellation), progress=progress)
 
 
 def _sidecar_cancel(cancellation):
@@ -1246,7 +1246,7 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None, cl
     if not destination_operation(destination.parent.is_dir):
         raise BatchError('The output parent folder does not exist. Choose an existing location.', output_issue='unavailable')
     records, patients, excluded = scan(source, progress=progress)
-    sidecars = _sidecar_scan(source, cancellation) if clean_json_sidecars else []
+    sidecars = _sidecar_scan(source, cancellation, progress=progress) if clean_json_sidecars else []
     if clean_json_sidecars:
         excluded = max(0, excluded - len(sidecars))
         progress('scan', patients=patients, total_files=len(records), excluded_files=excluded, sidecar_files=len(sidecars))
@@ -1589,7 +1589,7 @@ def main():
         if args.scan:
             records, patients, excluded = scan(args.source, progress=emit)
             if args.clean_json_sidecars:
-                sidecars = _sidecar_scan(args.source, cancellation)
+                sidecars = _sidecar_scan(args.source, cancellation, progress=emit)
                 emit('scan', patients=patients, total_files=len(records), excluded_files=max(0, excluded - len(sidecars)), sidecar_files=len(sidecars))
             else:
                 emit('scan', patients=patients, total_files=len(records), excluded_files=excluded)
