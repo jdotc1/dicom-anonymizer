@@ -16,6 +16,8 @@ jobs:
   engine-tests:
     if: ${{ inputs.acknowledge }}
     runs-on: ${{ matrix.os }}
+    env:
+      DICOM_TEST_TMPDIR: ${{ runner.temp }}
     strategy:
       fail-fast: false
       matrix:

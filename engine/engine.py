@@ -13,6 +13,7 @@ import stat
 import sys
 import tempfile
 import time
+import unicodedata
 import warnings
 from dataclasses import dataclass
 
@@ -225,6 +226,616 @@ def claim_patient_frames(ds, patient, owners):
                 raise BatchError(FRAME_COLLISION)
 
 
+# Folder-assignment reports name patient folder numbers and batch-relative locations so the files can be
+# found in Finder, but never absolute paths or UIDs. Real exports often name subfolders and files after the
+# patient, a record number, a date or a UID, so every subfolder name, file name and series label passes
+# through redact() first. Names are compared in folded form (composed, accents and case removed), because
+# HFS+ volumes store file names decomposed and exporters often drop accents or replace them with '_'.
+CONFLICT_LIMIT = 5        # conflicts described in detail; any others are listed by folder number
+MESSAGE_LINES = 15        # keeps the message readable in the app's error area
+MASK = '…'
+IDENTITY_KEYS = ('PatientName', 'PatientID', 'OtherPatientIDs', 'OtherPatientNames', 'PatientBirthName', 'AccessionNumber')
+_WORD = re.compile(r'[^\W_]+')
+_SEPARATOR = re.compile(r'[\W_]+')
+_DATE_OR_NUMBER = re.compile(
+    r'\d+(?:\.\d+){2,}'                                   # UIDs and other dotted numbers
+    r'|\d{4}[-_./ ]\d{1,2}[-_./ ]\d{1,2}'                 # 2026-09-14
+    r'|\d{1,2}[-_./ ]\d{1,2}[-_./ ]\d{2,4}'               # 09.14.2026
+    r'|\d{1,2}[-_. ]?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[-_. ]?\d{2,4}'
+    r'|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[-_. ]?\d{1,2}[-_., ]+\d{2,4}'
+    r'|\d{6,}',                                           # compact dates, times and record numbers
+    re.IGNORECASE)
+# Letters that Unicode does not decompose but exporters commonly transliterate.
+_TRANSLITERATE = str.maketrans({'ø': 'o', 'Ø': 'O', 'æ': 'ae', 'Æ': 'AE', 'œ': 'oe', 'Œ': 'OE', 'ł': 'l', 'Ł': 'L',
+                                'đ': 'd', 'Đ': 'D', 'ð': 'd', 'Ð': 'D', 'þ': 'th', 'Þ': 'TH', 'ı': 'i'})
+
+
+def fold(text):
+    """Comparable form of a name: composed or decomposed, with or without accents, in any case."""
+    text = unicodedata.normalize('NFKD', str(text).translate(_TRANSLITERATE))
+    return ''.join(char for char in text if not unicodedata.combining(char)).casefold()
+
+
+def identifying(word, terms):
+    """True if a folded word contains a source name/ID term, or is a fragment (3+ letters) of one."""
+    fragment = len(word) >= 3 and not word.isdigit()
+    for term in terms:
+        # Short Latin terms (such as a two-letter surname) must match a whole word; CJK names have no separators.
+        if word == term or ((len(term) >= 3 or not term.isascii()) and term in word) or (fragment and word in term):
+            return True
+    return False
+
+
+def _mask(text, terms):
+    """The text in composed (NFC) form and, for each character, whether it must be hidden."""
+    text = unicodedata.normalize('NFC', str(text))
+    hidden, named = [False] * len(text), [False] * len(text)
+    for match in _DATE_OR_NUMBER.finditer(text):
+        start, end = match.span()
+        hidden[start:end] = [True] * (end - start)
+    words = list(_WORD.finditer(text))
+    for match in words:
+        if identifying(fold(match.group()), terms):
+            start, end = match.span()
+            hidden[start:end] = named[start:end] = [True] * (end - start)
+    # A one- or two-letter word between two name words is hidden too: an initial, or the rest of a name whose
+    # accented letter an exporter replaced with '_' (GARC_A^JOS_).
+    for before, match, after in zip(words, words[1:], words[2:]):
+        if len(match.group()) <= 2 and named[before.end() - 1] and named[after.start()]:
+            start, end = match.span()
+            hidden[start:end] = [True] * (end - start)
+    for match in _SEPARATOR.finditer(text):
+        start, end = match.span()
+        if 0 < start and end < len(text) and hidden[start - 1] and hidden[end]:
+            hidden[start:end] = [True] * (end - start)
+    return text, hidden
+
+
+def redact(text, terms):
+    """Mask words containing or forming part of a source name/ID, and anything shaped like a date, long number or UID."""
+    text, hidden = _mask(text, terms)
+    out, previous = [], False
+    for flag, char in zip(hidden, text):
+        if not flag:
+            out.append(char)
+        elif not previous:
+            out.append(MASK)
+        previous = flag
+    return ''.join(out)
+
+
+def lead(text, terms):
+    """The folded hidden text a name starts with (such as a patient name and record number), or None. Never shown."""
+    text, hidden = _mask(text, terms)
+    if not hidden or not hidden[0]:
+        return None
+    return fold(text[:hidden.index(False)] if False in hidden else text)
+
+
+def finder_order(name):
+    """Approximates Finder's name order: case- and accent-insensitive, numbers by value, punctuation first."""
+    return [(1, int(run), '') if run[0].isdecimal() else (2, 0, run) if run.isalpha() else (0, 0, run)
+            for run in re.findall(r'\d+|\D', fold(name))]
+
+
+def ordinal(number):
+    return f'{number}{"th" if 10 <= number % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(number % 10, "th")}'
+
+
+def join_words(items):
+    items = [str(item) for item in items]
+    return ', '.join(items[:-1]) + ' and ' + items[-1] if len(items) > 1 else ''.join(items)
+
+
+def plural(count, noun, nouns=None):
+    return f'{count} {noun if count == 1 else nouns or noun + "s"}'
+
+
+def folder_list(folders, limit=8):
+    folders = list(folders)
+    if len(folders) > limit:
+        return ', '.join(folders[:limit]) + f' and {len(folders) - limit} more'
+    return join_words(folders)
+
+
+def name_difference(names):
+    """How differently recorded source patient names differ, described without showing any of them."""
+    def components(name):
+        groups = [[' '.join(part.split()) for part in group.split('^')] for group in str(name).split('=')]
+        for group in groups:
+            while group and not group[-1]:
+                group.pop()
+        while groups and not groups[-1]:
+            groups.pop()
+        return groups
+    forms = [components(name) for name in names]
+    if all(form == forms[0] for form in forms):
+        return 'the names differ only in spaces or empty ^ components'
+    folded = [[[fold(part) for part in group] for group in form] for form in forms]
+    if all(form == folded[0] for form in folded):
+        return 'the names differ only in capitalization or accents'
+    if all(len(form) == 1 and len(form[0]) >= 2 and form[0][:2] == folded[0][0][:2] for form in folded):
+        cased = '' if all(form[0][:2] == forms[0][0][:2] for form in forms) else ' and in capitalization or accents'
+        return f'the names differ after the family and given names, such as a middle name, prefix or suffix{cased}'
+    return 'the names are spelled differently'
+
+
+class FolderConflicts:
+    """Collects folder-assignment problems while scan() walks the batch and explains them in one message.
+
+    Four problems stop a batch: one study in several patient folders, one source patient ID in several
+    patient folders, more than one source patient ID or name inside one folder, and the same SOP instance
+    stored twice. The message reports the most fundamental of these in detail (folders, batch-relative
+    locations, file counts, series and a suggested fix) and names any unrelated remaining problem briefly.
+    """
+
+    def __init__(self, source):
+        self.source = source
+        self.terms = set()      # folded fragments of source names and IDs, used only for masking
+        self.series = {}        # series UID -> (modality, series number, description)
+        self.studies = {}       # study UID -> {patient folder}
+        self.ids = {}           # source PatientID -> {patient folder: [records]}
+        self.names = {}         # source PatientName -> {patient folder: [records]}
+        self.first = {}         # SOP instance UID -> first record stored
+        self.duplicates = []    # (first record, repeated record)
+        self.mixed = {}         # patient folder -> ('id' or 'name', {source value: [records]})
+        self.folder = []        # (record, PatientName) for the patient folder being walked
+        self.shown = {}         # file or folder name -> masked name
+        self.listings = {}      # folder -> the names Finder shows in it
+
+    def add(self, record, ds, name):
+        for key in IDENTITY_KEYS:
+            words = _WORD.findall(unicodedata.normalize('NFC', str(ds.get(key) or '')))
+            self.terms.update(fold(word) for word in words if len(word) > 1)
+        self.series.setdefault(record.series[1], (str(ds.Modality), str(ds.get('SeriesNumber') or '').strip(),
+                                                  str(ds.get('SeriesDescription') or '').strip()))
+        self.studies.setdefault(record.series[0], set()).add(record.patient)
+        if record.sop in self.first:
+            self.duplicates.append((self.first[record.sop], record))
+        else:
+            self.first[record.sop] = record
+        self.folder.append((record, name))
+
+    def close_folder(self, patient):
+        entries, self.folder = self.folder, []
+        for record, name in entries:
+            if record.identity:
+                self.ids.setdefault(record.identity, {}).setdefault(patient, []).append(record)
+            if name:
+                self.names.setdefault(name, {}).setdefault(patient, []).append(record)
+        ids = {record.identity for record, _ in entries if record.identity}
+        names = {name for _, name in entries if name}
+        if len(ids) > 1 or len(names) > 1:
+            grouping, groups = 'id' if len(ids) > 1 else 'name', {}
+            for record, name in entries:
+                groups.setdefault(record.identity if grouping == 'id' else name, []).append(record)
+            self.mixed[patient] = (grouping, groups)
+
+    # -- Locations and series, always masked -----------------------------------------------------------
+    def parts(self, record):
+        return record.path.relative_to(self.source).parts
+
+    def masked(self, name):
+        if name not in self.shown:
+            self.shown[name] = redact(name, self.terms)
+        return self.shown[name]
+
+    def twins(self, location):
+        """(level, other names) for each part of a location that looks the same as a sibling once masked."""
+        found = []
+        for level in range(1, len(location)):
+            parent = self.source.joinpath(*location[:level])
+            if parent not in self.listings:
+                try:
+                    # Finder hides dot files (.DS_Store, AppleDouble companions), so they cannot be confused.
+                    self.listings[parent] = [name for name in os.listdir(parent) if not name.startswith('.')]
+                except OSError:
+                    self.listings[parent] = []
+            same = [name for name in self.listings[parent]
+                    if name != location[level] and self.masked(name) == self.masked(location[level])]
+            if same:
+                found.append((level, same))
+        return found
+
+    def tell_apart(self, location, level, same, like=None):
+        """(hint, certain) telling one part of a location from look-alike siblings, without showing what was masked.
+
+        like = (patient folder, folder locations of the same patient's files). Misfiled files usually carry that
+        patient's name and record number at the start of their folder name, which the look-alikes do not.
+        Otherwise the hint gives the position in name order, which is less certain.
+        """
+        name, group = location[level], [location[level]] + same
+        kind = 'folders' if self.source.joinpath(*location[:level + 1]).is_dir() else 'files'
+        if like:
+            folder, references = like
+            keys = {lead(part, self.terms) for reference in references for part in reference[1:]} - {None}
+            if lead(name, self.terms) in keys and not any(lead(other, self.terms) in keys for other in same):
+                return (f'of {len(group)} {kind} that look alike here, the one whose full name starts like the '
+                        f'folder names in {folder}'), True
+        position = sorted(group, key=lambda other: (finder_order(other), other)).index(name) + 1
+        return f'the {ordinal(position)} of {len(group)} {kind} that look alike here, sorted by name', False
+
+    def locate(self, location, like=None):
+        """(masked location, hint, certain). The hint tells look-alike folders or files apart."""
+        if len(location) == 1:
+            return f'directly inside {location[0]}', '', True
+        shown = '/'.join((location[0],) + tuple(self.masked(part) for part in location[1:]))
+        hints = [self.tell_apart(location, level, same, like) for level, same in self.twins(location)]
+        return shown, '; '.join(hint for hint, _ in hints), all(certain for _, certain in hints)
+
+    def where(self, location, like=None):
+        shown, hint, _ = self.locate(location, like)
+        return f'{shown} ({hint})' if hint else shown
+
+    def clear(self, locations, like=None):
+        """True if every location can be found without guessing: unique once masked, or told apart by like."""
+        return all(self.locate(location, like)[2] for location in locations)
+
+    def file_path(self, record, hint=True):
+        return self.where(self.parts(record)) if hint else self.locate(self.parts(record))[0]
+
+    def by_location(self, records):
+        groups = {}
+        for record in records:
+            groups.setdefault(self.parts(record)[:-1], []).append(record)
+        return sorted(groups.items())
+
+    def series_label(self, uid):
+        modality, number, description = self.series[uid]
+        number, description = redact(number, self.terms), redact(description, self.terms).strip()
+        if len(description) > 40:
+            description = description[:39].rstrip() + MASK
+        label = f'{modality} series {number}' if number else f'{modality} series'
+        return f'{label} "{description}"' if description else label
+
+    def details(self, records, count=True):
+        counts = {}
+        for record in records:
+            counts[record.series[1]] = counts.get(record.series[1], 0) + 1
+        def order(uid):
+            number = self.series[uid][1]
+            return (int(number) if number.isascii() and number.isdigit() else float('inf'), self.series[uid][2])
+        labels = {}             # identical labels (same modality, number and description) are merged
+        for uid in sorted(counts, key=order):
+            label = self.series_label(uid)
+            labels[label] = labels.get(label, 0) + 1
+        shown = [label if n == 1 else f'{n} {label}' for label, n in list(labels.items())[:2]]
+        rest = sum(list(labels.values())[2:])
+        if rest:
+            shown.append(f'and {rest} more series')
+        return ', '.join(([plural(len(records), 'file')] if count else []) + shown)
+
+    def describe(self, records, like=None):
+        """Where a group of files is, how many there are and which series, e.g. '90002/RT (1 file, RTSTRUCT series 1)'."""
+        groups = self.by_location(records)
+        details = self.details(records)
+        if len(groups) == 1:
+            shown, hint, _ = self.locate(groups[0][0], like)
+            return f'{shown} ({details}; {hint})' if hint else f'{shown} ({details})'
+        if len(groups) <= 3:
+            return f'{join_words(self.where(location, like) for location, _ in groups)} ({details})'
+        return f'{records[0].patient}, {len(groups)} locations ({details})'
+
+    def bullet(self, records, label='', note='', like=None):
+        return f'• {label}{self.describe(records, like)}{note}'
+
+    def places(self, locations, like=None):
+        """Prose form of locations: 'in 90002/RT and directly inside 90002'."""
+        return join_words(self.where(location) if len(location) == 1 else f'in {self.where(location, like)}'
+                          for location in locations)
+
+    # -- The four problems ------------------------------------------------------------------------------
+    def split_report(self, split, records):
+        files, folder_ids, copies = {}, {}, {}
+        for record in records:
+            if record.series[0] in split:
+                files.setdefault(record.series[0], {}).setdefault(record.patient, []).append(record)
+            if record.identity:
+                folder_ids.setdefault(record.patient, {}).setdefault(record.series[0], set()).add(record.identity)
+        for first, again in self.duplicates:
+            if first.patient != again.patient:
+                copies.setdefault(first.sop, set()).update((first.patient, again.patient))
+        studies = sorted(split, key=lambda study: (sorted(split[study]), str(files[study][min(files[study])][0].path)))
+        single, blocks, unclear = len(studies) == 1, [], False
+        for number, study in enumerate(studies, 1):
+            folders = files[study]
+            def foreign(folder):
+                # The study's source patient IDs appear nowhere else in this folder.
+                ids = folder_ids.get(folder, {})
+                others = set().union(*(values for key, values in ids.items() if key != study))
+                return bool(ids.get(study) and others and not ids[study] & others)
+            def weight(folder):
+                # Hedged heuristic for the study's home: consistent patient ID, then images (not only RTSTRUCT), then most files.
+                return (not foreign(folder), any(self.series[r.series[1]][0] != 'RTSTRUCT' for r in folders[folder]),
+                        len(folders[folder]))
+            ranked = sorted(folders, key=weight, reverse=True)
+            home = ranked[0] if weight(ranked[0]) > weight(ranked[1]) else None
+            unclear |= home is None
+            if home is None:
+                lines = [] if single else [f'Study {number}, in {join_words(sorted(folders))} (unclear which folder is right):']
+                lines += [self.bullet(folders[folder]) for folder in sorted(folders)]
+                blocks.append((sorted(folders), lines))
+                continue
+            # Misfiled files are named like the home folder's files, which tells them from look-alike folders.
+            like = (home, [self.parts(record)[:-1] for record in folders[home]])
+            lines = [self.bullet(folders[home])] if single else [f'Study {number} in {self.describe(folders[home])}, also in:']
+            strays = [folder for folder in sorted(folders) if folder != home]
+            stray_locations, all_copies = [], True
+            for folder in strays:
+                groups = self.by_location(folders[folder])
+                for location, group in groups[:3]:
+                    copied = sum(home in copies.get(r.sop, ()) for r in group)
+                    all_copies &= copied == len(group)
+                    note = (f' (copies of files in {home})' if copied == len(group)
+                            else f' ({copied} are copies of files in {home})' if copied else '')
+                    lines.append(self.bullet(group, note=', likely misfiled' + note, like=like))
+                if len(groups) > 3:
+                    all_copies = False
+                    lines.append(f'• and {len(groups) - 3} more locations in {folder}, also likely misfiled')
+                stray_locations += [location for location, _ in groups]
+            blocks.append((sorted(folders), lines))
+        if not single:
+            headline = (f'Images from {len(studies)} studies are split across patient folders '
+                        f'{folder_list(sorted(set().union(*split.values())))}.')
+            fix = ('To fix: for each study, move the files marked "likely misfiled" into the folder named on that study\'s '
+                   '"Study N in …" line. They are marked because they hold fewer of the study\'s files, only its RTSTRUCT, '
+                   'or a source patient ID that differs from the rest of their folder. If a study\'s folders are the same '
+                   'person, combine them under one number instead.'
+                   + (' Where nothing is marked, decide which patient the study belongs to.' if unclear else '')
+                   + ' Then choose Check Again.')
+            return headline, blocks, None, fix, 'split studies'
+        everyone = join_words(sorted(files[studies[0]]))
+        headline = f'Patient folders {everyone} contain images from the same study.'
+        if len(files[studies[0]]) > 3:
+            everyone = 'these folders'
+        why = 'One study must stay in one patient folder, or the output would link different patient numbers.'
+        if home is None:
+            if all(r.sop in copies for group in folders.values() for r in group):
+                fix = (f'To fix: {everyone} hold copies of the same images. Keep them only in the folder of the patient they '
+                       f'belong to and delete the other copies. If {everyone} are the same person, also combine the folders '
+                       'under one number. Then choose Check Again.')
+            else:
+                fix = (f'To fix: decide which patient this study belongs to; {everyone} hold equal parts of it, so it is unclear. '
+                       'If they are the same person, combine the folders under one number. Otherwise move the study\'s files '
+                       'into the folder of the patient it belongs to. Then choose Check Again.')
+            return headline, blocks, why, fix, 'split studies'
+        where = self.places(stray_locations, like) if len(stray_locations) <= 3 else f'of this study in {join_words(strays)}'
+        # Never suggest deleting a folder the user cannot tell apart from a look-alike: the other one may be the patient's own.
+        if all_copies and len(stray_locations) <= 3 and self.clear(stray_locations, like):
+            fix = (f'To fix: delete the files {where}; they are copies of files already in {home}. If {everyone} are the '
+                   'same person, also combine the folders under one number. Then choose Check Again.')
+        else:
+            # State every signal that favours the main folder, not only the one that decided it.
+            reasons, foreigners = [], [f for f in strays if foreign(f)]
+            if len(folders[home]) > max(len(folders[f]) for f in strays):
+                reasons.append(f'{home} holds more of this study\'s files')
+            elif weight(home)[1] and not all(weight(f)[1] for f in strays):
+                reasons.append(f'{home} holds this study\'s images')
+            if foreigners and not foreign(home):
+                reasons.append(('they carry' if foreigners == strays else f'this study\'s files in {join_words(foreigners)} carry')
+                               + ' a different source patient ID from the other files in '
+                               + (join_words(foreigners) if len(foreigners) <= 3 else 'their folders'))
+            if all_copies:
+                reasons.append(f'they are copies of files already in {home}')
+            reason = join_words(reasons) or f'{home} holds more of this study\'s files than {ranked[1]}'
+            fix = (f'To fix: move the files {where} into {home}. They most likely belong there, because {reason}. '
+                   f'If {everyone} are the same person, combine the folders under one number instead. Then choose Check Again.')
+        return headline, blocks, why, fix, 'split studies'
+
+    def shared_report(self, shared, records):
+        files = {}
+        for record in records:
+            if record.identity in shared:
+                files.setdefault(record.identity, {}).setdefault(record.patient, []).append(record)
+        keys = sorted(shared, key=lambda value: sorted(shared[value]))
+        blocks = []
+        for value in keys:
+            folders = sorted(files[value])
+            lines = [] if len(keys) == 1 else [f'Same source patient ID in {join_words(folders)}:']
+            blocks.append((folders, lines + [self.bullet(files[value][folder]) for folder in folders]))
+        if len(keys) == 1:
+            everyone = join_words(blocks[0][0])
+            headline = f'Patient folders {everyone} contain images with the same source patient ID.'
+            why = 'One source patient ID in more than one folder would give one person more than one patient number.'
+            fix = (f'To fix: if {everyone} are the same person, combine the folders under one number. If they are different '
+                   'people, the source export gave two patients the same patient ID, so check the export. Then choose Check Again.')
+        else:
+            headline = (f'{len(keys)} source patient IDs each appear in more than one patient folder: '
+                        f'{folder_list(sorted(set().union(*shared.values())))}.')
+            why = None
+            fix = ('To fix: for each group, if its folders are the same person, combine them under one number; if they are '
+                   'different people, the source export gave two patients the same patient ID, so check the export. '
+                   'Then choose Check Again.')
+        return headline, blocks, why, fix, 'shared patient IDs'
+
+    def mixed_report(self, folders):
+        labels = {}
+        def label(grouping, value):
+            if not value:
+                return 'no patient ID' if grouping == 'id' else 'no patient name'
+            return labels.setdefault((grouping, value), f'identity {len(labels) + 1}')
+        blocks, variants, headline, why, fix = [], [], '', None, ''
+        for folder in folders:
+            grouping, groups = self.mixed[folder]
+            index = self.ids if grouping == 'id' else self.names
+            elsewhere = {value: sorted(set(index.get(value, {})) - {folder}) for value in groups if value}
+            # Keep the identity not found in any other folder, then the one with the most files.
+            named = sorted(elsewhere, key=lambda value: (bool(elsewhere[value]), -len(groups[value])))
+            ids = {r.identity for records in groups.values() for r in records if r.identity}
+            studies = [{r.series[0] for r in groups[value]} for value in named]
+            same_study = any(a & b for i, a in enumerate(studies) for b in studies[i + 1:])
+            # One person recorded two ways. Moving files apart would only trade this stop for a shared-ID or split-study one.
+            variant = (grouping == 'name' and len(ids) == 1) or same_study
+            if variant:
+                variants.append(folder)
+            lines = [] if len(folders) == 1 else [f'In {folder}' + (' (likely one patient recorded two ways):' if variant else ':')]
+            values = named + ([''] if '' in groups else [])
+            limit = 10 if len(folders) == 1 else 4      # keeps a folder of many patients within the message's line budget
+            rest = values[limit - 1:] if len(values) > limit else []
+            for value in values[:len(values) - len(rest)]:
+                note, like = '', None
+                if value and elsewhere[value]:
+                    note = f', also in {join_words(elsewhere[value])}'
+                    like = (elsewhere[value][0], [self.parts(r)[:-1] for r in index[value][elsewhere[value][0]]])
+                lines.append(self.bullet(groups[value], label=f'{label(grouping, value)}: ', note=note, like=like))
+            if rest:
+                lines.append(f'• and {len(rest)} more identities in {folder} '
+                             f'({plural(sum(len(groups[value]) for value in rest), "file")})')
+            blocks.append(([folder], lines))
+            if len(folders) > 1:
+                continue
+            kind = 'IDs' if grouping == 'id' else 'names'
+            headline = f'Patient folder {folder} contains images with {len(named)} different source patient {kind}'
+            if variant:
+                shared_id = grouping == 'name' and len(ids) == 1
+                headline += ' under one source patient ID.' if shared_id else ' in one study.'
+                what = 'patient name' if grouping == 'name' else 'patient ID'
+                detail = f' ({name_difference(named)})' if grouping == 'name' else ''
+                blocked = ('the same ID would then be in two folders' if shared_id
+                           else 'the study would then be split across folders')
+                why = 'The app cannot tell whether differently recorded patient details belong to one person, so it stops.'
+                fix = (f'To fix: these files {"share one source patient ID" if shared_id else "belong to the same study"}, so '
+                       f'they are most likely one person whose {what} was recorded differently{detail}. Moving files into '
+                       f'another folder will not clear this, because {blocked}. Correct the {what} in the source system so '
+                       'all files match and re-export this patient'
+                       + ('; if they are different people, correct the patient ID instead' if shared_id else '')
+                       + '. Then choose Check Again.')
+                continue
+            headline += '.'
+            why = 'Every file in a patient folder receives that folder\'s number, so each folder must hold one patient.'
+            moves, new = [], [label(grouping, value) for value in named[1:] if not elsewhere[value]]
+            for value in named[1:]:
+                if elsewhere[value]:
+                    target = (f'{elsewhere[value][0]} (which already holds that patient)' if len(elsewhere[value]) == 1
+                              else f'one of {join_words(elsewhere[value])} (which already hold that patient)')
+                    moves.append(f'the {label(grouping, value)} files into {target}')
+            if len(new) == 1:
+                moves.append(f'the {new[0]} files into a new numeric folder')
+            elif new:
+                span = join_words(new) if len(new) <= 3 else f'{new[0]} to {new[-1]}'
+                moves.append(f'the files of {span} each into a new numeric folder of its own')
+            fix = (f'To fix: give each identity its own numeric folder. Keep {label(grouping, named[0])} in {folder} and '
+                   f'move {join_words(moves)}.')
+            if '' in groups:
+                fix += f' Check which patient the files with {label(grouping, "")} belong to.'
+            counts = {}
+            for records in groups.values():
+                for location in {self.parts(r)[:-1] for r in records}:
+                    counts[location] = counts.get(location, 0) + 1
+            shared_places = [self.where(location) for location in sorted(counts) if counts[location] > 1]
+            if shared_places:
+                fix += (f' {join_words(shared_places[:2])} {"holds" if len(shared_places) == 1 else "hold"} files of more '
+                        'than one identity, so separate those files by series first.')
+            fix += ' Then choose Check Again.'
+        if len(folders) > 1:
+            headline = f'Patient folders {folder_list(folders)} each contain images with more than one source patient identity.'
+            steps = []
+            if len(variants) < len(folders):
+                steps.append(('In the other folders' if variants else 'In each folder') + ', keep the first identity listed and '
+                             'move the others into a new numeric folder, or into the "also in" folder that already holds that patient.')
+            if variants:
+                steps.append(f'In {join_words(variants)}, the files are most likely one patient whose details were recorded '
+                             'differently; moving files will not clear this, so correct the patient details in the source system '
+                             'and re-export.')
+            fix = 'To fix: ' + ' '.join(steps) + ' Then choose Check Again.'
+        return headline, blocks, why, fix, 'folders'
+
+    def duplicate_report(self, duplicates, records):
+        pairs, sizes = {}, {}
+        for first, again in duplicates:
+            pairs.setdefault((self.parts(first)[:-1], self.parts(again)[:-1]), []).append((first, again))
+        for record in records:
+            location = self.parts(record)[:-1]
+            sizes[location] = sizes.get(location, 0) + 1
+        blocks, spare = [], []
+        for (original, repeat), group in sorted(pairs.items()):
+            first, again = group[0]
+            series = self.details([r for pair in group for r in pair], count=False)
+            # In a group the example only illustrates the pattern; the folders locate the files.
+            example = f'{self.file_path(first, hint=False)} and {self.file_path(again, hint=False)}'
+            if len(group) == 1:
+                paths = f'{self.file_path(first)} and {self.file_path(again)}'
+                # Look-alike file names carry a position hint in parentheses, so the series goes first.
+                line = f'• {series}: {paths}' if paths != example else f'• {paths} ({series})'
+            elif original == repeat:
+                line = f'• {len(group)} images are stored twice in {self.where(original)} ({series}), for example {example}'
+            else:
+                line = (f'• {len(group)} files in {self.where(repeat)} repeat files in {self.where(original)} ({series}), '
+                        f'for example {example}')
+            # A location holding nothing but these copies can simply be deleted, if it cannot be mistaken for another.
+            for location in (repeat, original) if original != repeat else ():
+                if sizes[location] == len(group) and self.clear([location]):
+                    spare.append(self.where(location))
+                    break
+            blocks.append((sorted({first.patient, again.patient}), [line]))
+        folders = sorted({r.patient for pair in duplicates for r in pair})
+        what = 'the same image twice' if len(duplicates) == 1 else f'{len(duplicates)} duplicate images'
+        headline = (f'Patient folder {folders[0]} contains {what}.' if len(folders) == 1
+                    else f'Patient folders {folder_list(folders)} contain {what}.')
+        fix = 'To fix: remove one of the two copies' + (' of each image' if len(duplicates) > 1 else '')
+        if spare:
+            fix += (f' ({join_words(spare[:3])} {"holds" if len(spare) == 1 else "hold"} only copies, so '
+                    f'{"it" if len(spare) == 1 else "they"} can be deleted)')
+        return headline, blocks, None, fix + ', then choose Check Again.', 'duplicate groups'
+
+    # -- One message -------------------------------------------------------------------------------------
+    def message(self, records):
+        """Return one plain-text report of the batch's folder-assignment problems, or None if there are none."""
+        split = {study: folders for study, folders in self.studies.items() if len(folders) > 1}
+        shared = {value: set(folders) for value, folders in self.ids.items() if len(folders) > 1}
+        mixed, duplicates = sorted(self.mixed), list(self.duplicates)
+        # Report the most fundamental problem in full. Problems it causes are not repeated.
+        if split:
+            report = self.split_report(split, records)
+            covered = set().union(*split.values())
+            mixed = [folder for folder in mixed if folder not in covered]
+            shared = {value: folders for value, folders in shared.items() if not folders <= covered}
+            duplicates = [(a, b) for a, b in duplicates if a.patient == b.patient or a.series[0] not in split]
+        elif mixed:
+            report = self.mixed_report(mixed)
+            shared = {value: folders for value, folders in shared.items() if len(folders - set(mixed)) > 1}
+            mixed = []
+        elif shared:
+            report, shared = self.shared_report(shared, records), {}
+        elif duplicates:
+            report, duplicates = self.duplicate_report(duplicates, records), []
+        else:
+            return None
+        return self.compose(*report, also=self.also_found(mixed, shared, duplicates))
+
+    @staticmethod
+    def also_found(mixed, shared, duplicates):
+        notes = []
+        if mixed:
+            notes.append(f'{folder_list(mixed)} {"holds" if len(mixed) == 1 else "each hold"} more than one source patient identity')
+        if shared:
+            groups = sorted(sorted(folders) for folders in shared.values())
+            notes.append(f'{plural(len(groups), "source patient ID")} shared between folders ('
+                         + '; '.join(join_words(group) for group in groups[:3]) + ('; …' if len(groups) > 3 else '') + ')')
+        if duplicates:
+            notes.append(f'duplicate images in {folder_list(sorted({r.patient for pair in duplicates for r in pair}))}')
+        if not notes:
+            return None
+        return 'Also found: ' + '; '.join(notes) + '. Choose Check Again after the fix above to see the details.'
+
+    @staticmethod
+    def compose(headline, blocks, why, fix, noun, also=None):
+        budget = MESSAGE_LINES - 2 - bool(why) - bool(also)
+        shown = []
+        for index, (_, lines) in enumerate(blocks):
+            reserve = 1 if index + 1 < len(blocks) else 0
+            if shown and (len(shown) == CONFLICT_LIMIT or sum(map(len, shown)) + len(lines) + reserve > budget):
+                break
+            shown.append(lines)
+        text = [headline] + [line for lines in shown for line in lines]
+        rest = blocks[len(shown):]
+        if rest:
+            separator = '; ' if any(len(folders) > 1 for folders, _ in rest) else ', '
+            text.append(f'• and {len(rest)} more {noun}: ' + separator.join(join_words(folders) for folders, _ in rest[:6])
+                        + (separator + MASK if len(rest) > 6 else ''))
+        return '\n'.join(text + [line for line in (why, fix, also) if line])
+
+
 def scan(source, progress=None):
     source = Path(source).absolute()
     if source.is_symlink() or not source.is_dir():
@@ -245,8 +856,11 @@ def scan(source, progress=None):
     # Counts describe traversal work already encountered, including excluded files.
     # There is no known total while the single input walk is still in progress.
     scan_progress(force=True)
-    records, excluded, patients, seen_ids, seen_sops, seen_studies = [], 0, {}, {}, set(), {}
+    records, excluded, patients = [], 0, {}
+    # Folder-assignment problems are collected over the whole batch and reported together after the walk.
+    conflicts = FolderConflicts(source)
     frame_owners = {}
+    frame_conflict = False
     def appledouble(path, header=None):
         # macOS writes "._<name>" resource-fork companions on exFAT/FAT/SMB volumes.
         if not path.name.startswith('._'):
@@ -271,7 +885,7 @@ def scan(source, progress=None):
                 raise BatchError('The batch folder must contain only numeric patient folders. Move unrelated root items elsewhere.')
             if len(patient.name) > 64:
                 raise BatchError('A patient folder identifier exceeds 64 characters. Use a numeric identifier that fits DICOM patient fields.')
-            local, identities, names = [], set(), set()
+            local = []
             def walk_error(_):
                 raise BatchError('An input folder cannot be listed. Check read permissions and retry.')
             for root, dirs, files in os.walk(patient, followlinks=False, onerror=walk_error):
@@ -309,30 +923,18 @@ def scan(source, progress=None):
                     ds = stable_read(path, signature)
                     validate(ds)
                     name = str(ds.get('PatientName', '')).strip()
-                    if name:
-                        names.add(name)
                     identity = str(ds.get('PatientID', '')).strip()
-                    if identity:
-                        identities.add(identity)
-                    sop = str(ds.SOPInstanceUID)
-                    if sop in seen_sops:
-                        raise BatchError('Duplicate DICOM instance UIDs were found. Remove duplicate or conflicting instances before retrying.')
-                    seen_sops.add(sop)
-                    study = str(ds.StudyInstanceUID)
-                    if seen_studies.setdefault(study, patient.name) != patient.name:
-                        raise BatchError('The same study occurs in multiple patient folders. Resolve the folder assignments before retrying.')
-                    claim_patient_frames(ds, patient.name, frame_owners)
-                    record = Record(path, patient.name, (str(ds.StudyInstanceUID), str(ds.SeriesInstanceUID)), sop, identity, signature)
+                    try:
+                        claim_patient_frames(ds, patient.name, frame_owners)
+                    except BatchError:
+                        frame_conflict = True
+                    record = Record(path, patient.name, (str(ds.StudyInstanceUID), str(ds.SeriesInstanceUID)), str(ds.SOPInstanceUID), identity, signature)
                     record.estimated_output_bytes = estimate_output_bytes(ds, record.signature[2], patient.name)
+                    conflicts.add(record, ds, name)
                     local.append(record)
             if not local:
                 raise BatchError('A patient folder contains no readable DICOM files.')
-            if len(identities) > 1 or len(names) > 1:
-                raise BatchError('A patient folder contains conflicting patient identities. Correct the folder assignment before retrying.')
-            for identity in identities:
-                if identity in seen_ids:
-                    raise BatchError('The same patient identity occurs in multiple patient folders. Resolve the folder assignments before retrying.')
-                seen_ids[identity] = patient.name
+            conflicts.close_folder(patient.name)
             records.extend(local)
             patients[patient.name] = {'id': patient.name, 'files': len(local), 'series': len({r.series for r in local})}
     except BatchError:
@@ -342,6 +944,12 @@ def scan(source, progress=None):
     scan_progress(force=True)
     if not records:
         raise BatchError('No numeric patient folders containing DICOM data were found.')
+    problem = conflicts.message(records)
+    if problem:
+        # Fail closed: nothing has been written yet, and run() never starts staging.
+        raise BatchError(problem)
+    if frame_conflict:
+        raise BatchError(FRAME_COLLISION)
     return records, list(patients.values()), excluded
 
 # Free text with potential identity; ROI labels and observation labels intentionally retained.
@@ -589,7 +1197,41 @@ def clean(ds, patient, uid_map):
             element.value = [remap(v) for v in element.value] if element.VM > 1 else remap(element.value)
 
 
-def run(source, destination, progress=emit, audit=True, *, cancellation=None):
+def _sidecar_call(operation, *args, **kwargs):
+    # The app bootstrap puts the engine directory on the isolated runtime path.
+    # Import only for explicit opt-in; legacy DICOM-only execution is unchanged.
+    import sidecar_deid
+    try:
+        return operation(*args, **kwargs)
+    except sidecar_deid.SidecarError as error:
+        raise BatchError(str(error)) from None
+    except OSError:
+        raise BatchError('JSON sidecar files cannot be read or checked. Keep input unchanged and retry.') from None
+
+
+def _sidecar_output_operation(operation, *args):
+    import sidecar_deid
+    try:
+        return operation(*args)
+    except OSError as error:
+        raise output_error(error) from None
+    except sidecar_deid.SidecarError as error:
+        if isinstance(error.__cause__, OSError):
+            raise output_error(error.__cause__) from None
+        raise
+
+
+def _sidecar_scan(source, cancellation):
+    import sidecar_deid
+    return _sidecar_call(sidecar_deid.scan_sidecars, source, cancel_check=lambda: _sidecar_cancel(cancellation))
+
+
+def _sidecar_cancel(cancellation):
+    if cancellation.requested:
+        cancellation.cancel()
+
+
+def run(source, destination, progress=emit, audit=True, *, cancellation=None, clean_json_sidecars=False):
     cancellation = cancellation or Cancellation()
     source = Path(source).absolute()
     destination = Path(destination).absolute()
@@ -602,8 +1244,14 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
     if not destination_operation(destination.parent.is_dir):
         raise BatchError('The output parent folder does not exist. Choose an existing location.', output_issue='unavailable')
     records, patients, excluded = scan(source, progress=progress)
-    progress('scan', patients=patients, total_files=len(records), excluded_files=excluded)
-    check_disk_space(records, destination.parent)
+    sidecars = _sidecar_scan(source, cancellation) if clean_json_sidecars else []
+    if clean_json_sidecars:
+        excluded = max(0, excluded - len(sidecars))
+        progress('scan', patients=patients, total_files=len(records), excluded_files=excluded, sidecar_files=len(sidecars))
+        check_disk_space(records, destination.parent, sidecars=sidecars)
+    else:
+        progress('scan', patients=patients, total_files=len(records), excluded_files=excluded)
+        check_disk_space(records, destination.parent)
     staging = None
     staging_identity = None
     publication_succeeded = False
@@ -651,13 +1299,34 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
             written.append((out_path, record.patient))
             if index % 10 == 0 or index == len(records):
                 progress('progress', patient_id=record.patient, processed=index, total_files=len(records))
+        sidecar_written = []
+        if clean_json_sidecars:
+            import sidecar_deid
+            sidecar_written, sidecar_summary = _sidecar_call(
+                sidecar_deid.clean_sidecars_to_staging, sidecars, staging,
+                progress=progress, cancel_check=lambda: _sidecar_cancel(cancellation),
+                output_operation=_sidecar_output_operation)
         audit_summary = self_audit(staging, written, forbidden_uids, progress=progress) if audit else {'result': 'skipped', 'files_audited': 0}
+        if clean_json_sidecars:
+            sidecar_audit = _sidecar_call(sidecar_deid.audit_sidecars, staging, sidecar_written,
+                                        progress=progress, cancel_check=lambda: _sidecar_cancel(cancellation))
+            sidecar_summary = sidecar_summary.with_audit(sidecar_audit.files_audited)
         progress('phase', name='finalizing')
         forbidden_uids = None
         report = {'policy': POLICY, 'software': environment_info(), 'patients': patients,
                   'patient_count': len(patients), 'total_files': len(records), 'excluded_files': excluded,
                   'self_audit': audit_summary}
-        destination_operation((staging / 'anonymization-report.json').write_text, json.dumps(report, indent=2) + '\n')
+        if clean_json_sidecars:
+            report['excluded_files'] = excluded
+            report['json_sidecars'] = sidecar_deid.sidecar_report(sidecar_summary)
+        report_path = staging / 'anonymization-report.json'
+        destination_operation(report_path.write_text, json.dumps(report, indent=2) + '\n')
+        if clean_json_sidecars:
+            _sidecar_call(sidecar_deid.seal_staging_inventory, staging,
+                          dicom_paths=[path for path, _patient in written],
+                          sidecar_paths=[item.output for item in sidecar_written], report_path=report_path,
+                          sidecar_expectations=sidecar_written,
+                          cancel_check=lambda: _sidecar_cancel(cancellation))
         # Recheck before publication; rename is atomic. macOS exclusive rename prevents races.
         if destination_operation(destination.exists) or destination_operation(destination.is_symlink):
             raise BatchError('The output folder appeared during processing. Choose another output folder.', output_issue='conflict')
@@ -672,6 +1341,8 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None):
         publication_succeeded = True
         staging = None
         result = dict(processed=len(records), total_files=len(records), patients=len(patients), excluded_files=excluded, audited_files=audit_summary['files_audited'])
+        if clean_json_sidecars:
+            result.update(sidecar_files=sidecar_summary.files_written, sidecar_audited_files=sidecar_summary.files_audited)
         progress('complete', **result)
         return result
     except Exception as original:
@@ -777,7 +1448,7 @@ def allocation_unit(destination_parent):
     return DEFAULT_ALLOCATION_UNIT
 
 
-def estimate_disk_space(records, unit):
+def estimate_disk_space(records, unit, *, sidecars=()):
     """Budget encoded files, allocation rounding, output directories and report."""
     def allocated(size):
         return ((size + unit - 1) // unit) * unit
@@ -793,15 +1464,26 @@ def estimate_disk_space(records, unit):
         patient = getattr(record, 'patient', ('unknown', index))
         patients.add(patient)
         series.add((patient, getattr(record, 'series', ('unknown', index))))
-    directory_count = 1 + len(patients) + len(series)
+    if sidecars:
+        import sidecar_deid
+        for record in sidecars:
+            estimate = record.estimated_output_bytes
+            files += allocated(estimate if type(estimate) is int and estimate > 0 else sidecar_deid.BatchLimits.max_output_bytes)
+            patients.add(record.patient)
+        sidecar_directories = len({record.patient for record in sidecars})
+    else:
+        sidecar_directories = 0
+    directory_count = 1 + len(patients) + len(series) + sidecar_directories
     directories = directory_count * unit + allocated(
-        (len(records) + directory_count + 1) * DIRECTORY_ENTRY_ALLOWANCE)
+        (len(records) + len(sidecars) + directory_count + 1) * DIRECTORY_ENTRY_ALLOWANCE)
     report = allocated(REPORT_BASE_ALLOWANCE + REPORT_PATIENT_ALLOWANCE * len(patients))
+    if sidecars:
+        report += allocated(4096)
     return files + directories + report + DISK_MARGIN_BYTES
 
 
-def check_disk_space(records, destination_parent):
-    required = estimate_disk_space(records, allocation_unit(destination_parent))
+def check_disk_space(records, destination_parent, *, sidecars=()):
+    required = estimate_disk_space(records, allocation_unit(destination_parent), sidecars=sidecars)
     try:
         free = shutil.disk_usage(destination_parent).free
     except OSError as error:
@@ -893,6 +1575,7 @@ def environment_info():
 def main():
     parser = argparse.ArgumentParser(description='Bulk local DICOM pseudonymization')
     parser.add_argument('--source', required=True)
+    parser.add_argument('--clean-json-sidecars', action='store_true', help='Write cleaned MRI JSON sidecar copies using mri-physical-v1')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--scan', action='store_true')
     group.add_argument('--destination')
@@ -903,9 +1586,13 @@ def main():
     try:
         if args.scan:
             records, patients, excluded = scan(args.source, progress=emit)
-            emit('scan', patients=patients, total_files=len(records), excluded_files=excluded)
+            if args.clean_json_sidecars:
+                sidecars = _sidecar_scan(args.source, cancellation)
+                emit('scan', patients=patients, total_files=len(records), excluded_files=max(0, excluded - len(sidecars)), sidecar_files=len(sidecars))
+            else:
+                emit('scan', patients=patients, total_files=len(records), excluded_files=excluded)
         else:
-            run(args.source, args.destination, cancellation=cancellation)
+            run(args.source, args.destination, cancellation=cancellation, clean_json_sidecars=args.clean_json_sidecars)
         return 0
     except BatchError as exc:
         cancellation.deferred = True

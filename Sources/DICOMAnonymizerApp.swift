@@ -104,6 +104,7 @@ final class EngineRunner: @unchecked Sendable {
 enum BatchProblem { case input, output, processing, report }
 enum OutputIssue: String { case space, permissions, unavailable, conflict, unknown }
 enum BatchProcessingPhase { case writing, auditing, finalizing }
+enum SidecarProcessingPhase { case writing, auditing }
 
 @MainActor
 final class BatchModel: ObservableObject {
@@ -117,6 +118,11 @@ final class BatchModel: ObservableObject {
     @Published private(set) var auditedFiles = 0
     @Published private(set) var auditTotalFiles = 0
     @Published var excluded = 0
+    @Published private(set) var cleanJSONSidecars = false
+    @Published private(set) var sidecarFiles = 0
+    @Published private(set) var processedSidecars = 0
+    @Published private(set) var auditedSidecars = 0
+    @Published private(set) var sidecarPhase: SidecarProcessingPhase?
     @Published var activePatient: String?
     @Published var busy = false
     @Published var scanning = false
@@ -221,11 +227,26 @@ final class BatchModel: ObservableObject {
         }
     }
 
+    func setCleanJSONSidecars(_ enabled: Bool) {
+        guard !busy, enabled != cleanJSONSidecars else { return }
+        cleanJSONSidecars = enabled
+        sidecarFiles = 0; resetProcessingProgress(); ready = false
+        if source != nil { clearProblem(); scan() }
+    }
+
+    func engineArguments(source: URL, output: URL?) -> [String] {
+        var arguments = ["--source", source.path]
+        if let output { arguments += ["--destination", output.path] }
+        else { arguments.append("--scan") }
+        if cleanJSONSidecars { arguments.append("--clean-json-sidecars") }
+        return arguments
+    }
+
     func scan() {
         guard canScan, let source else { return }
-        patients = []; total = 0; excluded = 0; processed = 0
+        patients = []; total = 0; excluded = 0; processed = 0; sidecarFiles = 0
         ready = false; completedOutput = nil; summary = nil
-        launch(arguments: ["--source", source.path, "--scan"], isScan: true, output: nil)
+        launch(arguments: engineArguments(source: source, output: nil), isScan: true, output: nil)
     }
 
     func anonymize() {
@@ -234,7 +255,7 @@ final class BatchModel: ObservableObject {
         formatter.dateFormat = "yyyyMMdd_HHmmss"
         let output = outputParent.appendingPathComponent("Anonymized_" + formatter.string(from: Date()) + "_" + UUID().uuidString.prefix(6))
         processed = 0; completedOutput = nil; summary = nil
-        launch(arguments: ["--source", source.path, "--destination", output.path], isScan: false, output: output)
+        launch(arguments: engineArguments(source: source, output: output), isScan: false, output: output)
     }
 
     func beginRunState(isScan: Bool, output: URL?) {
@@ -336,6 +357,7 @@ final class BatchModel: ObservableObject {
             }
             total = eventCount(event["total_files"]) ?? 0
             excluded = eventCount(event["excluded_files"]) ?? 0
+            sidecarFiles = cleanJSONSidecars ? eventCount(event["sidecar_files"]) ?? 0 : 0
             completedPatients = nil
             scanReceived = true
         case "progress":
@@ -344,20 +366,40 @@ final class BatchModel: ObservableObject {
             processed = min(eventCount(event["processed"]) ?? processed, max(total, processed))
             if let patient = event["patient_id"] as? String, !patient.isEmpty { activePatient = patient }
             status = progressDetail
+        case "sidecar_progress", "sidecar_audit_progress":
+            guard busy, !scanning, !cancelling, errorMessage == nil, cleanJSONSidecars,
+                  scanReceived, !examiningInput, processingPhase != .finalizing,
+                  total > 0, processed >= total,
+                  let count = eventCount(event[name == "sidecar_progress" ? "processed" : "audited_files"]),
+                  let reportedTotal = eventCount(event["total_files"]),
+                  reportedTotal == sidecarFiles, count <= sidecarFiles else { return }
+            if name == "sidecar_progress" {
+                guard processingPhase == .writing, sidecarPhase != .auditing,
+                      count >= processedSidecars else { return }
+                processedSidecars = count; sidecarPhase = .writing
+            } else {
+                guard processingPhase == .auditing, auditedFiles == auditTotalFiles,
+                      processedSidecars == sidecarFiles, count >= auditedSidecars else { return }
+                auditedSidecars = count; sidecarPhase = .auditing
+            }
+            activePatient = nil; status = progressDetail
         case "audit_progress":
-            guard busy, !scanning, !cancelling, processingPhase != .finalizing,
+            guard busy, !scanning, !cancelling, processingPhase != .finalizing, sidecarPhase != .auditing,
                   let audited = eventCount(event["audited_files"]),
                   let auditTotal = eventCount(event["total_files"]),
                   total > 0, processed >= total, auditTotal == total, audited <= auditTotal else { return }
             if processingPhase == .auditing {
                 guard auditTotal == auditTotalFiles, audited >= auditedFiles else { return }
             }
+            sidecarPhase = nil
             processingPhase = .auditing
             auditedFiles = audited; auditTotalFiles = auditTotal; activePatient = nil
             status = progressDetail
         case "phase":
             guard busy, !scanning, !cancelling, event["name"] as? String == "finalizing",
-                  processingPhase == .auditing, auditTotalFiles > 0, auditedFiles == auditTotalFiles else { return }
+                  processingPhase == .auditing, auditTotalFiles > 0, auditedFiles == auditTotalFiles,
+                  (!cleanJSONSidecars || (processedSidecars == sidecarFiles && auditedSidecars == sidecarFiles)) else { return }
+            sidecarPhase = nil
             processingPhase = .finalizing; activePatient = nil
             status = progressDetail
         case "complete":
@@ -497,14 +539,18 @@ final class BatchModel: ObservableObject {
     }
 
     func resetProcessingProgress() {
-        processingPhase = .writing; auditedFiles = 0; auditTotalFiles = 0; activePatient = nil
+        processingPhase = .writing; auditedFiles = 0; auditTotalFiles = 0
+        processedSidecars = 0; auditedSidecars = 0; sidecarPhase = nil; activePatient = nil
     }
 
     var isFinalizing: Bool {
-        !examiningInput && (processingPhase == .finalizing || (processingPhase == .writing && total > 0 && processed >= total))
+        sidecarPhase == nil && !examiningInput && !(cleanJSONSidecars && sidecarFiles > 0 && processingPhase == .writing) && (processingPhase == .finalizing || (processingPhase == .writing && total > 0 && processed >= total))
     }
     var progressFraction: Double? {
         guard !cancelling, !examiningInput, !isFinalizing else { return nil }
+        if sidecarPhase == .writing { return sidecarFiles > 0 ? Double(processedSidecars) / Double(sidecarFiles) : nil }
+        if sidecarPhase == .auditing { return sidecarFiles > 0 ? Double(auditedSidecars) / Double(sidecarFiles) : nil }
+        if cleanJSONSidecars && sidecarFiles > 0 && processingPhase == .writing && processed >= total { return nil }
         if processingPhase == .auditing {
             return auditTotalFiles > 0 ? Double(auditedFiles) / Double(auditTotalFiles) : nil
         }
@@ -513,11 +559,15 @@ final class BatchModel: ObservableObject {
     var progressTitle: String {
         if cancelling { return "Cancelling" }
         if examiningInput { return "Checking batch" }
+        if sidecarPhase == .writing { return "Cleaning JSON sidecars" }
+        if sidecarPhase == .auditing { return "Checking JSON sidecars" }
         if processingPhase == .auditing { return "Checking output" }
         return isFinalizing ? "Finalizing batch" : processed == 0 ? "Preparing batch" : "Anonymizing"
     }
     var progressDetail: String {
         if cancelling { return "Waiting for the engine to stop or finish publication…" }
+        if sidecarPhase == .writing { return "\(processedSidecars) of \(sidecarFiles) JSON sidecars cleaned" }
+        if sidecarPhase == .auditing { return "\(auditedSidecars) of \(sidecarFiles) JSON sidecars checked" }
         if examiningInput {
             return String(localized: "\(scanFilesExamined) files · \(scanFoldersExamined) folders examined")
         }
@@ -724,6 +774,23 @@ struct CompletionView: View {
     }
 }
 
+struct SidecarOptions: View {
+    @ObservedObject var model: BatchModel
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Toggle("Clean JSON sidecars", isOn: Binding(get: { model.cleanJSONSidecars }, set: model.setCleanJSONSidecars))
+                .disabled(model.busy)
+            Text("Optional MRI metadata allowlist. Writes generated JSON copies; source files stay intact. NIfTI images are not copied or cleaned.")
+                .foregroundStyle(.secondary)
+            if model.cleanJSONSidecars {
+                Text("\(model.sidecarFiles) JSON sidecars in the last batch check.").foregroundStyle(.secondary)
+            }
+        }
+        .padding(12)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+
 struct PolicySummary: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -754,6 +821,7 @@ struct BatchView: View {
                 PatientPreview(patients: model.patients, activePatient: model.activePatient, total: model.total, excluded: model.excluded)
             }
             OutputSection(parent: model.outputParent, disabled: model.busy, choose: model.chooseOutput)
+            SidecarOptions(model: model)
             Divider()
             if model.errorMessage == nil { PolicySummary() }
             if let error = model.errorMessage {
