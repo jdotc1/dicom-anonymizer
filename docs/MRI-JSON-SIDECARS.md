@@ -18,6 +18,8 @@ Patient/site/device identifiers, dates, UIDs, paths and arbitrary free text are 
 
 The supplied archive's `evidence/FINAL_VERIFICATION.log` reports **92 portable tests passed**. That is reused handoff evidence, not a fresh local run. Parser, field-policy, number-token and original resource-budget tests were not repeated. The historical blob-gated patcher was not bypassed or applied to the newer source; integration was ported semantically into isolated current-main worktrees.
 
+The public consolidation retains this sidecar implementation and adds the previously private folder-conflict checks before discovery/staging. Public UI and native product inputs are unchanged by that port. Four new consolidation seam checks passed; the accepted sidecar checks below were reused, not repeated.
+
 No GUI use or app launches are authorized. Live toggle/rescan behavior, light/dark layout and minimum-window inspection remain pending. No merge, push, release, signing, notarization or installation was performed for this increment. Accepted DICOM policy/self-audit, existing recovery suites, runtime/dependency/icon evidence were reused, not rerun.
 
 This cleans JSON metadata only. It does not copy or anonymize NIfTI voxels, image text/faces or other companion formats. Technical values and numeric patient pseudonyms can remain linkable. Generated filenames lose BIDS/source acquisition linkage; outputs need review before sharing. This is not certified anonymization or DICOM confidentiality-profile conformance.
