@@ -8,3 +8,7 @@ Distribution completed: public build 19; Apple Accepted `b0807bd6-bd00-4f1f-b479
 ## 2026-10-24 — unified Preview 16/build 20
 
 New assembly source/resource checks, root signature, notarization `c3393d48-bcda-4dcc-9381-e2b0425a6c2d` (Accepted), stapled ticket, Gatekeeper and uploaded archive metadata passed once. Accepted sidecar/consolidation/native/runtime evidence reused. No GUI use, native app launch or installation. Live GUI acceptance remains pending. See `PUBLIC-CONSOLIDATION.md`.
+
+## 2026-10-24 — r2 Preview 17/build 21
+
+Accepted r2 delta, native and unchanged runtime/policy evidence reused. New package source/resource checks, root signature, notarization `3a5308be-cff7-4316-a945-64beebfda20a` (Accepted), stapled ticket and Gatekeeper passed once. No functional test/native build reruns, GUI use, native app launch or installation. Live GUI acceptance remains pending. See `SIDECAR-R2-RECONCILIATION.md`.

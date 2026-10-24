@@ -32,7 +32,7 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: Preview 16 (app build 20).** Unified public app with detailed folder-conflict recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance is pending, and no app was launched or installed for this delivery.
+**Current download: Preview 17 (app build 21).** Unified public app with detailed folder-conflict recovery, default-off MRI JSON-sidecar cleaning, and revised sidecar preflight/destination-recovery hardening. Signed, notarized and stapled; accepted verification reused. Live sidecar GUI acceptance remains pending. See [r2 reconciliation](docs/SIDECAR-R2-RECONCILIATION.md).
 
 Preview 14 introduced allocation-aware estimates. Allocation-aware disk-space estimates account for metadata growth, destination allocation, output folders and the report while preserving the interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 
