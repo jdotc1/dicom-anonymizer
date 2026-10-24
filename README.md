@@ -1,5 +1,7 @@
 # DICOM Anonymizer
 
+**Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
+
 **Unified public app:** ongoing development now uses this self-contained public SwiftUI implementation. Preview 16 adds detailed folder-conflict recovery and optional MRI JSON-sidecar cleaning. Live sidecar GUI acceptance remains pending. See [Consolidation](docs/PUBLIC-CONSOLIDATION.md) and [MRI JSON sidecars](docs/MRI-JSON-SIDECARS.md).
 
 **Local DICOM metadata pseudonymization for imaging-data privacy.**
@@ -32,7 +34,7 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: Preview 17 (app build 21).** Unified public app with detailed folder-conflict recovery, default-off MRI JSON-sidecar cleaning, and revised sidecar preflight/destination-recovery hardening. Signed, notarized and stapled; accepted verification reused. Live sidecar GUI acceptance remains pending. See [r2 reconciliation](docs/SIDECAR-R2-RECONCILIATION.md).
+**Current download: Preview 18 (app build 22).** Unified public app with worker-event reliability, sidecar preflight/completion feedback, detailed folder recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
 
 Preview 14 introduced allocation-aware estimates. Allocation-aware disk-space estimates account for metadata growth, destination allocation, output folders and the report while preserving the interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 

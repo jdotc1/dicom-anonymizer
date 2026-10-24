@@ -1,6 +1,6 @@
 # Worker events and sidecar feedback — 2026-10-24
 
-Status: local source increment; not yet released. Public UI structure, macOS 13 target, engine retention policy and sidecar allowlist remain unchanged.
+Status: delivered as public Preview 18 (version 2.0.0, build 22). The source-acceptance record below is retained as history. Public UI structure, macOS 13 target, engine retention policy and sidecar allowlist remain unchanged.
 
 ## Worker delivery
 
@@ -29,3 +29,9 @@ The existing completion panel and status show actual JSON files cleaned and chec
 - Independent source-only delta review found no blockers.
 
 Accepted policy/self-audit, sidecar parser/catalog/resource gates, previous recovery/consolidation/r2 and bundled runtime/icon/dependency evidence were reused. No passing unchanged suite, dependency/provenance hash or signature check was rerun. No merge, push, signing, notarization, release or installation occurred.
+
+## Preview 18 distribution
+
+Delivered on 2026-10-24 from engine/release source `ca109d338c3faba0edb959cb1d54ad0e47eeae00` and accepted native source `d7b49e47b76b38829eb5e4e52a25dfe7b9489d58`. Developer ID signature, Apple Accepted notarization `d1641659-914f-4b24-a8e4-44c32d159eef`, stapled ticket validation and Gatekeeper assessment passed once for this new package. Accepted functional/native/runtime evidence was reused; no functional test/native build repeated. No GUI use, native app launch or installation occurred. Live responsiveness and interaction/layout acceptance remain pending.
+
+Release: https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.18

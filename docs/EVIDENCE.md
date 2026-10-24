@@ -12,3 +12,7 @@ New assembly source/resource checks, root signature, notarization `c3393d48-bcda
 ## 2026-10-24 — r2 Preview 17/build 21
 
 Accepted r2 delta, native and unchanged runtime/policy evidence reused. New package source/resource checks, root signature, notarization `3a5308be-cff7-4316-a945-64beebfda20a` (Accepted), stapled ticket and Gatekeeper passed once. No functional test/native build reruns, GUI use, native app launch or installation. Live GUI acceptance remains pending. See `SIDECAR-R2-RECONCILIATION.md`.
+
+## 2026-10-24 — worker/feedback Preview 18/build 22
+
+Accepted 15 native +8 engine +2 affected checks and optimized product reused. New package source/resources, root signature, Apple Accepted notarization `d1641659-914f-4b24-a8e4-44c32d159eef`, stapled ticket/Gatekeeper passed once. No functional test/native build repeated, GUI use, native app launch or installation. See `WORKER-SIDECAR-FEEDBACK.md`; live GUI acceptance pending.
