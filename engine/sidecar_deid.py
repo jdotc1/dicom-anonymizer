@@ -25,6 +25,15 @@ class SidecarError(Exception):
     """A safe, user-presentable sidecar processing failure."""
 
 
+class SidecarDestinationError(SidecarError):
+    """A staging/output I/O failure whose errno must reach engine.output_error()."""
+
+    def __init__(self, message: str, os_error: OSError):
+        super().__init__(message)
+        self.os_error = os_error
+
+
+
 class JSONLimits:
     max_bytes = 2 * 1024 * 1024
     max_values = 20_000
@@ -499,22 +508,47 @@ def fingerprint(path: Path) -> Fingerprint:
     return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
 
 
-def _read_regular_nofollow(path: Path, *, maximum: int | None = None) -> tuple[bytes, Fingerprint]:
+def _raise_io_failure(message: str, error: OSError, *, destination: bool) -> None:
+    if destination:
+        raise SidecarDestinationError(message, error) from error
+    raise SidecarError(message) from error
+
+
+
+def _read_regular_nofollow(
+    path: Path,
+    *,
+    maximum: int | None = None,
+    destination: bool = False,
+) -> tuple[bytes, Fingerprint]:
     flags = os.O_RDONLY
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
     try:
         descriptor = os.open(path, flags)
     except OSError as exc:
-        raise SidecarError("A JSON sidecar could not be opened as a regular local file.") from exc
+        _raise_io_failure(
+            "A cleaned JSON sidecar could not be opened safely in staging."
+            if destination
+            else "A JSON sidecar could not be opened as a regular local file.",
+            exc,
+            destination=destination,
+        )
     try:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
-            raise SidecarError("JSON sidecars must be regular local files.")
+            raise SidecarError(
+                "Cleaned JSON sidecars must remain regular files in staging."
+                if destination
+                else "JSON sidecars must be regular local files."
+            )
         chunks: list[bytes] = []
         remaining = None if maximum is None else maximum + 1
         while remaining is None or remaining > 0:
-            chunk = os.read(descriptor, 64 * 1024 if remaining is None else min(64 * 1024, remaining))
+            chunk = os.read(
+                descriptor,
+                64 * 1024 if remaining is None else min(64 * 1024, remaining),
+            )
             if not chunk:
                 break
             chunks.append(chunk)
@@ -524,10 +558,29 @@ def _read_regular_nofollow(path: Path, *, maximum: int | None = None) -> tuple[b
         first = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
         second = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
         if first != second:
-            raise SidecarError("A JSON sidecar changed while it was being read.")
+            raise SidecarError(
+                "A cleaned JSON sidecar changed while it was being read from staging."
+                if destination
+                else "A JSON sidecar changed while it was being read."
+            )
         return b"".join(chunks), first
+    except SidecarError:
+        raise
+    except OSError as exc:
+        _raise_io_failure(
+            "A cleaned JSON sidecar could not be read safely from staging."
+            if destination
+            else "A JSON sidecar could not be read safely.",
+            exc,
+            destination=destination,
+        )
     finally:
-        os.close(descriptor)
+        try:
+            os.close(descriptor)
+        except OSError:
+            # The file data and identity checks above determine acceptance. A
+            # close failure must not replace a more specific active failure.
+            pass
 
 
 def _is_part10_dicom(path: Path) -> bool:
@@ -550,11 +603,16 @@ def scan_sidecars(source: str | os.PathLike[str], *, limits: BatchLimits = Batch
         raise SidecarError("Select an existing local batch folder, without symbolic links.")
     records: list[SidecarRecord] = []
     total_bytes = 0
+    total_output_bytes = 0
+    if cancel_check is not None:
+        cancel_check()
     def walk_error(error):
         raise SidecarError("JSON sidecar folders cannot be listed. Check read permissions and retry.") from None
     try:
         patients = sorted(root.iterdir(), key=lambda item: item.name)
         for patient in patients:
+            if cancel_check is not None:
+                cancel_check()
             if patient.is_symlink():
                 raise SidecarError("Symbolic links are not supported. Use a local copy of the input folders.")
             if not patient.is_dir() or re.fullmatch(r"[0-9]+", patient.name) is None:
@@ -565,6 +623,8 @@ def scan_sidecars(source: str | os.PathLike[str], *, limits: BatchLimits = Batch
                 files.sort()
                 current_path = Path(current)
                 for directory in dirs:
+                    if cancel_check is not None:
+                        cancel_check()
                     if (current_path / directory).is_symlink():
                         raise SidecarError("Symbolic links are not supported. Use a local copy of the input folders.")
                 if cancel_check is not None:
@@ -593,11 +653,18 @@ def scan_sidecars(source: str | os.PathLike[str], *, limits: BatchLimits = Batch
                     data, stable_signature = _read_regular_nofollow(path, maximum=JSONLimits.max_bytes)
                     if stable_signature != signature or fingerprint(path) != signature:
                         raise SidecarError("A JSON sidecar changed during batch checking. Keep input files unchanged and retry.")
+                    if cancel_check is not None:
+                        cancel_check()
                     document = parse_json_bytes(data)
                     cleaned, _result = clean_document(document, MRI_PHYSICAL_V1)
                     output_size = len((serialize_json(cleaned, pretty=True) + "\n").encode("utf-8"))
                     if output_size > limits.max_output_bytes:
                         raise SidecarError("The cleaned JSON sidecar output byte limit was exceeded.")
+                    total_output_bytes += output_size
+                    if total_output_bytes > limits.max_total_output_bytes:
+                        raise SidecarError("The cleaned JSON sidecar output byte limit was exceeded.")
+                    if cancel_check is not None:
+                        cancel_check()
                     records.append(
                         SidecarRecord(
                             source=path,
@@ -635,7 +702,11 @@ def _ensure_owned_directory(root: Path, path: Path) -> None:
         relative = path.relative_to(root)
     except ValueError:
         raise SidecarError("A generated sidecar output directory escaped staging.") from None
-    if root.is_symlink() or not root.is_dir():
+    try:
+        root_info = root.lstat()
+    except OSError as exc:
+        raise SidecarDestinationError("The staging directory could not be inspected.", exc) from exc
+    if stat.S_ISLNK(root_info.st_mode) or not stat.S_ISDIR(root_info.st_mode):
         raise SidecarError("The staging directory is unavailable or was replaced.")
     current = root
     for part in relative.parts:
@@ -646,9 +717,19 @@ def _ensure_owned_directory(root: Path, path: Path) -> None:
             try:
                 os.mkdir(current, 0o700)
             except FileExistsError:
-                info = current.lstat()
+                try:
+                    info = current.lstat()
+                except OSError as exc:
+                    raise SidecarDestinationError("A generated sidecar output directory could not be inspected.", exc) from exc
+            except OSError as exc:
+                raise SidecarDestinationError("A generated sidecar output directory could not be created.", exc) from exc
             else:
-                info = current.lstat()
+                try:
+                    info = current.lstat()
+                except OSError as exc:
+                    raise SidecarDestinationError("A generated sidecar output directory could not be inspected.", exc) from exc
+        except OSError as exc:
+            raise SidecarDestinationError("A generated sidecar output directory could not be inspected.", exc) from exc
         if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
             raise SidecarError("A generated sidecar output directory is symbolic, replaced, or not a directory.")
 
@@ -666,7 +747,7 @@ def _exclusive_write(path: Path, data: bytes) -> None:
     except FileExistsError:
         raise SidecarError("A generated JSON sidecar output already exists in staging.") from None
     except OSError as exc:
-        raise SidecarError("A cleaned JSON sidecar could not be written to staging.") from exc
+        raise SidecarDestinationError("A cleaned JSON sidecar could not be opened for writing in staging.", exc) from exc
     try:
         view = memoryview(data)
         while view:
@@ -680,9 +761,12 @@ def _exclusive_write(path: Path, data: bytes) -> None:
             path.unlink(missing_ok=True)
         except OSError:
             pass
-        raise SidecarError("A cleaned JSON sidecar could not be written to staging.") from exc
+        raise SidecarDestinationError("A cleaned JSON sidecar could not be written to staging.", exc) from exc
     finally:
-        os.close(descriptor)
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
 
 
 Progress = Callable[..., None]
@@ -793,7 +877,11 @@ def audit_sidecars(
         if path.is_symlink():
             raise SidecarError("A cleaned JSON sidecar was replaced before audit.")
         try:
-            data, _signature = _read_regular_nofollow(path, maximum=JSONLimits.max_bytes)
+            data, _signature = _read_regular_nofollow(
+                path, maximum=JSONLimits.max_bytes, destination=True
+            )
+        except SidecarDestinationError:
+            raise
         except SidecarError as exc:
             raise SidecarError("A cleaned JSON sidecar could not be re-read safely for audit.") from exc
         digest = hashlib.sha256(data).hexdigest()
@@ -820,6 +908,11 @@ def seal_staging_inventory(
 ) -> None:
     """Reject any file or directory not produced by the current operation."""
 
+    def check_cancel() -> None:
+        if cancel_check is not None:
+            cancel_check()
+
+    check_cancel()
     root = Path(staging).absolute()
     if root.is_symlink() or not root.is_dir():
         raise SidecarError("The staging directory is unavailable or was replaced.")
@@ -830,6 +923,7 @@ def seal_staging_inventory(
 
     allowed_dirs = {root}
     for path in expected_files:
+        check_cancel()
         try:
             relative = path.relative_to(root)
         except ValueError:
@@ -839,31 +933,44 @@ def seal_staging_inventory(
             parent = parent / part
             allowed_dirs.add(parent)
 
+    def walk_error(error: OSError) -> None:
+        raise SidecarDestinationError("The staging inventory could not be read.", error) from error
+
     seen_files: set[Path] = set()
     seen_dirs: set[Path] = {root}
-    def walk_error(error):
-        raise SidecarError("Staging could not be fully inspected. No output was published.") from None
-
-    for current, dirs, files in os.walk(root, topdown=True, followlinks=False, onerror=walk_error):
-        if cancel_check is not None:
-            cancel_check()
+    for current, dirs, files in os.walk(
+        root, topdown=True, followlinks=False, onerror=walk_error
+    ):
+        check_cancel()
         current_path = Path(current).absolute()
         for name in list(dirs):
+            check_cancel()
             path = (current_path / name).absolute()
-            if path.is_symlink():
+            try:
+                info = path.lstat()
+            except OSError as exc:
+                raise SidecarDestinationError("A staging directory could not be inspected.", exc) from exc
+            if stat.S_ISLNK(info.st_mode):
                 raise SidecarError("Staging contains an unexpected symbolic-link directory.")
+            if not stat.S_ISDIR(info.st_mode):
+                raise SidecarError("Staging contains an unexpected non-directory entry.")
             seen_dirs.add(path)
         for name in files:
+            check_cancel()
             path = (current_path / name).absolute()
-            if path.is_symlink():
+            try:
+                info = path.lstat()
+            except OSError as exc:
+                raise SidecarDestinationError("A staged output file could not be inspected.", exc) from exc
+            if stat.S_ISLNK(info.st_mode):
                 raise SidecarError("Staging contains an unexpected symbolic-link file.")
-            info = path.stat(follow_symlinks=False)
             if not stat.S_ISREG(info.st_mode):
                 raise SidecarError("Staging contains an unexpected non-regular file.")
             if path not in expected_files:
                 raise SidecarError("Staging contains an unexpected file. No output was published.")
             seen_files.add(path)
 
+    check_cancel()
     unexpected_dirs = seen_dirs - allowed_dirs
     if unexpected_dirs:
         raise SidecarError("Staging contains an unexpected directory. No output was published.")
@@ -871,15 +978,19 @@ def seal_staging_inventory(
         raise SidecarError("Staging is missing an expected output file. No output was published.")
 
     for item in sidecar_expectations or ():
-        if cancel_check is not None:
-            cancel_check()
+        check_cancel()
         _verify_owned_parent(root, item.output)
         try:
-            data, _signature = _read_regular_nofollow(item.output, maximum=JSONLimits.max_bytes)
+            data, _signature = _read_regular_nofollow(
+                item.output, maximum=JSONLimits.max_bytes, destination=True
+            )
+        except SidecarDestinationError:
+            raise
         except SidecarError as exc:
             raise SidecarError("A cleaned JSON sidecar could not be sealed safely.") from exc
         if len(data) != item.expected_size or hashlib.sha256(data).hexdigest() != item.expected_sha256:
             raise SidecarError("A cleaned JSON sidecar changed after audit; its digest no longer matches.")
+    check_cancel()
 
 
 def sidecar_report(summary: BatchSummary, policy: SidecarPolicy = MRI_PHYSICAL_V1) -> dict[str, Any]:
@@ -916,6 +1027,7 @@ __all__ = [
     "MRI_PHYSICAL_V1",
     "RawNumber",
     "SidecarError",
+    "SidecarDestinationError",
     "SidecarPolicy",
     "SidecarRecord",
     "WrittenSidecar",

@@ -1203,6 +1203,8 @@ def _sidecar_call(operation, *args, **kwargs):
     import sidecar_deid
     try:
         return operation(*args, **kwargs)
+    except sidecar_deid.SidecarDestinationError as error:
+        raise output_error(error.os_error) from None
     except sidecar_deid.SidecarError as error:
         raise BatchError(str(error)) from None
     except OSError:
