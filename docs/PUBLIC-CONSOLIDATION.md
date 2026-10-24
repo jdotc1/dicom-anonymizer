@@ -1,5 +1,13 @@
 # Public app consolidation
 
+## Preview 16 delivery — 2026-10-24
+
+Published unified public Preview 16 (version 2.0.0, build 20) from engine/release source `78d315cb52bbe372c5da02f7a99f9bd4dce1bdd8` and reused native source `80a8a8d1e820e64c6aab322894f61213a7adf893`. Developer ID signing, Apple Accepted notarization `c3393d48-bcda-4dcc-9381-e2b0425a6c2d`, stapling/ticket validation and Gatekeeper assessment passed once for this new package. Accepted functional/native/runtime evidence was reused; no tests, native build or unchanged dependency-signature checks were repeated. No GUI use, native app launch or installation occurred. Live toggle/rescan/layout acceptance remains pending.
+
+Release: https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.16
+
+The source-increment record below is retained as history; its pre-publication statements describe that earlier stage.
+
 ## Consolidated source
 
 ## Focused evidence

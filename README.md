@@ -1,5 +1,7 @@
 # DICOM Anonymizer
 
+**Unified public app:** ongoing development now uses this self-contained public SwiftUI implementation. Preview 16 adds detailed folder-conflict recovery and optional MRI JSON-sidecar cleaning. Live sidecar GUI acceptance remains pending. See [Consolidation](docs/PUBLIC-CONSOLIDATION.md) and [MRI JSON sidecars](docs/MRI-JSON-SIDECARS.md).
+
 **Local DICOM metadata pseudonymization for imaging-data privacy.**
 
 DICOM Anonymizer combines a Python engine with a native macOS interface for
@@ -30,7 +32,7 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: Preview 15 (app build 19).** Input-stability recovery now checks file identity across scan and processing reads and stops through the existing retry path on detected changes. See [Input-stability recovery](docs/INPUT-STABILITY.md).
+**Current download: Preview 16 (app build 20).** Unified public app with detailed folder-conflict recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance is pending, and no app was launched or installed for this delivery.
 
 Preview 14 introduced allocation-aware estimates. Allocation-aware disk-space estimates account for metadata growth, destination allocation, output folders and the report while preserving the interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 
