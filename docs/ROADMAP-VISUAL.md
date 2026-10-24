@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 18/app build 22: unified public UI, detailed folder recovery, optional MRI JSON sidecars, r2 hardening and worker/sidecar feedback.
+Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 19/app build 23: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and resumable publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -20,9 +20,9 @@ Initial scan activity is now delivered: files/folders examined appear without a 
 
 Allocation-aware disk-space estimates are now delivered. See [Disk-space estimate](SPACE-ESTIMATE.md).
 
-## Current local implementation
+## Latest delivered increment
 
-Interruption recovery records operation ownership/publication state and uses the existing recovery area without automatic resume/deletion. Resumable publication binds a finalized archive to a draft release and reconciles uncertain remote outcomes. Both have focused synthetic/mock evidence; neither is deployed in Preview 18. No GUI use or app launches occurred.
+Interruption recovery records operation ownership/publication state and uses the existing recovery area without automatic resume/deletion. Resumable publication binds a finalized archive to a draft release and reconciles uncertain remote outcomes. Focused synthetic/mock evidence was reused for Preview 19; its first live authenticated publication completed using the new tooling. No GUI use or app launches occurred.
 
 ## Decision-dependent future scope
 

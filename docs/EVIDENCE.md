@@ -16,3 +16,11 @@ Accepted r2 delta, native and unchanged runtime/policy evidence reused. New pack
 ## 2026-10-24 — worker/feedback Preview 18/build 22
 
 Accepted 15 native +8 engine +2 affected checks and optimized product reused. New package source/resources, root signature, Apple Accepted notarization `d1641659-914f-4b24-a8e4-44c32d159eef`, stapled ticket/Gatekeeper passed once. No functional test/native build repeated, GUI use, native app launch or installation. See `WORKER-SIDECAR-FEEDBACK.md`; live GUI acceptance pending.
+
+## 2026-10-24 — resilience Preview 19/build 23
+
+The unified public app is delivered as **Preview 19/build 23**, using the new resumable publication tooling. Packaged engine/release source is `a4fb9336cf821889dfdc7b7eb2259eacee2398c6`; accepted native executable source is `b0feaaba596360e39e183a344cc7ded69e3e0cf4`. Apple notarization `d8530154-3c29-406a-bfce-51d5c6c86844` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. The archive is 29,048,047 bytes.
+
+Accepted evidence was reused: 11 engine journal cases, 12 native recovery/model/filesystem cases, 12 mocked publication methods and the existing policy, self-audit, sidecar/r2, worker-feedback, runtime, icon and dependency receipts. No functional test or native build was repeated for delivery. No GUI use, native app launch or installation occurred. Live startup/recovery, sidecar interaction, responsiveness and compact-window acceptance remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.19). Earlier entries retain their historical scope.

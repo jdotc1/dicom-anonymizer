@@ -1,6 +1,6 @@
-# Interruption recovery — local source increment
+# Interruption recovery
 
-Date: 2026-10-24. Not yet released. Public interface and metadata policy are unchanged.
+Date: 2026-10-24. Delivered in Preview 19/build 23. Public interface and metadata policy are unchanged.
 
 ## Operational journal
 
@@ -31,3 +31,11 @@ Accepted policy/self-audit, sidecar/r2, worker feedback, runtime, dependency and
 ## Limits
 
 This is advisory ownership-aware reconciliation, not automatic repair or a crash-proof transaction across every OS/storage failure. An interruption between staging creation and recording its identity remains unknown; device identity changes after remount also remain unknown. PID reuse can conservatively defer a notice. A live owner seen at startup is not continuously monitored. Journal persistence is durable to the filesystem's fsync contract, not a hardware power-loss guarantee. No privileged-local-attacker or atomic snapshot claim is made.
+
+## Distribution
+
+The unified public app is delivered as **Preview 19/build 23**, using the new resumable publication tooling. Packaged engine/release source is `a4fb9336cf821889dfdc7b7eb2259eacee2398c6`; accepted native executable source is `b0feaaba596360e39e183a344cc7ded69e3e0cf4`. Apple notarization `d8530154-3c29-406a-bfce-51d5c6c86844` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. The archive is 29,048,047 bytes.
+
+Accepted evidence was reused: 11 engine journal cases, 12 native recovery/model/filesystem cases, 12 mocked publication methods and the existing policy, self-audit, sidecar/r2, worker-feedback, runtime, icon and dependency receipts. No functional test or native build was repeated for delivery. No GUI use, native app launch or installation occurred. Live startup/recovery, sidecar interaction, responsiveness and compact-window acceptance remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.19). Earlier entries retain their historical scope.

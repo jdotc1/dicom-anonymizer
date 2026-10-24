@@ -1,10 +1,18 @@
 # Source publication record
 
-## Current release — Preview 18, build 22
+## Current release — Preview 19, build 23
+
+The unified public app is delivered as **Preview 19/build 23**, using the new resumable publication tooling. Packaged engine/release source is `a4fb9336cf821889dfdc7b7eb2259eacee2398c6`; accepted native executable source is `b0feaaba596360e39e183a344cc7ded69e3e0cf4`. Apple notarization `d8530154-3c29-406a-bfce-51d5c6c86844` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. The archive is 29,048,047 bytes.
+
+Accepted evidence was reused: 11 engine journal cases, 12 native recovery/model/filesystem cases, 12 mocked publication methods and the existing policy, self-audit, sidecar/r2, worker-feedback, runtime, icon and dependency receipts. No functional test or native build was repeated for delivery. No GUI use, native app launch or installation occurred. Live startup/recovery, sidecar interaction, responsiveness and compact-window acceptance remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.19). Earlier entries retain their historical scope.
+
+## Previous release — Preview 18, build 22
 
 The unified public app is delivered as Preview 18/build 22. See [Worker/sidecar feedback](WORKER-SIDECAR-FEEDBACK.md) for accepted source and distribution evidence. Accepted notarization is `d1641659-914f-4b24-a8e4-44c32d159eef`; release source `ca109d3`, native source `d7b49e4`. Existing receipts are reused, not reverified. No GUI use, native app launch or installation occurred for that delivery; live sidecar/startup/response/layout acceptance remains pending.
 
-Current local development adds interruption recovery and resumable publication; those source changes are not yet released. Older entries below are retained historical receipts, not current status.
+At that milestone, interruption recovery and resumable publication were not yet released. Older entries below are retained historical receipts, not current status.
 
 ## Preview 14 delivery (historical) — preview 14, build 18
 
