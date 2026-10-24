@@ -14,6 +14,12 @@ struct CompletionSummary: Equatable {
     let excluded: Int
     let output: URL
     let elapsed: TimeInterval
+    var sidecars: Int? = nil
+    var auditedSidecars: Int? = nil
+    var sidecarDetail: String? {
+        guard let sidecars, let auditedSidecars else { return nil }
+        return "\(sidecars) JSON sidecars cleaned · \(auditedSidecars) checked"
+    }
 }
 
 // Engine JSON integers arrive as NSNumber; accept only whole, non-negative numbers
@@ -30,6 +36,85 @@ func elapsedText(_ interval: TimeInterval) -> String {
     return seconds >= 3600
         ? String(format: "%d:%02d:%02d", seconds / 3600, seconds / 60 % 60, seconds % 60)
         : String(format: "%d:%02d", seconds / 60, seconds % 60)
+}
+
+// Framing is independent of JSON and retains partial UTF-8 bytes across reads.
+struct EngineEventStream {
+    private var pending = Data()
+    mutating func append(_ chunk: Data) -> [Data] {
+        pending.append(chunk)
+        var lines: [Data] = []
+        while let boundary = pending.firstIndex(of: 10) {
+            lines.append(Data(pending[..<boundary]))
+            pending.removeSubrange(...boundary)
+        }
+        return lines
+    }
+    mutating func finish() -> [Data] {
+        guard !pending.isEmpty else { return [] }
+        let tail = pending; pending.removeAll()
+        return [tail]
+    }
+}
+
+@MainActor
+final class EngineEventDelivery {
+    private(set) var malformed = false
+    private(set) var sawComplete = false
+    private(set) var sawError = false
+
+    private func advances(_ previous: [String: Any], _ next: [String: Any]) -> Bool {
+        guard let name = previous["event"] as? String, name == next["event"] as? String else { return false }
+        let keys: [String]
+        switch name {
+        case "scan_progress", "sidecar_scan_progress": keys = ["files_examined", "folders_examined"]
+        case "progress", "sidecar_progress": keys = ["processed"]
+        case "audit_progress", "sidecar_audit_progress": keys = ["audited_files"]
+        default: return false
+        }
+        if keys.count == 1 {
+            guard let oldTotal = eventCount(previous["total_files"]),
+                  let newTotal = eventCount(next["total_files"]), oldTotal == newTotal else { return false }
+        }
+        return keys.allSatisfy { key in
+            guard let old = eventCount(previous[key]), let new = eventCount(next[key]) else { return false }
+            return new >= old
+        }
+    }
+
+    func deliver(_ lines: [Data], event: ([String: Any]) -> Void) {
+        var progress: [String: Any]?
+        for line in lines {
+            if line.allSatisfy({ [9, 13, 32].contains($0) }) { continue }
+            guard let object = try? JSONSerialization.jsonObject(with: line),
+                  let json = object as? [String: Any],
+                  let name = json["event"] as? String, !name.isEmpty else {
+                if let progress { event(progress) }
+                progress = nil; malformed = true
+                continue
+            }
+            if let previous = progress, advances(previous, json) {
+                progress = json
+            } else {
+                if let previous = progress { event(previous) }
+                progress = json
+            }
+            if name == "complete" { sawComplete = true }
+            if name == "error" { sawError = true }
+        }
+        if let progress { event(progress) }
+    }
+
+    func finish(code: Int32, cancelled: Bool, event: ([String: Any]) -> Void,
+                finished: (Int32, Bool) -> Void) {
+        if malformed && (!sawError || sawComplete) {
+            // A valid complete event means publication happened. Without a safe
+            // engine error, the output state is also uncertain: never claim no output.
+            event(["event": "error", "output_published": true,
+                   "message": "The engine response could not be fully read. Check the batch and output location before retrying; completed output may already be present."])
+        }
+        finished(malformed && code == 0 ? 1 : code, cancelled)
+    }
 }
 
 // All blocking process I/O stays on one background queue. The lock only protects
@@ -77,26 +162,24 @@ final class EngineRunner: @unchecked Sendable {
                 return
             }
             lock.unlock()
-            var pending = Data()
+            var stream = EngineEventStream()
+            let delivery = DispatchQueue.main.sync { EngineEventDelivery() }
             while true {
                 let chunk = pipe.fileHandleForReading.availableData
                 if chunk.isEmpty { break }
-                pending.append(chunk)
-                while let boundary = pending.firstIndex(of: 10) {
-                    let line = Data(pending[..<boundary])
-                    pending.removeSubrange(...boundary)
-                    // Transfer immutable Data; decode non-Sendable JSON only on the UI actor.
-                    DispatchQueue.main.async {
-                        if let json = try? JSONSerialization.jsonObject(with: line) as? [String: Any] {
-                            event(json)
-                        }
-                    }
+                let lines = stream.append(chunk)
+                // At most one delivery batch is outstanding. Backpressure stays
+                // on this I/O worker, not on the main actor or an unbounded queue.
+                if !lines.isEmpty {
+                    DispatchQueue.main.sync { delivery.deliver(lines, event: event) }
                 }
             }
+            let tail = stream.finish()
+            if !tail.isEmpty { DispatchQueue.main.sync { delivery.deliver(tail, event: event) } }
             task.waitUntilExit()
             lock.lock(); process = nil; let stopped = cancelled; lock.unlock()
             let code = task.terminationStatus
-            DispatchQueue.main.async { finished(code, stopped) }
+            DispatchQueue.main.async { delivery.finish(code: code, cancelled: stopped, event: event, finished: finished) }
         }
     }
 }
@@ -129,6 +212,9 @@ final class BatchModel: ObservableObject {
     @Published private(set) var examiningInput = false
     @Published private(set) var scanFilesExamined = 0
     @Published private(set) var scanFoldersExamined = 0
+    @Published private(set) var checkingSidecars = false
+    @Published private(set) var sidecarFilesExamined = 0
+    @Published private(set) var sidecarFoldersExamined = 0
     @Published var ready = false
     @Published var status = "Choose a batch folder to begin."
     @Published var errorMessage: String?
@@ -182,6 +268,8 @@ final class BatchModel: ObservableObject {
     }
     private var scanReceived = false
     private var completeReceived = false
+    private var completedSidecars: Int?
+    private var completedSidecarAudits: Int?
     private var terminationReply: ((Bool) -> Void)?
     private var activeOutput: URL?
     private var engineCancelled = false
@@ -261,11 +349,13 @@ final class BatchModel: ObservableObject {
     func beginRunState(isScan: Bool, output: URL?) {
         resetProcessingProgress()
         examiningInput = true; scanFilesExamined = 0; scanFoldersExamined = 0
+        checkingSidecars = false; sidecarFilesExamined = 0; sidecarFoldersExamined = 0
         activeOutput = output
         engineCancelled = false
         publishedWithoutConfirmation = false
         busy = true; scanning = isScan; cancelling = false; clearProblem()
         scanReceived = false; completeReceived = false
+        completedSidecars = nil; completedSidecarAudits = nil
         runStarted = isScan ? nil : Date()
         status = isScan ? "Checking patient folders and DICOM metadata…" : "Checking the batch before processing…"
     }
@@ -288,8 +378,10 @@ final class BatchModel: ObservableObject {
         if code == 0 && !isScan && completeReceived, let output {
             completedOutput = output
             summary = CompletionSummary(patients: completedPatients ?? patients.count, files: processed,
-                                             excluded: excluded, output: output, elapsed: elapsed)
-            status = "Complete · \(processed) DICOM files across \(completedPatients ?? patients.count) patients in \(elapsedText(elapsed))."
+                                             excluded: excluded, output: output, elapsed: elapsed,
+                                             sidecars: cleanJSONSidecars ? completedSidecars : nil,
+                                             auditedSidecars: cleanJSONSidecars ? completedSidecarAudits : nil)
+            status = idleStatus
         } else if cleanupIncomplete {
             ready = false
             status = "Incomplete output needs attention."
@@ -340,17 +432,25 @@ final class BatchModel: ObservableObject {
         guard let name = event["event"] as? String else { return }
         switch name {
         case "scan_progress":
-            guard busy, examiningInput, !scanReceived, !cancelling, errorMessage == nil,
+            guard busy, examiningInput, !checkingSidecars, !scanReceived, !cancelling, errorMessage == nil,
                   processingPhase == .writing,
                   let files = eventCount(event["files_examined"]),
                   let folders = eventCount(event["folders_examined"]),
                   files >= scanFilesExamined, folders >= scanFoldersExamined else { return }
             scanFilesExamined = files; scanFoldersExamined = folders
             status = progressDetail
+        case "sidecar_scan_progress":
+            guard busy, examiningInput, cleanJSONSidecars, !scanReceived, !cancelling, errorMessage == nil,
+                  let files = eventCount(event["files_examined"]),
+                  let folders = eventCount(event["folders_examined"]),
+                  files >= sidecarFilesExamined, folders >= sidecarFoldersExamined else { return }
+            checkingSidecars = true
+            sidecarFilesExamined = files; sidecarFoldersExamined = folders
+            status = progressDetail
         case "scan":
             guard !cancelling, processingPhase == .writing else { return }
             resetProcessingProgress()
-            examiningInput = false
+            examiningInput = false; checkingSidecars = false
             patients = (event["patients"] as? [Any] ?? []).compactMap { item in
                 guard let row = item as? [String: Any], let id = row["id"] as? String, !id.isEmpty else { return nil }
                 return PatientRow(id: id, files: eventCount(row["files"]) ?? 0, series: eventCount(row["series"]) ?? 0)
@@ -403,6 +503,12 @@ final class BatchModel: ObservableObject {
             processingPhase = .finalizing; activePatient = nil
             status = progressDetail
         case "complete":
+            if cleanJSONSidecars,
+               let written = eventCount(event["sidecar_files"]),
+               let checked = eventCount(event["sidecar_audited_files"]),
+               written == sidecarFiles, checked == written {
+                completedSidecars = written; completedSidecarAudits = checked
+            }
             processed = eventCount(event["processed"]) ?? total
             completedPatients = eventCount(event["patients"])
             if let value = eventCount(event["excluded_files"]) { excluded = value }
@@ -516,7 +622,7 @@ final class BatchModel: ObservableObject {
     }
     private var idleStatus: String {
         if let summary {
-            return "Complete · \(summary.files) DICOM files across \(summary.patients) patients in \(elapsedText(summary.elapsed))."
+            return "Complete · \(summary.files) DICOM files across \(summary.patients) patients in \(elapsedText(summary.elapsed))." + (summary.sidecarDetail.map { " " + $0 + "." } ?? "")
         }
         return ready ? "Ready · \(patients.count) patients and \(total) DICOM files." : "Choose a batch folder to begin."
     }
@@ -558,6 +664,7 @@ final class BatchModel: ObservableObject {
     }
     var progressTitle: String {
         if cancelling { return "Cancelling" }
+        if examiningInput && checkingSidecars { return "Checking JSON sidecars" }
         if examiningInput { return "Checking batch" }
         if sidecarPhase == .writing { return "Cleaning JSON sidecars" }
         if sidecarPhase == .auditing { return "Checking JSON sidecars" }
@@ -568,6 +675,7 @@ final class BatchModel: ObservableObject {
         if cancelling { return "Waiting for the engine to stop or finish publication…" }
         if sidecarPhase == .writing { return "\(processedSidecars) of \(sidecarFiles) JSON sidecars cleaned" }
         if sidecarPhase == .auditing { return "\(auditedSidecars) of \(sidecarFiles) JSON sidecars checked" }
+        if examiningInput && checkingSidecars { return "\(sidecarFilesExamined) JSON files · \(sidecarFoldersExamined) folders examined" }
         if examiningInput {
             return String(localized: "\(scanFilesExamined) files · \(scanFoldersExamined) folders examined")
         }
@@ -757,6 +865,7 @@ struct CompletionView: View {
                     Text("Batch complete").bold()
                     Text(summary.output.lastPathComponent).lineLimit(2).truncationMode(.middle)
                         .textSelection(.enabled).help(summary.output.path)
+                    if let detail = summary.sidecarDetail { Text(detail).foregroundStyle(.secondary).monospacedDigit() }
                     Text("\(summary.patients) patients · \(summary.files) files · \(summary.excluded) excluded · \(elapsedText(summary.elapsed))")
                         .foregroundStyle(.secondary).monospacedDigit()
                 }

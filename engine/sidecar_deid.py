@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import time
 from typing import Any, Callable, Iterable, Mapping
 import unicodedata
 
@@ -595,12 +596,21 @@ def _is_appledouble(path: Path) -> bool:
     return data[:4] == b"\x00\x05\x16\x07"
 
 
-def scan_sidecars(source: str | os.PathLike[str], *, limits: BatchLimits = BatchLimits(), cancel_check: CancelCheck | None = None) -> list[SidecarRecord]:
-    """Discover regular .json files under numeric patient folders without reading values."""
+def scan_sidecars(source: str | os.PathLike[str], *, limits: BatchLimits = BatchLimits(), cancel_check: CancelCheck | None = None, progress: Progress | None = None) -> list[SidecarRecord]:
+    """Discover, validate and size regular JSON companions with count-only telemetry."""
 
     root = Path(source).absolute()
     if root.is_symlink() or not root.is_dir():
         raise SidecarError("Select an existing local batch folder, without symbolic links.")
+    files_examined = folders_examined = 0
+    last_progress = time.monotonic()
+    def report_progress(force=False):
+        nonlocal last_progress
+        now = time.monotonic()
+        if progress is not None and (force or now - last_progress >= 0.1):
+            progress("sidecar_scan_progress", files_examined=files_examined, folders_examined=folders_examined)
+            last_progress = now
+    report_progress(force=True)
     records: list[SidecarRecord] = []
     total_bytes = 0
     total_output_bytes = 0
@@ -619,6 +629,8 @@ def scan_sidecars(source: str | os.PathLike[str], *, limits: BatchLimits = Batch
                 # The DICOM scanner owns root-layout validation. Sidecar discovery only follows valid patient folders.
                 continue
             for current, dirs, files in os.walk(patient, followlinks=False, onerror=walk_error):
+                folders_examined += 1
+                report_progress()
                 dirs.sort()
                 files.sort()
                 current_path = Path(current)
@@ -635,6 +647,8 @@ def scan_sidecars(source: str | os.PathLike[str], *, limits: BatchLimits = Batch
                     path = current_path / name
                     if path.suffix.lower() != ".json":
                         continue
+                    files_examined += 1
+                    report_progress()
                     if path.is_symlink():
                         raise SidecarError("Symbolic links are not supported. Use a local copy of the input folders.")
                     info = path.stat(follow_symlinks=False)
@@ -680,6 +694,7 @@ def scan_sidecars(source: str | os.PathLike[str], *, limits: BatchLimits = Batch
     except OSError as exc:
         raise SidecarError("JSON sidecar files cannot be read. Check permissions and available local storage.") from exc
     records.sort(key=lambda item: (item.patient, item.relative_path))
+    report_progress(force=True)
     return records
 
 

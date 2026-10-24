@@ -51,7 +51,7 @@ class SidecarIntegrationTests(unittest.TestCase):
         self.assertEqual(report['json_sidecars']['files_audited'], 1)
         self.assertEqual(report['excluded_files'], 0)
         self.assertEqual(result['sidecar_files'], 1)
-        self.assertEqual(self.events[0]['sidecar_files'], 1)
+        self.assertEqual(next(event for event in self.events if event['event'] == 'scan')['sidecar_files'], 1)
         self.assertNotIn('Private', json.dumps(self.events)+json.dumps(report))
         self.assertEqual(self.file.read_text(), '{"EchoTime": 0.00300, "PatientName":"Private Patient"}')
         self.assertEqual(self.events[-1]['event'], 'complete')
