@@ -1,5 +1,7 @@
 # DICOM Anonymizer
 
+**Local development:** interruption recovery, resumable publication and consolidation cleanup are implemented on the local resilience branch; the public download remains Preview 18. See [Interruption recovery](docs/INTERRUPTION-RECOVERY.md).
+
 **Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
 
 **Unified public app:** ongoing development now uses this self-contained public SwiftUI implementation. Preview 16 adds detailed folder-conflict recovery and optional MRI JSON-sidecar cleaning. Live sidecar GUI acceptance remains pending. See [Consolidation](docs/PUBLIC-CONSOLIDATION.md) and [MRI JSON sidecars](docs/MRI-JSON-SIDECARS.md).

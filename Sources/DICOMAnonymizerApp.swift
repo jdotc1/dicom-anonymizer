@@ -184,6 +184,85 @@ final class EngineRunner: @unchecked Sendable {
     }
 }
 
+struct InterruptionNotice: Sendable {
+    let message: String
+    let location: URL
+    let ownedStaging: Bool
+    let publicationPossible: Bool
+}
+
+// Records are local operational state, never part of a batch report or upload.
+enum InterruptionRecovery {
+    static var directory: URL? {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("DICOM Anonymizer/Operations", isDirectory: true)
+    }
+    static func identity(_ url: URL) -> (UInt64, UInt64)? {
+        guard let values = try? url.resourceValues(forKeys: [.isSymbolicLinkKey, .isDirectoryKey]),
+              values.isSymbolicLink == false, values.isDirectory == true,
+              let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let device = attributes[.systemNumber] as? NSNumber,
+              let inode = attributes[.systemFileNumber] as? NSNumber else { return nil }
+        return (device.uint64Value, inode.uint64Value)
+    }
+    static func record(_ url: URL) -> [String: Any]? {
+        guard let values = try? url.resourceValues(forKeys: [.isSymbolicLinkKey, .isRegularFileKey, .fileSizeKey]),
+              values.isSymbolicLink == false, values.isRegularFile == true,
+              let size = values.fileSize, size > 0, size <= 65536,
+              let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let schema = eventCount(json["schema"]), schema == 1,
+              let operationID = json["operation_id"] as? String, UUID(uuidString: operationID) != nil,
+              let phase = json["phase"] as? String,
+              ["started", "allocated", "publishing", "published", "cleaned"].contains(phase),
+              let output = json["output"] as? String, output.hasPrefix("/"),
+              eventCount(json["pid"]) != nil else { return nil }
+        return json
+    }
+    static func matches(_ url: URL, _ record: [String: Any]) -> Bool {
+        guard let actual = identity(url), let device = record["device"] as? NSNumber,
+              let inode = record["inode"] as? NSNumber else { return false }
+        return actual.0 == device.uint64Value && actual.1 == inode.uint64Value
+    }
+    static func inspect(_ url: URL, ownerIsRunning: (Int) -> Bool = { pid in
+        guard pid > 0, pid <= Int(Int32.max) else { return false }
+        return kill(pid_t(pid), 0) == 0 || errno == EPERM
+    }) -> InterruptionNotice? {
+        guard let record = record(url), let phase = record["phase"] as? String,
+              ["started", "allocated", "publishing", "published"].contains(phase),
+              let outputPath = record["output"] as? String, outputPath.hasPrefix("/") else { return nil }
+        if let pid = record["pid"] as? Int, ownerIsRunning(pid) { return nil }
+        let output = URL(fileURLWithPath: outputPath).standardizedFileURL
+        if ["publishing", "published"].contains(phase) && matches(output, record) {
+            return InterruptionNotice(message: "A previous batch appears to have been published, but completion was not acknowledged. Review the output before retrying.", location: output, ownedStaging: false, publicationPossible: true)
+        }
+        if let path = record["staging"] as? String, path.hasPrefix("/") {
+            let staging = URL(fileURLWithPath: path).standardizedFileURL
+            if staging.deletingLastPathComponent() == output.deletingLastPathComponent(),
+               staging.lastPathComponent.hasPrefix(".dicom-batch-"), matches(staging, record) {
+                return InterruptionNotice(message: "A previous batch was interrupted and its staging identity still matches the recovery record. Review the incomplete staging folder before starting again. Nothing will be resumed or deleted automatically.", location: staging, ownedStaging: true, publicationPossible: false)
+            }
+        }
+        return InterruptionNotice(message: "A previous batch was interrupted, but its staging or publication outcome cannot be confirmed. Inspect the output location before retrying; no automatic cleanup was attempted.", location: output.deletingLastPathComponent(), ownedStaging: false, publicationPossible: true)
+    }
+    static func firstNotice(in directory: URL) -> InterruptionNotice? {
+        guard let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return nil }
+        for file in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where file.pathExtension == "json" {
+            if record(file) == nil {
+                return InterruptionNotice(message: "A local recovery record could not be read safely. Inspect the recovery location and output before retrying; no automatic cleanup was attempted.", location: directory, ownedStaging: false, publicationPossible: true)
+            }
+            if let notice = inspect(file) { return notice }
+        }
+        return nil
+    }
+    static func acknowledge(_ journal: URL?, output: URL) {
+        guard let journal, let record = record(journal), record["phase"] as? String == "published",
+              record["output"] as? String == output.path, matches(output, record) else { return }
+        // The worker has exited and each operation has a unique record path.
+        try? FileManager.default.removeItem(at: journal)
+    }
+}
+
 enum BatchProblem { case input, output, processing, report }
 enum OutputIssue: String { case space, permissions, unavailable, conflict, unknown }
 enum BatchProcessingPhase { case writing, auditing, finalizing }
@@ -230,9 +309,19 @@ final class BatchModel: ObservableObject {
     static let outputDefaultsKey = "OutputParentPath"
 
     private let defaults: UserDefaults
+    private var activeJournal: URL?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        if defaults === UserDefaults.standard, let directory = InterruptionRecovery.directory {
+            DispatchQueue.global(qos: .utility).async { [weak self] in
+                let notice = InterruptionRecovery.firstNotice(in: directory)
+                DispatchQueue.main.async {
+                    guard let self, let notice, !self.busy, self.source == nil, self.summary == nil else { return }
+                    self.presentInterruption(notice)
+                }
+            }
+        }
         // Restore the last chosen output location only when it is still an existing folder.
         if let path = defaults.string(forKey: Self.outputDefaultsKey) {
             var isDirectory: ObjCBool = false
@@ -360,10 +449,24 @@ final class BatchModel: ObservableObject {
         status = isScan ? "Checking patient folders and DICOM metadata…" : "Checking the batch before processing…"
     }
 
+    func presentInterruption(_ notice: InterruptionNotice) {
+        guard !busy, source == nil, summary == nil, errorMessage == nil else { return }
+        ready = false; cleanupIncomplete = notice.ownedStaging
+        publishedWithoutConfirmation = notice.publicationPossible
+        presentProblem(.output, message: notice.message, url: notice.location)
+    }
+
     private func launch(arguments: [String], isScan: Bool, output: URL?) {
         beginRunState(isScan: isScan, output: output)
         let worker = EngineRunner(); runner = worker
-        worker.start(arguments: arguments, event: { [weak self] event in
+        var workerArguments = arguments
+        activeJournal = nil
+        if !isScan, let directory = InterruptionRecovery.directory {
+            let journal = directory.appendingPathComponent(UUID().uuidString + ".json")
+            activeJournal = journal
+            workerArguments += ["--journal", journal.path]
+        }
+        worker.start(arguments: workerArguments, event: { [weak self] event in
             self?.receive(event)
         }, finished: { [weak self] code, cancelled in
             self?.finishRun(code: code, cancelled: cancelled, isScan: isScan, output: output)
@@ -382,6 +485,7 @@ final class BatchModel: ObservableObject {
                                              sidecars: cleanJSONSidecars ? completedSidecars : nil,
                                              auditedSidecars: cleanJSONSidecars ? completedSidecarAudits : nil)
             status = idleStatus
+            InterruptionRecovery.acknowledge(activeJournal, output: output)
         } else if cleanupIncomplete {
             ready = false
             status = "Incomplete output needs attention."
@@ -409,7 +513,7 @@ final class BatchModel: ObservableObject {
                 }
             }
         }
-        activeOutput = nil
+        activeOutput = nil; activeJournal = nil
         let reply = terminationReply; terminationReply = nil
         reply?(!cleanupIncomplete && !outcomeUncertain && !publishedWithoutConfirmation)
     }

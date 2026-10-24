@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 23 October 2026. This view tracks the public standalone macOS app. The current delivered milestone is Preview 14/app build 18.
+Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 18/app build 22: unified public UI, detailed folder recovery, optional MRI JSON sidecars, r2 hardening and worker/sidecar feedback.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -10,7 +10,7 @@ The graphic below is the retained storage-recovery milestone snapshot, before th
 
 ## Current development stage
 
-The app has a delivered standalone macOS workflow, bundled Python, an app icon, signing/notarization, pre-publication output auditing, visible audit progress and focused recovery. This release adds allocation-aware disk-space estimates while retaining the interface, initial scan-progress feedback and metadata policy.
+The app has a delivered standalone macOS workflow, bundled Python, an app icon, signing/notarization, pre-publication output auditing, visible audit progress and focused recovery. Current delivery includes allocation-aware disk-space estimates, scan/audit and sidecar feedback, and worker-event reliability, with the existing metadata policy retained. Live sidecar interaction, startup/recovery, responsiveness and compact-window appearance checks remain pending under the no-GUI restriction.
 
 The storage-recovery implementation reuses accepted optimized products and evidence: 27 new engine checks plus one intentionally changed publication regression per repository, 11 model checks per app, and native warning/output-replacement review. Earlier unchanged policy, runtime, icon and UI receipts remain in use. See [Storage recovery](STORAGE-RECOVERY.md) for the acceptance and delivery record.
 
@@ -20,7 +20,11 @@ Initial scan activity is now delivered: files/folders examined appear without a 
 
 Allocation-aware disk-space estimates are now delivered. See [Disk-space estimate](SPACE-ESTIMATE.md).
 
-## Proposed next priorities
+## Current local implementation
+
+Interruption recovery records operation ownership/publication state and uses the existing recovery area without automatic resume/deletion. Resumable publication binds a finalized archive to a draft release and reconciles uncertain remote outcomes. Both have focused synthetic/mock evidence; neither is deployed in Preview 18. No GUI use or app launches occurred.
+
+## Decision-dependent future scope
 
 1. **Resolve supported-input policy decisions separately.** Opaque payloads, unsupported structures, resource limits and conformance claims need explicit scope and approval before implementation.
 
