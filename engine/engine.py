@@ -1233,7 +1233,17 @@ def _sidecar_cancel(cancellation):
         cancellation.cancel()
 
 
-def run(source, destination, progress=emit, audit=True, *, cancellation=None, clean_json_sidecars=False):
+def _journal_mark(operation, phase, **values):
+    if operation is None:
+        return
+    from operation_journal import JournalError
+    try:
+        operation.mark(phase, **values)
+    except (OSError, JournalError):
+        raise BatchError('The local recovery record could not be saved. Check local storage and permissions before retrying.') from None
+
+
+def run(source, destination, progress=emit, audit=True, *, cancellation=None, clean_json_sidecars=False, journal=None):
     cancellation = cancellation or Cancellation()
     source = Path(source).absolute()
     destination = Path(destination).absolute()
@@ -1245,6 +1255,10 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None, cl
         raise BatchError('The output must be separate from the input folder, with neither inside the other.', output_issue='conflict')
     if not destination_operation(destination.parent.is_dir):
         raise BatchError('The output parent folder does not exist. Choose an existing location.', output_issue='unavailable')
+    if journal is not None:
+        journal_path = Path(journal).absolute().resolve()
+        if journal_path == src_real or src_real in journal_path.parents or journal_path == dst_real or dst_real in journal_path.parents:
+            raise BatchError('Recovery records must be stored separately from input and completed output.')
     records, patients, excluded = scan(source, progress=progress)
     sidecars = _sidecar_scan(source, cancellation, progress=progress) if clean_json_sidecars else []
     if clean_json_sidecars:
@@ -1257,12 +1271,20 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None, cl
     staging = None
     staging_identity = None
     publication_succeeded = False
+    operation = None
     try:
+        if journal is not None:
+            from operation_journal import OperationJournal, JournalError
+            try:
+                operation = OperationJournal(journal, destination)
+            except (OSError, JournalError):
+                raise BatchError('A local recovery record could not be created. Check local storage and permissions before retrying.') from None
         # Capture ownership before honoring a signal delivered during allocation.
         cancellation.deferred = True
         staging = Path(destination_operation(tempfile.mkdtemp, prefix='.dicom-batch-', dir=destination.parent))
         created = destination_operation(staging.lstat)
         staging_identity = (created.st_dev, created.st_ino)
+        _journal_mark(operation, "allocated", staging=staging, identity=staging_identity)
         cancellation.deferred = False
         if cancellation.requested:
             cancellation.cancel()
@@ -1332,6 +1354,7 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None, cl
         # Recheck before publication; rename is atomic. macOS exclusive rename prevents races.
         if destination_operation(destination.exists) or destination_operation(destination.is_symlink):
             raise BatchError('The output folder appeared during processing. Choose another output folder.', output_issue='conflict')
+        _journal_mark(operation, "publishing")
         cancellation.begin_publication()
         if sys.platform == 'darwin':
             import ctypes
@@ -1341,6 +1364,7 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None, cl
         else:
             destination_operation(os.rename, staging, destination)
         publication_succeeded = True
+        _journal_mark(operation, "published")
         staging = None
         result = dict(processed=len(records), total_files=len(records), patients=len(patients), excluded_files=excluded, audited_files=audit_summary['files_audited'])
         if clean_json_sidecars:
@@ -1357,6 +1381,10 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None, cl
         if staging is not None:
             try:
                 remove_staging(staging, staging_identity)
+                try:
+                    _journal_mark(operation, "cleaned")
+                except BatchError:
+                    pass  # Preserve the primary failure; a stale record is conservative.
             except OSError as cleanup_error:
                 owned_path = None if staging_identity is None or isinstance(cleanup_error, StagingOwnershipError) else str(staging)
                 recovery = (
@@ -1577,6 +1605,7 @@ def environment_info():
 def main():
     parser = argparse.ArgumentParser(description='Bulk local DICOM pseudonymization')
     parser.add_argument('--source', required=True)
+    parser.add_argument('--journal', help='Private local recovery record path; never included in batch reports')
     parser.add_argument('--clean-json-sidecars', action='store_true', help='Write cleaned MRI JSON sidecar copies using mri-physical-v1')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--scan', action='store_true')
@@ -1594,7 +1623,7 @@ def main():
             else:
                 emit('scan', patients=patients, total_files=len(records), excluded_files=excluded)
         else:
-            run(args.source, args.destination, cancellation=cancellation, clean_json_sidecars=args.clean_json_sidecars)
+            run(args.source, args.destination, cancellation=cancellation, clean_json_sidecars=args.clean_json_sidecars, journal=args.journal)
         return 0
     except BatchError as exc:
         cancellation.deferred = True

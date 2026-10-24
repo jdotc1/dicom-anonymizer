@@ -1,6 +1,12 @@
 # Source publication record
 
-## Current release — preview 14, build 18
+## Current release — Preview 18, build 22
+
+The unified public app is delivered as Preview 18/build 22. See [Worker/sidecar feedback](WORKER-SIDECAR-FEEDBACK.md) for accepted source and distribution evidence. Accepted notarization is `d1641659-914f-4b24-a8e4-44c32d159eef`; release source `ca109d3`, native source `d7b49e4`. Existing receipts are reused, not reverified. No GUI use, native app launch or installation occurred for that delivery; live sidecar/startup/response/layout acceptance remains pending.
+
+Current local development adds interruption recovery and resumable publication; those source changes are not yet released. Older entries below are retained historical receipts, not current status.
+
+## Preview 14 delivery (historical) — preview 14, build 18
 
 The receipt-driven workflow delivered public Preview 14/app build 18 with accepted engine-source `80caae5` and reused native-source `b28a3df`. Release source: `e2f95de`. Apple accepted notarization `92ca3f7b-0e55-46b6-93f2-c3fceeed405e`; the new root signature, stapled ticket and Gatekeeper assessment passed once. Accepted estimate evidence (24 new checks and four affected existing checks per repository) and earlier unchanged policy, self-audit, UI/build, runtime, icon and nested-signature receipts were reused. Five new packaging fixtures per app profile passed for distinct native/engine provenance and vendor cache exclusion; source-only review found no blockers. No accepted test suite, native build, provenance hash or dependency-signature check was repeated. The standalone arm64 ZIP was published and its HTTPS delivery returned HTTP 200. The deployment target remains macOS 13, with bundled Python. See `SPACE-ESTIMATE.md`.
 
