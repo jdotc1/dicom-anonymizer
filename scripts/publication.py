@@ -159,6 +159,9 @@ def publish(root, title, notes, authorize=False, retry_absent=False, api=gh):
         latest = api([endpoint])
         if any(latest.get(key) != item.get(key) for key in ('id', 'tag_name', 'target_commitish', 'name', 'body', 'prerelease')):
             raise ValueError('Remote metadata changed during upload')
+        resolved = tag_commit()
+        if resolved is not None and resolved != bound['target']:
+            raise ValueError('Tag changed before publication')
         mutation('publish', [endpoint, '--method', 'PATCH', '-F', 'draft=false'], not item['draft'])
         final = api([endpoint])
         if final['draft'] or final['tag_name'] != bound['tag'] or tag_commit() != bound['target']:

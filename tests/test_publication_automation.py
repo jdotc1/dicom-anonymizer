@@ -1,5 +1,4 @@
 """New publication-only fixtures; no remote calls or accepted package reads."""
-import importlib.util
 import json
 from pathlib import Path
 import subprocess
@@ -126,6 +125,17 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.invoke()
         self.invoke(retry_absent=True)
+
+    def test_tag_changed_during_upload_blocks_publication(self):
+        def api(args):
+            result = self.api(args)
+            if '/assets?' in args[0] and '--method' in args:
+                self.tag = 'c' * 40
+            return result
+        with self.assertRaises(ValueError):
+            publication.publish(self.root, 'Preview', 'Notes', authorize=True, api=api)
+        self.assertTrue(self.item['draft'])
+        self.assertFalse(any('PATCH' in c for c in self.calls))
 
     def test_unowned_existing_draft_refused(self):
         self.item = dict(id=1, tag_name='v2.0.0-preview.99', draft=True)
