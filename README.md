@@ -12,6 +12,8 @@
 
 **Recovery-state feedback:** Preview 24/build 28 retains uncertainty on recovery-directory inspection failure and preserves completed results with nonblocking acknowledgement warnings. See [Recovery-state feedback](docs/RECOVERY-STATE-FEEDBACK.md).
 
+**Local source increment:** outstanding acknowledgement warnings survive report recovery, and generation tokens reject stale background snapshots. Preview 24 remains the public download. See [Recovery consistency](docs/RECOVERY-CONSISTENCY.md).
+
 **Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
 
 **Unified public app:** ongoing development now uses this self-contained public SwiftUI implementation. Preview 16 adds detailed folder-conflict recovery and optional MRI JSON-sidecar cleaning. Live sidecar GUI acceptance remains pending. See [Consolidation](docs/PUBLIC-CONSOLIDATION.md) and [MRI JSON sidecars](docs/MRI-JSON-SIDECARS.md).
