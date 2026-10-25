@@ -1,5 +1,6 @@
 """Changed sanitation boundaries only; disposable Git repositories and ZIPs."""
 import io
+import gzip
 import json
 import os
 from pathlib import Path
@@ -262,7 +263,7 @@ class SafetyTests(unittest.TestCase):
             self.gate()
 
     def test_unsupported_compression_refused(self):
-        for magic in (b'\x1f\x8b', b'BZh', b'\xfd7zXZ', b'7z\xbc\xaf\x27\x1c'):
+        for magic in (b'BZh', b'\xfd7zXZ', b'7z\xbc\xaf\x27\x1c'):
             with self.assertRaisesRegex(ValueError, 'unsupported compressed'):
                 safety.payload_check(magic + b'fixture', 'fixture')
 
@@ -381,6 +382,40 @@ class SafetyTests(unittest.TestCase):
         result = subprocess.run([str(dispatcher)], cwd=self.repo, capture_output=True, text=True)
         self.assertNotEqual(0, result.returncode)
         self.assertIn('checker missing', result.stderr)
+
+    def test_gzip_clean_and_private_payload_inspected(self):
+        safety.payload_check(gzip.compress(b'portable data'), 'fixture')
+        with self.assertRaisesRegex(ValueError, 'machine-home'):
+            safety.payload_check(gzip.compress(private_path().encode()), 'fixture')
+
+    def test_gzip_nested_inside_zip_and_depth_limits(self):
+        archive = self.archive({'App.app/data.gz': gzip.compress(private_path().encode())})
+        with safety.ledger(self.repo) as receipts, self.assertRaises(ValueError):
+            safety.archive_gate(archive, receipts)
+        nested = b'portable'
+        for _ in range(5):
+            nested = gzip.compress(nested)
+        with self.assertRaisesRegex(ValueError, 'depth'):
+            safety.payload_check(nested, 'fixture')
+
+    def test_gzip_corrupt_and_expansion_limit_fail_closed(self):
+        with self.assertRaises((OSError, EOFError)):
+            safety.payload_check(b'\x1f\x8bcorrupt', 'fixture')
+        compressed = gzip.compress(b'a' * 50)
+        with patch.object(safety, 'MAX_FILE', 10), self.assertRaisesRegex(ValueError, 'size limit'):
+            safety.payload_check(compressed, 'fixture')
+
+    def test_additive_gzip_policy_reuses_prior_successes_without_scans(self):
+        self.gate(self.base)
+        path = safety.cache_root(self.repo) / 'receipts.json'
+        value = json.loads(path.read_text())
+        value['policy'] = next(iter(safety.COMPATIBLE_POLICIES))
+        value['texts']['prior-success'] = 'accepted'
+        path.write_text(json.dumps(value))
+        with patch.object(safety, 'check', side_effect=AssertionError('repeat scan')):
+            with safety.ledger(self.repo) as receipts:
+                self.assertEqual('accepted', receipts['texts']['prior-success'])
+                self.assertEqual(safety.POLICY, receipts['policy'])
 
 
 if __name__ == '__main__':

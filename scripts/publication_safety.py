@@ -3,6 +3,7 @@
 import argparse
 from contextlib import contextmanager
 import fcntl
+import gzip
 import hashlib
 import io
 import json
@@ -41,8 +42,11 @@ RULES = {
     'credential': r'(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})',
 }
 # Bump when inspection semantics change, even if the pattern set stays the same.
-SCANNER_VERSION = 1
+SCANNER_VERSION = 2
 POLICY = hashlib.sha256(json.dumps([SCANNER_VERSION, RULES], sort_keys=True).encode()).hexdigest()
+# Version 2 only adds bounded gzip support. Version 1 rejected every gzip
+# payload; its previously successful objects remain valid without rescanning.
+COMPATIBLE_POLICIES = {hashlib.sha256(json.dumps([1, RULES], sort_keys=True).encode()).hexdigest()}
 PATTERNS = {name: re.compile(value, re.I) for name, value in RULES.items()}
 MAX_FILE = 512 * 1024 * 1024
 MAX_ARCHIVE = 2 * 1024 * 1024 * 1024
@@ -90,7 +94,9 @@ def ledger(repository):
         fcntl.flock(lock, fcntl.LOCK_EX)
         path = root / 'receipts.json'
         value = json.loads(path.read_text()) if path.exists() else {}
-        if value.get('policy') != POLICY:
+        if value.get('policy') in COMPATIBLE_POLICIES:
+            value['policy'] = POLICY
+        elif value.get('policy') != POLICY:
             value = dict(policy=POLICY, objects={}, archives={}, texts={})
         try:
             yield value
@@ -162,14 +168,24 @@ def file_identity(path):
 
 
 def payload_check(data, label, budget=None, depth=0):
+    if depth > 3:
+        raise ValueError('Sanitation refused: nested archive depth')
     check(data, label)
     if data.startswith(b'version https://git-lfs.github.com/spec/v1'):
         raise ValueError('Sanitation refused: uninspected LFS payload')
     if data[257:262] == b'ustar':
         raise ValueError('Sanitation refused: unsupported tar payload')
-    if zipfile.is_zipfile(io.BytesIO(data)):
+    if data.startswith(b'\x1f\x8b'):
+        with gzip.GzipFile(fileobj=io.BytesIO(data)) as stream:
+            unpacked = stream.read(MAX_FILE + 1)
+        total = budget if budget is not None else [0]
+        total[0] += len(unpacked)
+        if len(unpacked) > MAX_FILE or total[0] > MAX_ARCHIVE:
+            raise ValueError('Sanitation refused: gzip inspection size limit')
+        payload_check(unpacked, label, total, depth + 1)
+    elif zipfile.is_zipfile(io.BytesIO(data)):
         zip_check(io.BytesIO(data), budget if budget is not None else [0], depth + 1)
-    elif data.startswith((b'\x1f\x8b', b'BZh', b'\xfd7zXZ', b'7z\xbc\xaf\x27\x1c')):
+    elif data.startswith((b'BZh', b'\xfd7zXZ', b'7z\xbc\xaf\x27\x1c')):
         raise ValueError('Sanitation refused: unsupported compressed payload')
 
 

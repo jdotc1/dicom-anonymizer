@@ -50,7 +50,7 @@ read-only reconciliation safeguards remain in force.
 Private selection/journal/ownership files belong beside the app, never inside the
 distribution. Source repositories, private workspace directories, credential files,
 and imaging inputs are refused in new source/distributed members. Unsupported
-compressed containers fail closed; supported nested ZIPs are inspected with size
+compressed containers fail closed; supported nested ZIP/gzip containers are inspected with size
 and depth limits. Archive names, member metadata, comments, container bytes and
 contents are inspected without extraction. Absolute and escaping symlinks are
 refused. UTF-8/ASCII and both UTF-16 byte orders and alignments are inspected,
@@ -108,3 +108,7 @@ Read-only review identified history substitution, compressed payload, symlink,
 ZIP overlay, commit-cache and pending-ownership hazards; the implementation and
 focused fixtures address them. Local hook installation imports the existing
 sanitized-history acceptance instead of scanning that history again.
+
+## Bounded gzip support
+
+The first guarded assembly encountered the bundled runtime's compressed public-suffix data. The gate stopped before signing. Bounded gzip inspection now checks expanded content, rejects corruption and enforces expansion/depth limits. Four new synthetic methods cover this boundary. Scanner version 2 explicitly carries forward successful version-1 receipts: version 1 rejected every gzip payload, so none of those successful inspections depended on the new capability. This additive migration does not bypass a failed inspection or repeat unchanged accepted checks.
