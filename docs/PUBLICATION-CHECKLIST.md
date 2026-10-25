@@ -6,7 +6,28 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 32, build 36
+## Current release — Preview 33, build 37
+
+Preview 33/build 37 delivers bounded recovery-message aggregation with complete
+record inspection and uncertainty retention. Release source is
+`9309ccd9cfb44ee001c36c16c84f64858637862b`; accepted native/engine source is
+`5ebaa55481308ec33169e0420fe10a8c31d9f8e4`.
+
+The nine-case composite headless evidence, accepted native executable/compile and
+unchanged engine/runtime/dependency/icon/worker/recovery receipts were reused.
+No functional test or native build was repeated for delivery. New source,
+documentation, package and public release-text sanitation boundaries passed,
+reusing accepted receipts where applicable. New root signature, stapled ticket
+and Gatekeeper checks passed. Apple notarization
+`56644144-8688-4f60-8215-7b54b8501a84` was Accepted. The ZIP is 29,079,716 bytes.
+
+Publication completed without retrying a GitHub mutation. Earlier releases and
+signed downloads remain preserved. No GUI use, app launch or installation
+occurred. See [Runtime acceptance](RUNTIME-ACCEPTANCE.md) for evidence limits.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.33).
+
+## Previous release — Preview 32, build 36
 
 Preview 32/build 36 delivers the independent staged-file header audit. Release
 source is `bf5a119e772a166020974d39015df9dca94a1008`; accepted engine source is

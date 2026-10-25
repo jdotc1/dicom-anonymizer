@@ -1,6 +1,6 @@
 # DICOM Anonymizer
 
-**Current release: Preview 32/build 36.** The independent audit now checks the writer's zeroed preamble and rebuilt file-meta guarantees. The public interface and metadata-cleaning policy are unchanged. See [Staged-file header audit](docs/FILE-HEADER-AUDIT.md) and the [release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.32).
+**Current release: Preview 33/build 37.** Recovery-message text is bounded while every record still contributes uncertainty and scan state. The public interface structure and engine policy are unchanged. See [Bounded recovery messages](docs/BOUNDED-RECOVERY-MESSAGES.md) and the [release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.33).
 
 **Resilience delivery:** Preview 19/build 23 adds interruption recovery and ships through the resumable publication tooling; consolidation cleanup is complete. See [Interruption recovery](docs/INTERRUPTION-RECOVERY.md).
 
@@ -89,8 +89,8 @@ complete validity of every MR/CT/RTSTRUCT object.
 3. Open the app, choose the input batch and an output location, inspect the scan
    summary, and process the batch.
 
-The [Preview 32 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.32)
-is app version 2.0.0, build 36. Its app is Developer ID signed and Apple notarized,
+The [Preview 33 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.33)
+is app version 2.0.0, build 37. Its app is Developer ID signed and Apple notarized,
 with a stapled ticket. It includes **CPython 3.13.16 and pydicom 3.0.2** and uses
 its bundled interpreter wherever the app is moved. No Homebrew, separate Python
 installation, launch-time runtime download, or package installation is needed.
@@ -169,7 +169,7 @@ focused source coverage for the writer's existing preamble and file-meta guarant
 its delivery status and evidence scope are recorded separately.
 
 See [Bounded recovery messages](docs/BOUNDED-RECOVERY-MESSAGES.md) for the
-unreleased source change that limits accumulated notice text while retaining
+delivered change that limits accumulated notice text while retaining
 recovery records and uncertainty from omitted details.
 
 Symbolic links, nonregular patient-file entries, unsupported modalities,

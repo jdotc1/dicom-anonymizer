@@ -1,6 +1,29 @@
 # macOS release acceptance
 
-## Current release — Preview 32, build 36
+## Current release — Preview 33, build 37
+
+Preview 33/build 37 limits accumulated recovery-message text to eight complete
+details within a 16 KiB UTF-8 budget, while full inspection and all uncertainty
+flags remain in use. Omitted counts and the record-directory location are shown;
+unresolved records are preserved and existing cleaned-record retirement is
+unchanged. See [Bounded recovery messages](BOUNDED-RECOVERY-MESSAGES.md).
+
+Release source is `9309ccd9cfb44ee001c36c16c84f64858637862b`; accepted native/engine
+source is `5ebaa55481308ec33169e0420fe10a8c31d9f8e4`. Nine new headless cases as
+composite evidence, the accepted optimized native compile/product and unchanged
+engine/header-audit/sidecar/runtime/dependency/icon/worker/recovery evidence were
+reused. No functional test or native build was repeated for delivery.
+
+New assembly metadata, sanitation, root signature, stapled ticket and Gatekeeper
+checks passed. Apple notarization `56644144-8688-4f60-8215-7b54b8501a84` was
+Accepted. The ZIP is 29,079,716 bytes. Journaled publication completed without
+retrying a GitHub mutation. Prior releases/downloads remain preserved. No GUI
+use, app launch or installation occurred. Live appearance/interaction remains
+pending; directory listing/sorting is not bounded by the text cap.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.33).
+
+## Previous release — Preview 32, build 36
 
 Preview 32/build 36 independently audits zeroed preambles, synchronized file-meta
 SOP Class/Instance UIDs and the writer's rebuilt implementation metadata. It

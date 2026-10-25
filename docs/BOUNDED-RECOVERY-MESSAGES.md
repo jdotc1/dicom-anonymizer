@@ -1,7 +1,6 @@
 # Bounded recovery-message aggregation
 
-This source increment is not yet released; the current download remains Preview
-32/build 36. Existing controls, engine policy, report schema and dependencies are
+Delivered in Preview 33/build 37. Existing controls, engine policy, report schema and dependencies are
 unchanged. No GUI use or app launch is part of this source acceptance.
 
 ## Text and detail limits
@@ -58,5 +57,20 @@ The real optimized native target is compiled for macOS 13 arm64 using Swift 6
 and warnings as errors. This is compile-only app evidence plus headless filesystem
 coverage; it does not establish live recovery-area appearance or interaction.
 Accepted engine, file-header audit, sidecar, runtime, dependency, icon, worker and
-unaffected recovery evidence is reused. Signing, notarization, publication and
-installation are separate steps and were not performed for this increment.
+unaffected recovery evidence is reused. Source acceptance did not include signing,
+notarization, publication or installation; authorized delivery followed separately.
+
+## Guarded delivery
+
+Preview 33/build 37 reused the accepted native executable and source evidence
+without rebuilding or repeating functional tests. Accepted native/engine source
+is `5ebaa55481308ec33169e0420fe10a8c31d9f8e4`; release source is
+`9309ccd9cfb44ee001c36c16c84f64858637862b`.
+
+New distribution sanitation, root signature, stapled ticket and Gatekeeper checks
+passed. Apple notarization `56644144-8688-4f60-8215-7b54b8501a84` was Accepted.
+The 29,079,716-byte ZIP was published through the guarded journal without retrying
+a GitHub mutation. Prior releases and signed downloads remain preserved. No GUI
+use, app launch or installation occurred.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.33).
