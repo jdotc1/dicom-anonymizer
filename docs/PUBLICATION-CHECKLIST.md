@@ -6,7 +6,28 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 29, build 33
+## Current release — Preview 30, build 34
+
+Preview 30/build 34 delivers bounded recovery-record reads and qualified release
+provenance with the existing interface and engine policy. Release source is
+`ec686b9fe6d047512a06913ffe0d8a7096f25f51`; native/engine source is
+`af9ed1b84ca905ed5b69c809b031a705814499f2`. Eight provenance fixture methods,
+15 headless recovery cases and the accepted native compile were reused along
+with unchanged engine/self-audit/sidecar/runtime/dependency/icon evidence.
+
+The guarded workflow checked the new source, documentation, package and public
+release text; accepted sanitation receipts were reused where applicable. New
+root signature, stapled ticket and Gatekeeper checks passed. Apple notarization
+`7790c256-6886-481b-8067-791eb90f8e5a` was Accepted. The signed download is
+29,079,336 bytes. Publication completed without retrying a GitHub mutation.
+No native rebuild, functional test rerun, GUI use, app launch or installation
+occurred during delivery. Existing releases/downloads remain preserved.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.30).
+Live interaction/volume acceptance remains pending; headless evidence retains
+its original scope. See [Runtime acceptance](RUNTIME-ACCEPTANCE.md).
+
+## Previous release — Preview 29, build 33
 
 Preview 29/build 33 delivers terminal-event consistency and improved text from
 existing Copy Details controls. Original packaged release/engine source:

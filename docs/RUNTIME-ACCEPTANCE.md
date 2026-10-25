@@ -1,6 +1,28 @@
 # macOS release acceptance
 
-## Current release — Preview 29, build 33
+## Current release — Preview 30, build 34
+
+Preview 30/build 34 delivers bounded, identity-checked recovery-record reads and
+qualified history-aware release provenance. Public UI, engine policy and sidecar
+defaults are unchanged. Release source is `ec686b9fe6d047512a06913ffe0d8a7096f25f51`;
+accepted native/engine source is `af9ed1b84ca905ed5b69c809b031a705814499f2`.
+
+The accepted native executable, 15 new headless recovery cases, eight new
+provenance fixture methods and unchanged engine/self-audit/sidecar/runtime/
+dependency/icon evidence were reused. No native rebuild or functional test rerun
+occurred for delivery. New assembly metadata, sanitation, root signature, stapled
+ticket and Gatekeeper checks passed. Apple notarization
+`7790c256-6886-481b-8067-791eb90f8e5a` was Accepted. The ZIP is 29,079,336 bytes.
+
+The guarded publication journal completed without retrying a GitHub mutation.
+Earlier releases and signed downloads remain preserved. No GUI use, app launch
+or installation occurred; live interaction and volume behavior remain pending.
+See [Recovery-record reads](RECOVERY-RECORD-READS.md) and
+[Release automation](RELEASE-AUTOMATION.md) for scope and provenance semantics.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.30).
+
+## Previous release — Preview 29, build 33
 
 Preview 29/build 33 delivers terminal-event consistency and improved diagnostics
 through the existing Copy Details action. The public UI, engine policy and

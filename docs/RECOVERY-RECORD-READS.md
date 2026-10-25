@@ -1,7 +1,6 @@
 # Bounded recovery-record reads
 
-This source change is not yet released. The delivered app remains Preview 29/build
-33. Public controls, engine policy, sidecar defaults and imaging processing are
+Delivered in Preview 30/build 34. Public controls, engine policy, sidecar defaults and imaging processing are
 unchanged.
 
 Recovery inspection opens each record once with no-follow, nonblocking and
@@ -28,3 +27,12 @@ The real native target is compiled for macOS 13 arm64 with warnings as errors.
 Headless file checks do not establish live UI or volume behavior. Accepted
 unchanged engine, self-audit, runtime, dependency, icon and interaction evidence
 is reused; no GUI use or app launch is required for this source increment.
+
+For delivery the accepted executable was reused without rebuilding or rerunning
+functional checks. New distribution sanitation, root signature, stapled ticket
+and Gatekeeper checks passed. Apple notarization
+`7790c256-6886-481b-8067-791eb90f8e5a` was Accepted. The guarded publication
+journal completed for the 29,079,336-byte ZIP without retrying a remote mutation.
+No GUI use, app launch or installation occurred.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.30).
