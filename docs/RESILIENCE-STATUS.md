@@ -8,11 +8,17 @@ See `INTERRUPTION-RECOVERY.md`. Eleven new engine journal cases and twelve new n
 
 ## Resumable publication
 
-See `RESUMABLE-PUBLICATION.md`. Twelve new mocked methods passed as composite evidence, including lost create/upload/publish responses, ownership conflicts, changed tags and paginated upload confirmation. The native app was not involved. Parent review identified an upload URL construction risk; official CLI source was consulted, and the absolute upload URL with canonical authentication host was corrected before any real use. A new upload-boundary fixture passed once. No live GitHub mutation or accepted package verification occurred during that source-only increment.
+See `RESUMABLE-PUBLICATION.md`. Twelve new mocked methods passed as composite evidence, including lost create/upload/publish responses, ownership conflicts, changed tags and paginated upload confirmation. The native app was not involved. Source review identified an upload URL construction risk; official CLI source was consulted, and the absolute upload URL with canonical authentication host was corrected before any real use. A new upload-boundary fixture passed once. No live GitHub mutation or accepted package verification occurred during that source-only increment.
 
-## Cleanup completed
+## Artifact retention
+
+Superseded generated artifacts were retired while source, current release inputs,
+verification records and logs were preserved. Published releases retained their
+historical scope. Artifact retirement is not a reason to repeat accepted checks.
 
 ## Evidence and authority
+
+Detailed logs and verification records are retained outside the repository. Accepted unchanged policy, self-audit, sidecar, r2, worker feedback, runtime, icon and dependency receipts were reused. No GUI use, native app launch, workflow dispatch, push, release, signing, notarization or installation occurred during the source-only increment. Startup/recovery interaction, responsiveness and compact-window appearance remain pending live acceptance. At that source-only milestone, publication transport was covered by mocks/source review and live authenticated execution was pending separate release authorization.
 
 ## Authorized delivery
 
@@ -21,3 +27,5 @@ The unified public app is delivered as **Preview 19/build 23**, using the new re
 Accepted evidence was reused: 11 engine journal cases, 12 native recovery/model/filesystem cases, 12 mocked publication methods and the existing policy, self-audit, sidecar/r2, worker-feedback, runtime, icon and dependency receipts. No functional test or native build was repeated for delivery. No GUI use, native app launch or installation occurred. Live startup/recovery, sidecar interaction, responsiveness and compact-window acceptance remain pending.
 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.19). Earlier entries retain their historical scope.
+
+The initial live tooling run stopped when a newly created draft was not yet visible. Read-only reconciliation found the owned draft; resuming the same journal completed upload and publication without duplicate creation or an absent-operation override.

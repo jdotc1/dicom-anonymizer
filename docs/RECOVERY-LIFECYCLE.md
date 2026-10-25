@@ -26,6 +26,8 @@ Ten new lifecycle cases and ten new worker process cases passed as composite evi
 
 Source review identified two gaps and both were addressed: production reinspection of live owners, and a recovery marker surviving a newer output-validation error. The latter has its own new regression case. The real optimized native target compiles with warnings as errors, Swift 6.4.2, Xcode 27.2 (27B48), SDK 27.2, arm64/macOS 13. The executable was not launched.
 
+Detailed logs, harnesses and verification records are retained outside the repository. Accepted engine/policy/self-audit, sidecar/r2, prior worker framing/model, runtime, dependency, icon and Preview 19 distribution receipts are reused. No engine tests, signing, notarization or release operations are needed for this source increment.
+
 ## Remaining limits
 
 Live app timer scheduling, recovery interaction, sidecar interaction, responsiveness and layout acceptance remain pending. A scan stopped by a new user workflow is not a continuous process monitor. PID reuse can conservatively defer recovery. Record removal remains a best-effort local-state operation; no automatic staging cleanup or resume is added. Preview 20/build 24 is the public download; the live acceptance limits above remain in force.
@@ -37,3 +39,5 @@ The unified public app is delivered as **Preview 20/build 24**, using `scripts/p
 Accepted verification was reused: 10 recovery-lifecycle cases, 10 headless worker process cases, four affected interruption cases and existing engine/policy/self-audit, sidecar/r2, worker/model, runtime, dependency and icon receipts. No functional test or native build was repeated for delivery. The public UI structure and engine policy are unchanged. No GUI use, native app launch or installation occurred. Live timer scheduling, recovery/sidecar interaction, responsiveness and layout acceptance remain pending.
 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.20). Prior receipts retain their historical scope.
+
+GitHub briefly delayed visibility of the newly created draft. Read-only inspection found the owned draft, and the same publication journal resumed to completion without duplicate creation or an absent-operation override.

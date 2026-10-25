@@ -23,6 +23,6 @@ Public: retain the independent SwiftUI interface and macOS 13. The real optimize
 
 Reuse the accepted evidence recorded in WORKFLOW-POLISH.md and the existing engine, self-audit, standalone-Python, dependency, icon and theme receipts. No engine/self-audit processing, unchanged suite, signing/dependency verification, provenance rehash or corpus pass was repeated. Existing physical drag-and-drop acceptance limitations remain unchanged.
 
-The recovery branch is merged into main with history preserved. Distribution reuses the accepted optimized executable and existing resources, with new release metadata and a new Developer ID root signature and notarization submission. Private delivery is build 11; public delivery is preview 6/build 10. The earlier ticket does not certify the changed executable.
+The recovery branch is merged into main with history preserved. Distribution reuses the accepted optimized executable and existing resources, with new release metadata and a new Developer ID root signature and notarization submission. This historical delivery is Preview 6/build 10. The earlier ticket does not certify the changed executable.
 
 Apple accepted the new build-10 submission `97c13195-06fc-4cec-9261-1ef558d33792` on 2026-10-14. Signing and installation/delivery evidence are separate from the reused focused source acceptance.

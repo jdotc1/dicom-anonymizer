@@ -1,14 +1,18 @@
 # macOS preview release
 
+Release: `v2.0.0-preview.6`, prepared 2026-10-14. Destination: [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). MIT license. This record describes the source-disclosure and packaging scope of that historical preview.
+
 ## Included
 
 Python engine and bootstrap, native Swift source, local build scripts, pinned requirements, synthetic unit/native test sources, a standalone fictional-data generator, manual-only synthetic CI, license/dependency notices and documentation. The generator reads no files and writes new synthetic objects. No actual DICOM files or patient-derived examples are committed.
 
 ## Excluded
 
+Patient data and outputs, local operational records, internal correspondence, previous build artifacts, signing keys, credentials and icon-authoring files are excluded from the public source distribution.
+
 ## Attribution and contact
 
-Copyright: DICOM Anonymizer Project contributors. Source commit metadata uses the deliberately non-deliverable `maintainers@dicom-anonymizer.invalid` address. It is not a registered contact or support mailbox. Public repository ownership is `jdotc1`. Use GitHub private vulnerability reporting for security-sensitive reports. The release app identifier is `io.github.jdotc1.dicom-anonymizer`.
+Copyright remains DICOM Anonymizer Project contributors. Use GitHub private vulnerability reporting for security-sensitive reports; see `SECURITY.md` for reporting channels. The release app identifier is `io.github.jdotc1.dicom-anonymizer`.
 
 ## Evidence boundaries
 
@@ -21,6 +25,8 @@ The standalone release ZIP targets Apple Silicon and includes CPython 3.13.16. N
 This remains a preview prerelease. Focused runtime acceptance does not establish clinical validation, complete anonymization, certified confidentiality-profile compliance, complete IOD conformance or all-macOS-version qualification. Retained pixels, descriptors and linkable pseudonyms remain documented in the README and data-handling contract.
 
 ## Icon packaging delta (preview 4 history)
+
+The downloadable app includes the project-selected app icon using compiled `Assets.car` and `AppIcon.icns` resources supplied separately. Both `CFBundleIconName` and `CFBundleIconFile` are set to `AppIcon`. Icon-authoring files are not distributed in this source repository; applicable artwork rights remain unchanged. Existing icon compilation and native appearance evidence were reused; the engine, runtime and Swift executable were not rebuilt or retested for this resource-only delta.
 
 ## Workflow polish delta — preview 5
 

@@ -26,6 +26,8 @@ The existing recovery area shows the location and explanation; no new workflow s
 
 Eleven new engine cases passed as a composite: nine initial journal/publication/cleanup cases plus new CLI forwarding and record-collision cases. Twelve new native CLI/model cases passed as a composite: six initial passes, three URL-trailing-slash fixture repairs, and three new malformed/semantic-record/current-action guard cases. Passing cases were not repeated. Actual optimized arm64/macOS 13 target compiled with warnings as errors using Swift 6.4.2, Xcode 27.2 build 27B48 and SDK 27.2.
 
+Source-only review found and corrected semantic-record validation; native fixture failures were URL equality expectations, corrected to compare filesystem paths. The tests simulate interruption with owned temporary files; no native app or engine process was killed or launched. Detailed verification records are retained outside the repository.
+
 Accepted policy/self-audit, sidecar/r2, worker feedback, runtime, dependency and icon evidence was reused. No GUI use, native app launch, remote publication, signing, notarization or installation occurred. Live startup/recovery, responsiveness and layout acceptance remain pending.
 
 ## Limits

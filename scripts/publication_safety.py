@@ -2,6 +2,7 @@
 """Fail-closed, receipt-reusing sanitation gates. Never modifies public inputs."""
 import argparse
 from contextlib import contextmanager
+from contextvars import ContextVar
 import fcntl
 import gzip
 import hashlib
@@ -16,43 +17,95 @@ import tempfile
 import zipfile
 
 # Patterns are intentionally written without embedding real private examples.
-def _private_rule(name):
-    # Owner-specific values are intentionally configured outside tracked source.
-    repository = Path(__file__).resolve().parents[1]
-    common = subprocess.check_output(['git', '-C', str(repository), 'rev-parse', '--git-common-dir'], text=True).strip()
-    path = (repository / common).resolve() / 'publication-safety/private-rules.json'
-    if path.is_symlink() or not path.is_file():
-        raise ValueError('Required private sanitation configuration is missing')
-    configuration = json.loads(path.read_text())
-    rules = configuration.get('rules', {})
-    if configuration.get('schema') != 1 or name not in rules or not isinstance(rules[name], str) or not rules[name]:
-        raise ValueError('Invalid private sanitation configuration')
-    return rules[name]
-
-
 RULES = {
     'machine-home': r'/(?:Users|home)/[^/\s"\'<>]+',
     'local-work-root': r'(?:~|\$(?:HOME|\{HOME\}))/Developer(?:/|\b)',
     'session-scratch': r'/(?:private/)?tmp/(?:claude|codex)-[^\s/]+',
     'encoded-home': r'(?:-Users-|%2[fF]Users%2[fF])[A-Za-z0-9_.-]+',
-    'personal-email': _private_rule('personal-email'),
-    'private-correspondence': _private_rule('private-correspondence'),
+    'personal-email': r'[A-Za-z0-9_.+-]+@icloud\.com',
+    'private-correspondence': r'(?:BEGIN[_ ]PRIVATE(?! DOMAINS)|<private[_-](?:message|communication))',
     'private-workspace': r'(?:CODEX[_]HANDOFF|CLAUDE[_]HANDOFF|\.claude/(?:projects|handoffs)|\.codex/(?:sessions|memories))',
-    'unrelated-internal-app': _private_rule('unrelated-internal-app'),
     'credential': r'(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})',
 }
 # Bump when inspection semantics change, even if the pattern set stays the same.
 SCANNER_VERSION = 4
-POLICY = hashlib.sha256(json.dumps([SCANNER_VERSION, RULES], sort_keys=True).encode()).hexdigest()
-# Versions 2/3 only expand accepted formats and exclude a public-data heading.
-# Previously successful checks remain valid; failed inputs are never imported.
-_PRIOR_RULES = dict(RULES)
-_PRIOR_RULES['private-correspondence'] = RULES['private-correspondence'].replace('(?! DOMAINS)', '')
-COMPATIBLE_POLICIES = {hashlib.sha256(json.dumps([version, rules], sort_keys=True).encode()).hexdigest()
-                       for version, rules in ((1, _PRIOR_RULES), (2, _PRIOR_RULES), (3, RULES))}
+PRIVATE_RULE_KEYS = frozenset(('personal-email', 'private-correspondence', 'unrelated-internal-app'))
 PATTERNS = {name: re.compile(value, re.I) for name, value in RULES.items()}
+_ACTIVE_PATTERNS = ContextVar('publication_patterns', default=None)
+
+
+def policy_identity(rules, version=SCANNER_VERSION):
+    return hashlib.sha256(json.dumps([version, rules], sort_keys=True).encode()).hexdigest()
+
+
+def compatible_policies(rules):
+    prior = dict(rules)
+    prior['private-correspondence'] = rules['private-correspondence'].replace('(?! DOMAINS)', '')
+    return {policy_identity(value, version) for version, value in ((1, prior), (2, prior), (3, rules))}
+
+
+def read_private_rules(path):
+    path = Path(path)
+    if path.is_symlink() or not path.is_file():
+        raise ValueError('Required private sanitation rules are missing or unsafe')
+    value = json.loads(path.read_text())
+    if not isinstance(value, dict):
+        raise ValueError('Private sanitation configuration must be an object')
+    rules = value.get('rules')
+    if value.get('schema') != 1 or not isinstance(rules, dict) or set(rules) != PRIVATE_RULE_KEYS:
+        raise ValueError('Private sanitation rules require the documented schema and categories')
+    for pattern in rules.values():
+        if not isinstance(pattern, str) or not pattern.strip():
+            raise ValueError('Private sanitation rule must be a nonempty pattern')
+        try:
+            re.compile(pattern, re.I)
+        except re.error:
+            raise ValueError('Invalid private sanitation pattern') from None
+    return rules
+
+
+def effective_rules(repository):
+    return {**RULES, **read_private_rules(cache_root(repository) / 'private-rules.json')}
+
+
 MAX_FILE = 512 * 1024 * 1024
 MAX_ARCHIVE = 2 * 1024 * 1024 * 1024
+DOCUMENTATION_RULES = {
+    'internal-implementation-history': r'\bprivate\s+(?:app|repository|repo|GUI|variant|target|build)\b',
+    'session-branch-reference': r'\b(?:codex|claude)/[a-z0-9_-]+|\bwt-(?:codex|claude)-',
+    'local-evidence-directory': r'\bDICOM[-A-Za-z0-9]*-20\d{6}\b',
+    'handoff-archive': r'\b[^\s`/]*handoff[^\s`/]*\.zip\b',
+}
+DOCUMENTATION_SCANNER_VERSION = 1
+DOCUMENTATION_POLICY = hashlib.sha256(json.dumps([DOCUMENTATION_SCANNER_VERSION, DOCUMENTATION_RULES], sort_keys=True).encode()).hexdigest()
+
+
+def check_documentation(data):
+    text = data.decode('utf-8')
+    for name, pattern in DOCUMENTATION_RULES.items():
+        if re.search(pattern, text, re.I):
+            raise ValueError('Public documentation refused: ' + name)
+
+
+def documentation_gate(repository, tips, receipts):
+    """A separate current-document scope; never re-audits accepted history."""
+    accepted = receipts.setdefault('documentation', {})
+    for tip in tips:
+        for entry in git(repository, 'ls-tree', '-rz', tip + '^{commit}').split(b'\0'):
+            if not entry:
+                continue
+            metadata, path = entry.split(b'\t', 1)
+            if not path.lower().endswith(b'.md') or path.startswith(b'licenses/'):
+                continue
+            oid = metadata.split()[2].decode()
+            key = DOCUMENTATION_POLICY + ':' + oid
+            name_key = DOCUMENTATION_POLICY + ':name:' + path.decode('utf-8')
+            if name_key not in accepted:
+                check_documentation(path)
+                accepted[name_key] = 'accepted'
+            if key not in accepted:
+                check_documentation(git(repository, 'cat-file', 'blob', oid))
+                accepted[key] = 'accepted'
 
 
 def check(data, label):
@@ -60,7 +113,7 @@ def check(data, label):
     for encoding, offset in (('utf-8', 0), ('utf-16-le', 0), ('utf-16-be', 0),
                              ('utf-16-le', 1), ('utf-16-be', 1)):
         text = data[offset:].decode(encoding, errors='ignore')
-        for name, pattern in PATTERNS.items():
+        for name, pattern in (_ACTIVE_PATTERNS.get() or PATTERNS).items():
             candidate = text
             if name == 'machine-home':
                 # Portable examples in third-party runtime code are not personal
@@ -98,18 +151,24 @@ def save(path, value):
 @contextmanager
 def ledger(repository):
     root = cache_root(repository)
+    rules = effective_rules(repository)
+    policy = policy_identity(rules)
+    compatible = compatible_policies(rules)
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (root / 'lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         path = root / 'receipts.json'
         value = json.loads(path.read_text()) if path.exists() else {}
-        if value.get('policy') in COMPATIBLE_POLICIES:
-            value['policy'] = POLICY
-        elif value.get('policy') != POLICY:
-            value = dict(policy=POLICY, objects={}, archives={}, texts={})
+        if value.get('policy') in compatible:
+            value['policy'] = policy
+        elif value.get('policy') != policy:
+            value = dict(policy=policy, objects={}, archives={}, texts={},
+                         documentation=value.get('documentation', {}))
+        token = _ACTIVE_PATTERNS.set({name: re.compile(pattern, re.I) for name, pattern in rules.items()})
         try:
             yield value
         finally:
+            _ACTIVE_PATTERNS.reset(token)
             # Successful individual checks survive a later failure; failures never do.
             save(path, value)
 
@@ -166,6 +225,7 @@ def git_gate(repository, tips, receipts):
     # Never accept a reachable commit until all of its newly exposed objects pass.
     for oid in accepted_commits:
         receipts['objects'][oid] = 'commit'
+    documentation_gate(repository, tips, receipts)
 
 
 def file_identity(path):
@@ -318,18 +378,22 @@ def release_gate(repository, commit, title, notes, archive):
 
 
 def pre_push(repository, lines):
+    refs = []
     tips = []
     for line in lines:
         local_ref, oid, remote_ref, remote_oid = line.split()
-        check((local_ref + '\n' + remote_ref).encode(), 'push reference name')
+        refs.append(local_ref + '\n' + remote_ref)
         if set(oid) != {'0'}:
             tips.append(oid)
-    if tips:
+    if refs:
         with ledger(repository) as receipts:
-            git_gate(repository, tips, receipts)
+            for ref in refs:
+                check(ref.encode(), 'push reference name')
+            if tips:
+                git_gate(repository, tips, receipts)
 
 
-def install(repository, accepted, evidence):
+def install(repository, accepted, evidence, private_rules=None):
     # This is a local configuration action, never a remote operation.
     oid = git(repository, 'rev-parse', accepted + '^{commit}').decode().strip()
     git(repository, 'merge-base', '--is-ancestor', oid, 'HEAD')
@@ -340,7 +404,20 @@ def install(repository, accepted, evidence):
                          str(Path(repository).resolve() / '.githooks')):
         raise ValueError('Existing hooks configuration requires explicit integration')
     root = cache_root(repository)
+    if private_rules is not None:
+        supplied = Path(private_rules).resolve()
+        if supplied.is_relative_to(Path(repository).resolve()) and not supplied.is_relative_to(root):
+            raise ValueError('Private rules must be supplied outside the source tree')
+        configured = read_private_rules(private_rules)
+    else:
+        configured = read_private_rules(root / 'private-rules.json')
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    target_rules = root / 'private-rules.json'
+    if target_rules.exists() or target_rules.is_symlink():
+        if read_private_rules(target_rules) != configured:
+            raise ValueError('Private rule selection already exists; preserve it')
+    else:
+        save(target_rules, {'schema': 1, 'rules': configured})
     record = dict(commit=oid, evidence=str(Path(evidence).resolve()), identity=file_identity(evidence),
                   scope='Existing owner-selected history sanitation acceptance; no rescan')
     target = root / 'accepted-history.json'
@@ -362,12 +439,13 @@ def main():
     parser.add_argument('--repository', type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument('--accepted-source')
     parser.add_argument('--evidence', type=Path)
+    parser.add_argument('--private-rules', type=Path, help='Required private configuration for initial setup; kept outside source')
     args = parser.parse_args()
     try:
         if args.action == 'install':
             if not args.accepted_source or not args.evidence:
                 parser.error('install requires explicit accepted source and existing evidence')
-            install(args.repository, args.accepted_source, args.evidence)
+            install(args.repository, args.accepted_source, args.evidence, args.private_rules)
         else:
             pre_push(args.repository, sys.stdin)
     except (ValueError, OSError, subprocess.CalledProcessError, zipfile.BadZipFile) as exc:

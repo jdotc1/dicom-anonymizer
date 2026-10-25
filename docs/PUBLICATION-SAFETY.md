@@ -32,8 +32,20 @@ Local setup on another checkout requires an existing accepted commit and evidenc
 
 ```sh
 python3 scripts/publication_safety.py install \
-  --accepted-source ACCEPTED_COMMIT --evidence "$ACCEPTED_SANITATION_EVIDENCE"
+  --accepted-source ACCEPTED_COMMIT --evidence "$ACCEPTED_SANITATION_EVIDENCE" \
+  --private-rules "$PRIVATE_SANITATION_RULES"
 ```
+
+Owner-specific deny-patterns are required local configuration, not public source.
+The supplied JSON uses schema `1` and a `rules` object with the categories
+`personal-email`, `private-correspondence`, and `unrelated-internal-app`. Supply
+the actual patterns through a file outside the tracked source tree. The installer
+keeps the configuration in the private Git common directory; it never prints the
+patterns. Missing, unsafe, incomplete or invalid configuration stops the gate.
+
+The effective public and configured rules determine receipt identity. Moving an
+unchanged rule into local configuration preserves its existing accepted receipts;
+changing the effective rule invalidates affected rule-dependent acceptance.
 
 The installer preserves unrelated custom hook configurations by refusing to
 replace them. The disabled hooks setting may be replaced with this requested
@@ -97,6 +109,22 @@ protection is separate and has not been configured by this change. There is no
 claimed remote enforcement or live publication acceptance.
 
 ## Focused implementation evidence
+
+### Current-document semantic checks
+
+Markdown has a separate, cached check for internal implementation history,
+operator branch references, local evidence-directory identifiers and handoff
+archive names. It checks current selected tips, including when their source
+objects already have accepted generic sanitation receipts. Documentation
+acceptance uses its own rule identity and immutable blob IDs. Legitimate medical
+private-tag descriptions, vulnerability-reporting guidance and dependency
+attributions remain valid public documentation.
+
+Changing current files does not erase earlier Git versions or already published
+assets. Historical removal and remote changes require their own authorized
+operation; this checker does not rewrite or delete history.
+
+### Initial implementation evidence
 
 Thirty-eight new synthetic sanitation methods passed as composite evidence,
 including Git/history/tag boundaries, receipt reuse and invalidation, binary and

@@ -163,7 +163,7 @@ At that milestone, interruption recovery and resumable publication were not yet 
 
 ## Preview 14 delivery (historical) — preview 14, build 18
 
-The receipt-driven workflow delivered public Preview 14/app build 18 with accepted engine-source `80caae5` and reused native-source `b28a3df`. Release source: `e2f95de`. Apple accepted notarization `92ca3f7b-0e55-46b6-93f2-c3fceeed405e`; the new root signature, stapled ticket and Gatekeeper assessment passed once. Accepted estimate evidence (24 new checks and four affected existing checks per repository) and earlier unchanged policy, self-audit, UI/build, runtime, icon and nested-signature receipts were reused. Five new packaging fixtures per app profile passed for distinct native/engine provenance and vendor cache exclusion; source-only review found no blockers. No accepted test suite, native build, provenance hash or dependency-signature check was repeated. The standalone arm64 ZIP was published and its HTTPS delivery returned HTTP 200. The deployment target remains macOS 13, with bundled Python. See `SPACE-ESTIMATE.md`.
+The receipt-driven workflow delivered public Preview 14/app build 18 with accepted engine-source `80caae5` and reused native-source `b28a3df`. Release source: `e2f95de`. Apple accepted notarization `92ca3f7b-0e55-46b6-93f2-c3fceeed405e`; the new root signature, stapled ticket and Gatekeeper assessment passed once. Accepted estimate evidence (24 new checks and four affected existing checks for the public app) and earlier unchanged policy, self-audit, UI/build, runtime, icon and nested-signature receipts were reused. Five new packaging fixtures for the public release profile passed for distinct native/engine provenance and vendor cache exclusion; source-only review found no blockers. No accepted test suite, native build, provenance hash or dependency-signature check was repeated. The standalone arm64 ZIP was published and its HTTPS delivery returned HTTP 200. The deployment target remains macOS 13, with bundled Python. See `SPACE-ESTIMATE.md`.
 
 ## Preview 13 packaging withdrawal (historical)
 
@@ -201,17 +201,27 @@ evidence and reused verification. Distribution checks cover only the new bundle.
 
 ## Preview 5 delivery (historical) — preview 5, build 9
 
+`v2.0.0-preview.5` delivers the accepted workflow polish with the existing standalone Python and icon. The existing SwiftUI interface is retained. Preview 4 remains available as the previous release; tags and earlier acceptance history are preserved.
+
 ## Preview 4 download housekeeping (historical)
 
 Before preview 5 was prepared on 2026-10-14, `v2.0.0-preview.4` was the only downloadable GitHub release. Previews 1–3 were superseded by preview 4 and their GitHub release entries were removed; their Git tags remain. The earlier source-publication and runtime-acceptance records below are preserved as historical evidence. Preview 4 reuses the accepted standalone runtime from preview 3 and adds the approved icon; this housekeeping does not change source behavior, the current app download or acceptance scope.
 
 ## Destination and scope
 
+The public repository is owned by `jdotc1`. The publication destination is [jdotc1/dicom-anonymizer](https://github.com/jdotc1/dicom-anonymizer). This repository contains the public app source. The initial source-only release is `v2.0.0-preview.1`. The historical standalone macOS preview `v2.0.0-preview.14` bundles Python and its focused acceptance is recorded in `RUNTIME-ACCEPTANCE.md`.
+
 ## Publication controls
+
+- Include reviewed source, synthetic example/test sources, MIT license and dependency notices.
+- Exclude patient data, unrelated development history, local operational records, prior build artifacts, credentials, signing material and existing artwork.
+- Keep GitHub Actions disabled at publication. The committed workflow is manual-only and requires explicit acknowledgement if Actions is enabled later.
+- Enable GitHub private vulnerability reporting and confirm its API status after the repository becomes public.
+- Confirm the repository owner, public visibility, published source commit and prerelease metadata through GitHub.
 
 ## Attribution and security
 
-Copyright remains DICOM Anonymizer Project contributors. The source commits use a neutral display identity and the deliberately non-deliverable `maintainers@dicom-anonymizer.invalid` address. This address is not a contact channel. Repository ownership publicly associates this project with `jdotc1` by the owner’s choice; no personal email address is included in source metadata.
+Copyright remains DICOM Anonymizer Project contributors. Maintenance and reporting channels are documented in `SECURITY.md`; commit metadata addresses are not support mailboxes.
 
 Use the repository’s Security > Advisories > Report a vulnerability channel. Reports must use synthetic reproductions. Repository administrators should monitor private-report notifications; no personal notification address is published and no response-time guarantee is made.
 

@@ -40,6 +40,8 @@ Seven new explanation cases and eight new worker-to-model cases passed as compos
 
 Read-only review corrected two overstatements in fallback text: parent metadata does not prove content access, and unavailable identity does not prove mismatch. Only the two affected explanation cases were rerun after that wording change. Passing unchanged cases, lifecycle/worker process suites, engine policy/self-audit, sidecar/r2, runtime, dependencies, icon, publication-tooling and Preview 20 distribution receipts were reused.
 
+The real optimized native target compiled with warnings as errors using Swift 6.4.2, Xcode 27.2 (27B48), SDK 27.2, Swift language mode 6, arm64/macOS 13. It was not launched. Detailed logs, diagnostic evidence and verification records are retained outside the repository.
+
 No GUI use, native app launch, installation, signing, notarization, push or release occurred for this source increment. Preview 21/build 25 is the public download. Live recovery/sidecar interaction, scheduling, responsiveness and layout acceptance remain pending.
 
 ## Authorized distribution

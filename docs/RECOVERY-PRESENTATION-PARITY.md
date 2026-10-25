@@ -2,6 +2,11 @@
 
 ## Preview 7 source change
 
+Preview 7/build 11 improves recovery presentation in the existing SwiftUI
+interface using its accepted source and optimized executable.
+Preview 6/build 10 remains the historical release described in
+`docs/ERROR-RECOVERY.md`; no older acceptance record is rewritten.
+
 ## Behavior
 
 - Recovery text fits naturally when space allows and scrolls within the available
@@ -15,6 +20,10 @@
   action remains in the recovery area. Busy-state cancellation remains available.
 - The toolchain guard accepts Apple Swift 6.4 patch releases, including 6.4.2,
   while retaining the requirement for Apple Swift 6.4 from Xcode.
+
+This change preserves the public interface and macOS 13 deployment target.
+It does not change the engine, anonymization policy, event schema, runtime
+requirements or existing accessibility behavior. No new UI dependency is introduced.
 
 ## Evidence
 

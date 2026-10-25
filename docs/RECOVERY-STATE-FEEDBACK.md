@@ -35,6 +35,8 @@ The first seven acknowledgement cases reached their expected completion/record s
 
 Two affected older worker-to-model cases, whose synthetic workers intentionally omit the selected record, now expect retained completion plus a nonblocking acknowledgement warning. Only those two existing cases were run. All unrelated passing engine, policy, self-audit, sidecar/r2, lifecycle, worker/model/journal, runtime, dependency, icon and Preview 23 distribution receipts were reused.
 
+The actual optimized native target compiled with warnings as errors using Swift 6.4.2, Xcode 27.2 (27B48), SDK 27.2, Swift language mode 6, arm64/macOS 13. The executable was not launched. Detailed logs, harnesses and verification records are retained outside the repository.
+
 ## Evidence limits and delivery
 
 Synthetic workers create isolated records/output markers; they do not establish real engine processing, audit/publication/durability or live app termination behavior. Snapshot checks establish model decisions, not actual timer scheduling. Live recovery/sidecar interaction, volume behavior, responsiveness and layout remain pending.

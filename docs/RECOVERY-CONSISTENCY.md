@@ -30,6 +30,8 @@ Fourteen new cases passed once: eight report/warning transitions and six generat
 
 Read-only source review found no blockers. The actual optimized native target compiled with warnings as errors using Swift 6.4.2, Xcode 27.2 (27B48), SDK 27.2, Swift language mode 6, arm64/macOS 13. The executable was not launched.
 
+Accepted engine/policy/self-audit, sidecar/r2, prior lifecycle/worker/model/journal/acknowledgement, runtime, dependency, icon, publication-tooling and Preview 24 distribution receipts were reused. No passing unchanged suites, engine checks, source hashes or dependency signatures were repeated. Detailed logs, harnesses and verification records are retained outside the repository.
+
 ## Limits and delivery
 
 Synthetic workers and pure report-result reducers do not establish actual report opening, real engine processing/audit/publication, GUI interaction, timer scheduling, layout or responsiveness. The tests establish token acceptance/rejection and presentation transitions; they do not wait for live timers or inspect native windows.

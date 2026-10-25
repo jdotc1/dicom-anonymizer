@@ -8,7 +8,19 @@ Release: https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.
 
 The source-increment record below is retained as history; its pre-publication statements describe that earlier stage.
 
+
+The repository `jdotc1/dicom-anonymizer` is the app source for ongoing development. The SwiftUI interface, Apple silicon/macOS 13 target, bundle identifier, icon and standalone Python runtime are retained.
+
 ## Consolidated source
+
+- Retained optional MRI JSON-sidecar processing.
+- Added aggregated folder-conflict explanations, source-patient-ID reuse detection,
+  relative-location masking and actionable fixes before staging.
+- Retained the metadata clean/audit policy, input-stability comparisons, progress,
+  storage estimates, cancellation, owned cleanup and exclusive publication.
+- Retained `tests/test_folder_conflicts.py` and its accepted verification for
+  unchanged behavior. Patient datasets, credentials and signing secrets are not
+  part of this source distribution.
 
 ## Focused evidence
 
@@ -19,11 +31,15 @@ Four new public host seam checks passed once in `tests/test_public_consolidation
 3. Distinct patients retain exact numeric output folders while DICOM and sidecar outputs are both audited and published together.
 4. Default-off DICOM-only processing uses the improved recovery without invoking sidecar discovery.
 
-Source-only independent review found no consolidation blocker. Public native sources were unchanged by consolidation, so the accepted optimized executable, 11 sidecar model checks and development-bundle runtime evidence from `80a8a8d` are reused. No native rebuild, model rerun or bundle smoke rerun occurred for this engine-only port. The sidecar source receipt has 17 engine seam checks per variant plus one new development-bundle CLI smoke check per variant; those remain their own input-specific evidence.
+Source-only independent review found no consolidation blocker. Native sources were unchanged, so the accepted optimized executable, 11 sidecar model checks and development-bundle runtime evidence were reused. No native rebuild, model rerun or bundle smoke rerun occurred for this engine-only change. The accepted 17 engine seam checks and development-bundle CLI smoke check retain their original input-specific scope.
+
+Detailed consolidation and sidecar verification records are retained outside the repository.
 
 ## CI and publication
 
 The existing public workflow remains manually authorized; no workflow was dispatched. Its temporary-directory environment is now set explicitly so the focused fixtures have a valid scratch location on a future authorized CI run. No automatic full-suite reruns were enabled.
+
+The original source-only stage involved no distribution or installation. Subsequent delivery is recorded above. Live toggle/rescan/layout acceptance remains pending; compilation, model and CLI evidence do not establish live GUI behavior.
 
 ## Sidecar limits
 

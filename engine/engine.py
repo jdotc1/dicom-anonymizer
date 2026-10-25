@@ -1027,6 +1027,7 @@ PRESERVE_UID_KEYS = {
 # Numeric policy additions: PS3.15 2026d E.1-1, resolved against the shipped
 # README, except ContrastBolusAgent retains the existing product behavior.
 # Numeric tags also cover entries absent from pydicom 3.0.2.
+# This selected tag set defines the runtime behavior; no external proposal is imported.
 CLEAR_TAGS = {
     0x00081088,  # PyramidDescription
     0x00120022,  # IssuerOfClinicalTrialProtocolID
