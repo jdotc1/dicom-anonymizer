@@ -7,7 +7,7 @@ creates a concrete plan by default; deletion requires a separate explicit apply
 command using that existing plan. It does not build, test, sign, notarize,
 publish, launch, install or contact GitHub.
 
-This local tooling increment follows Preview 25/build 29. App interfaces and
+This tooling increment follows Preview 25/build 29 and is delivered with Preview 26/build 30. App interfaces and
 engine policy are unchanged. No live release folder was cleaned while developing
 or testing this command.
 
@@ -114,5 +114,17 @@ final focused review found no blockers.
 No accepted package, native executable or historical evidence was rehashed or
 reverified. Existing app/engine/packaging/publication receipts were reused. No
 GUI use, app launch, native build, signing, notarization, installation, network
-publication or real artifact deletion occurred. Live behavior of the new
-ownership registration remains untested until a separately authorized release.
+publication or real artifact deletion occurred. Fresh ownership registration was subsequently exercised during the authorized
+Preview 26 delivery below; live destructive retirement remains untested.
+
+## Authorized distribution
+
+The unified public app is delivered as **Preview 26/build 30**, using bounded read-only visibility reconciliation in `scripts/publication.py`. Packaged engine/release source is `c50ae5762c641d802f9934dbcd59e9229ded253a`; reused accepted native executable source is `b64ce1b2bb999c217c6c4fa9638dc872b67ad37b`. Apple notarization `19dbf886-c264-4d4e-b49f-8941b05e6bb7` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,070,670 bytes.
+
+Fresh finalization created the new artifact-ownership record. Its release/build/source and artifact entries were checked once as new metadata; no existing package was rehashed or reverified. No retirement plan was applied to real artifacts. Native/engine behavior remains unchanged from Preview 25.
+
+Accepted verification reused: 26 retirement fixture methods and existing report/warning, snapshot-generation, engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal/acknowledgement, runtime, dependency, icon and publication-tooling evidence. No functional tests, native builds, unchanged source hashes or dependency-signature checks were repeated for delivery.
+
+No GUI use, native app launch or installation occurred. Public UI structure and engine policy are unchanged. Live scheduling, recovery/report/sidecar interaction, volume behavior, responsiveness and layout remain pending. Ownership metadata supplies ordinary replacement detection, not cryptographic or privileged-attacker guarantees.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.26). Earlier records retain their historical scope.

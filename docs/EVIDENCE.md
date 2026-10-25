@@ -108,3 +108,15 @@ No GUI use, native app launch or installation occurred. Pure report-result reduc
 ## 2026-10-24 — local conservative artifact retirement
 
 Twenty-six new tiny fixture methods passed as composite evidence; only six affected eligibility/deletion cases were repeated after ownership/traversal changes. Read-only review findings were resolved, including pre-plan archive replacement, missing current inputs, traversal errors/mounts and dangling ledger links. Finalization commands are mocked; no accepted artifacts were touched or verification rerun. No GUI use, app launch, native build, signing, notarization, installation or publication. See `ARTIFACT-RETIREMENT.md` for scope/limits.
+
+## 2026-10-24 — artifact retirement tooling Preview 26/build 30
+
+The unified public app is delivered as **Preview 26/build 30**, using bounded read-only visibility reconciliation in `scripts/publication.py`. Packaged engine/release source is `c50ae5762c641d802f9934dbcd59e9229ded253a`; reused accepted native executable source is `b64ce1b2bb999c217c6c4fa9638dc872b67ad37b`. Apple notarization `19dbf886-c264-4d4e-b49f-8941b05e6bb7` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,070,670 bytes.
+
+Fresh finalization created the new artifact-ownership record. Its release/build/source and artifact entries were checked once as new metadata; no existing package was rehashed or reverified. No retirement plan was applied to real artifacts. Native/engine behavior remains unchanged from Preview 25.
+
+Accepted verification reused: 26 retirement fixture methods and existing report/warning, snapshot-generation, engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal/acknowledgement, runtime, dependency, icon and publication-tooling evidence. No functional tests, native builds, unchanged source hashes or dependency-signature checks were repeated for delivery.
+
+No GUI use, native app launch or installation occurred. Public UI structure and engine policy are unchanged. Live scheduling, recovery/report/sidecar interaction, volume behavior, responsiveness and layout remain pending. Ownership metadata supplies ordinary replacement detection, not cryptographic or privileged-attacker guarantees.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.26). Earlier records retain their historical scope.

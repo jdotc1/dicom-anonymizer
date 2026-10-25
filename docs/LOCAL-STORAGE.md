@@ -66,11 +66,11 @@ that old DICOM payloads remain available locally. Accepted verification was
 reused. No tests, builds, content hashes, signing checks, GUI use or app launches
 were performed. Current release inputs and source history remain retained.
 
-## Conservative retirement tooling — local increment
+## Conservative retirement tooling — delivered with Preview 26
 
 A plan-first companion command now supports bounded retirement of explicitly
 selected finalized public artifacts, while protecting current inputs and keeping
 receipts/logs. Ownership metadata is recorded only for freshly finalized future
 releases; unbound legacy bundles/uploads are skipped. Generic cache sweeping is
-not automated. See [Artifact retirement](ARTIFACT-RETIREMENT.md). No additional
-real cleanup or release was performed for this implementation.
+not automated. See [Artifact retirement](ARTIFACT-RETIREMENT.md). No additional real cleanup was applied. Fresh ownership registration was
+exercised for the separately authorized Preview 26 release.

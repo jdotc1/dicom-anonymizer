@@ -14,7 +14,7 @@
 
 **Recovery consistency:** Preview 25/build 29 preserves outstanding acknowledgement warnings across report recovery and rejects stale background snapshots with generation tokens. See [Recovery consistency](docs/RECOVERY-CONSISTENCY.md).
 
-**Local tooling increment:** plan-first artifact retirement protects current release inputs and evidence, with ownership checks for superseded packages. Preview 25 remains the public download. See [Artifact retirement](docs/ARTIFACT-RETIREMENT.md).
+**Artifact retirement tooling:** Preview 26/build 30 ships through fresh ownership-record creation; the plan-first retirement command protects current inputs and evidence. Cleanup requires a separate explicit apply. See [Artifact retirement](docs/ARTIFACT-RETIREMENT.md).
 
 **Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
 
@@ -50,7 +50,7 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: [Preview 25 (app build 29)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.25).** Unified public app with ownership-aware interruption recovery, worker-event reliability, sidecar feedback, detailed folder recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
+**Current download: [Preview 26 (app build 30)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.26).** Unified public app with ownership-aware interruption recovery, worker-event reliability, sidecar feedback, detailed folder recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
 
 Preview 14 introduced allocation-aware estimates. Allocation-aware disk-space estimates account for metadata growth, destination allocation, output folders and the report while preserving the interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 
