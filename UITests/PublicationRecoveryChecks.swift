@@ -27,7 +27,7 @@ struct PublicationRecoveryChecks {
         guard let defaults = UserDefaults(suiteName: suite) else { throw PublicationRecoveryFailure(message: "Isolated preferences unavailable") }
         defer { defaults.removePersistentDomain(forName: suite) }
         let model = BatchModel(defaults: defaults)
-        let parent = URL(fileURLWithPath: "DICOM-Publication-Recovery-20261023/model-output", isDirectory: true)
+        let parent = FileManager.default.temporaryDirectory.appendingPathComponent("DICOM-Publication-Recovery-20261023/model-output", isDirectory: true)
         let output = parent.appendingPathComponent("Anonymized_fixture", isDirectory: true)
         let stage = parent.appendingPathComponent(".dicom-batch-fixture", isDirectory: true)
         model.outputParent = parent

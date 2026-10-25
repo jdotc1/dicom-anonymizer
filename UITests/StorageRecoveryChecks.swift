@@ -24,7 +24,7 @@ struct StorageRecoveryChecks {
         let suite = "DICOMStorageRecoveryTests." + UUID().uuidString
         guard let defaults = UserDefaults(suiteName: suite) else { throw StorageRecoveryFailure(message: "Isolated preferences unavailable") }
         defer { defaults.removePersistentDomain(forName: suite) }
-        let root = URL(fileURLWithPath: "DICOM-Storage-Recovery-20261023/model-fixtures", isDirectory: true).appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("DICOM-Storage-Recovery-20261023/model-fixtures", isDirectory: true).appendingPathComponent(UUID().uuidString, isDirectory: true)
         let first = root.appendingPathComponent("First output", isDirectory: true)
         let replacement = root.appendingPathComponent("Replacement output", isDirectory: true)
         try FileManager.default.createDirectory(at: first, withIntermediateDirectories: true)
