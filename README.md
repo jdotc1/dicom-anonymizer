@@ -6,6 +6,8 @@
 
 **Recovery explanations:** Preview 21/build 25 adds clearer confirmed/uncertain recovery guidance, with accepted headless worker-to-model integration coverage. See [Recovery explanations](docs/RECOVERY-EXPLANATIONS.md).
 
+**Local source increment:** guarded output-location rechecks and headless recovery-record acknowledgement coverage are complete; Preview 21 remains the public download. See [Output-location rechecks](docs/OUTPUT-LOCATION-RECHECKS.md).
+
 **Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
 
 **Unified public app:** ongoing development now uses this self-contained public SwiftUI implementation. Preview 16 adds detailed folder-conflict recovery and optional MRI JSON-sidecar cleaning. Live sidecar GUI acceptance remains pending. See [Consolidation](docs/PUBLIC-CONSOLIDATION.md) and [MRI JSON sidecars](docs/MRI-JSON-SIDECARS.md).

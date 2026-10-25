@@ -211,6 +211,13 @@ struct InterruptionNotice: Sendable {
 struct InterruptionScan: Sendable {
     let notice: InterruptionNotice?
     let hasLiveOwners: Bool
+    let hasPendingLocations: Bool
+
+    init(notice: InterruptionNotice?, hasLiveOwners: Bool, hasPendingLocations: Bool = false) {
+        self.notice = notice
+        self.hasLiveOwners = hasLiveOwners
+        self.hasPendingLocations = hasPendingLocations
+    }
 }
 
 // Records are local operational state, never part of a batch report or upload.
@@ -306,6 +313,7 @@ enum InterruptionRecovery {
         guard let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return InterruptionScan(notice: nil, hasLiveOwners: false) }
         var notices: [InterruptionNotice] = []
         var hasLiveOwners = false
+        var hasPendingLocations = false
         for file in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where file.pathExtension == "json" {
             guard let identity = recordIdentity(file), let entry = record(file) else {
                 notices.append(InterruptionNotice(message: "Unconfirmed: the operation described by recovery record \(file.lastPathComponent). This record could not be read safely, so no staging ownership or publication outcome can be established. Next: inspect the recovery location and any known output before retrying. No automatic cleanup was attempted.", location: directory, ownedStaging: false, publicationPossible: true))
@@ -316,17 +324,20 @@ enum InterruptionRecovery {
                 _ = retire(file, identity: identity)
                 continue
             }
-            if let notice = inspect(file, ownerIsRunning: { _ in false }) { notices.append(notice) }
+            if let notice = inspect(file, ownerIsRunning: { _ in false }) {
+                notices.append(notice)
+                hasPendingLocations = true
+            }
         }
         guard let first = notices.first else { return InterruptionScan(notice: nil, hasLiveOwners: hasLiveOwners) }
-        if notices.count == 1 { return InterruptionScan(notice: first, hasLiveOwners: hasLiveOwners) }
+        if notices.count == 1 { return InterruptionScan(notice: first, hasLiveOwners: hasLiveOwners, hasPendingLocations: hasPendingLocations) }
         let combined = InterruptionNotice(
             message: "\(notices.count) previous batch recovery records need review. Nothing will be resumed or deleted automatically.\n\n" + notices.enumerated().map {
                 "\($0.offset + 1). \($0.element.message)\nLocation: \($0.element.location.path)"
             }.joined(separator: "\n\n"), location: directory,
             ownedStaging: notices.contains { $0.ownedStaging },
             publicationPossible: notices.contains { $0.publicationPossible })
-        return InterruptionScan(notice: combined, hasLiveOwners: hasLiveOwners)
+        return InterruptionScan(notice: combined, hasLiveOwners: hasLiveOwners, hasPendingLocations: hasPendingLocations)
     }
     static func firstNotice(in directory: URL, ownerIsRunning: (Int) -> Bool = { pid in
         guard pid > 0, pid <= Int(Int32.max) else { return false }
@@ -391,6 +402,7 @@ final class BatchModel: ObservableObject {
     private let defaults: UserDefaults
     private var activeJournal: URL?
     private var interruptionMessage: String?
+    private var interruptionRefreshAllowed = true
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -422,7 +434,7 @@ final class BatchModel: ObservableObject {
         }
     }
     private var canRefreshInterruption: Bool {
-        !busy && source == nil && summary == nil && (errorMessage == nil || interruptionMessage != nil)
+        interruptionRefreshAllowed && !busy && source == nil && summary == nil && (errorMessage == nil || interruptionMessage != nil)
     }
     @discardableResult func receiveInterruptionScan(_ snapshot: InterruptionScan) -> Bool {
         guard canRefreshInterruption else { return false }
@@ -430,7 +442,7 @@ final class BatchModel: ObservableObject {
             clearProblem(); publishedWithoutConfirmation = false; status = idleStatus
         }
         if let notice = snapshot.notice { presentInterruption(notice) }
-        return snapshot.hasLiveOwners
+        return snapshot.hasLiveOwners || snapshot.hasPendingLocations
     }
 
     private func isDirectory(_ url: URL) -> Bool {
@@ -451,6 +463,9 @@ final class BatchModel: ObservableObject {
 
     func setOutputParent(_ url: URL) {
         guard !busy, validateOutput(url) else { return }
+        // A deliberate location choice owns the recovery area, including a
+        // successful choice that leaves no error for the delayed-scan guard.
+        interruptionRefreshAllowed = false
         outputParent = url.standardizedFileURL
         defaults.set(url.standardizedFileURL.path, forKey: Self.outputDefaultsKey)
         if problem == .output { clearProblem(); status = idleStatus }
