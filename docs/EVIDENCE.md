@@ -76,3 +76,7 @@ This is a tooling/distribution update; native and engine behavior are unchanged 
 No GUI use, native app launch or installation occurred. Public UI structure and engine policy are unchanged. Live scheduling, volume behavior, recovery/sidecar interaction, responsiveness and layout remain pending. Prior synthetic evidence retains its original limits.
 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.23). Earlier records retain their historical scope.
+
+## 2026-10-24 — local recovery inspection and acknowledgement feedback
+
+Nine new directory/model and eight new synthetic worker/model/record-feedback cases passed as composite evidence, plus two affected older worker-to-model cases. A harness-only idle-quit assertion was corrected; product quit behavior was preserved. Review found and resolved missing-directory history after a live-owner-only scan. Optimized native target compiled with warnings as errors. Accepted unchanged engine, policy, sidecar, lifecycle, worker, runtime and Preview 23 distribution evidence reused. No GUI use, native app launch, installation or publication. See `RECOVERY-STATE-FEEDBACK.md` for limits.

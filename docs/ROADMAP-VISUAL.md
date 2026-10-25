@@ -40,6 +40,10 @@ Valid unresolved recovery locations are rechecked through the existing guarded b
 
 Publication tooling now reconciles delayed release/asset/published-tag visibility through bounded reads and preserves the existing journal, archive selection and ownership safeguards. Seventeen new mocked methods passed as composite evidence; the changed tooling is used for the Preview 23 release, with the accepted native executable reused. Mock timing guarantees remain separate from live service behavior. See [Resumable publication](RESUMABLE-PUBLICATION.md).
 
+## Current local source increment
+
+Recovery inspection failures are distinct from empty listings and retain prior uncertainty, including after live-owner-only observations. Successful completion with unresolved local-record acknowledgement now retains the result and shows a nonblocking warning through existing controls. This increment is not yet released. See [Recovery-state feedback](RECOVERY-STATE-FEEDBACK.md).
+
 ## Decision-dependent future scope
 
 1. **Resolve supported-input policy decisions separately.** Opaque payloads, unsupported structures, resource limits and conformance claims need explicit scope and approval before implementation.

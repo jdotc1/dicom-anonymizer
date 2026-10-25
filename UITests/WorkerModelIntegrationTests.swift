@@ -62,7 +62,7 @@ import Foundation
         try require(!model.scanning && !model.cancelling, "exit clears activity state")
         switch name {
         case "successfulEOF", "lateCancellationCompletion":
-            try require(model.summary?.files == 2 && model.completedOutput?.path == output.path && model.canInspectOutput && model.errorMessage == nil, "only accepted exit creates completion")
+            try require(model.summary?.files == 2 && model.completedOutput?.path == output.path && model.canInspectOutput && model.errorMessage?.contains("local recovery record") == true && !model.hasBlockingProblem, "accepted completion survives absent synthetic recovery record with a warning")
             if name == "lateCancellationCompletion" { try require(requested, "late cancellation exercised") }
         case "completeNonzeroExit", "malformedAfterComplete", "abruptExit":
             try require(model.summary == nil && model.completedOutput == nil && !model.canAnonymize, "no false completion/readiness")
