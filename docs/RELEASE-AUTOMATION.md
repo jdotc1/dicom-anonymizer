@@ -63,6 +63,8 @@ targets and reachability. It does not authenticate the qualification record or
 repeat source comparisons, tests, hashes or signature verification. Missing,
 duplicate, unaccepted, non-commit or unreachable mappings fail closed. Original
 metadata must still match the original receipt; a mapping cannot repair mismatches.
+Source resolution, ancestry checks and engine extraction disable Git replacement
+objects and grafts, matching the sanitation gate's view of immutable history.
 
 Assembly extracts the engine from the sanitized selection. `source_commit` and
 `engine_source_commit` name that selection. `native_source_commit` continues to

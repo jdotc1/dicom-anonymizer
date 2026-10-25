@@ -125,10 +125,10 @@ def translated_sources(accepted, base, repository, source, native):
                 not isinstance(entry.get('qualification'), str) or not entry['qualification'].strip() or
                 not isinstance(target, str) or not re.fullmatch('[0-9a-f]{40}', target)):
             raise ValueError('History mapping requires explicit scoped qualification')
-        resolved = run(['git', '-C', str(repository), 'rev-parse', target + '^{commit}']).strip()
+        resolved = publication_safety.git(repository, 'rev-parse', target + '^{commit}').decode().strip()
         if resolved != target:
             raise ValueError('History target must be an immutable commit')
-        run(['git', '-C', str(repository), 'merge-base', '--is-ancestor', target, 'HEAD'])
+        publication_safety.git(repository, 'merge-base', '--is-ancestor', target, 'HEAD')
         results.append(target)
     return tuple(results)
 
@@ -137,9 +137,9 @@ def plan(manifest_path, repository):
     manifest_path = Path(manifest_path).resolve()
     m = read(manifest_path)
     profile = read(repository / 'scripts/release-profile.json')
-    if run(['git', '-C', str(repository), 'status', '--porcelain', '--untracked-files=all', '--',
+    if publication_safety.git(repository, 'status', '--porcelain', '--untracked-files=all', '--',
             'scripts/release.py', 'scripts/release-profile.json', 'scripts/publication.py',
-            'scripts/publication_safety.py', 'scripts/release_storage.py', '.githooks/pre-push']).strip():
+            'scripts/publication_safety.py', 'scripts/release_storage.py', '.githooks/pre-push').strip():
         raise ValueError('Commit release tooling and profile before selecting release provenance')
     if m['schema'] != 1 or m['variant'] != profile['variant']:
         raise ValueError('Manifest schema or app variant mismatch')
@@ -190,9 +190,9 @@ def plan(manifest_path, repository):
     selected_source, selected_native = translated_sources(m['accepted'], manifest_path.parent,
                                                          repository, source, native_source)
     if selected_native != selected_source:
-        run(['git', '-C', str(repository), 'rev-parse', selected_native + '^{commit}'])
-    commit = run(['git', '-C', str(repository), 'rev-parse', selected_source + '^{commit}']).strip()
-    release_commit = run(['git', '-C', str(repository), 'rev-parse', 'HEAD']).strip()
+        publication_safety.git(repository, 'rev-parse', selected_native + '^{commit}')
+    commit = publication_safety.git(repository, 'rev-parse', selected_source + '^{commit}').decode().strip()
+    release_commit = publication_safety.git(repository, 'rev-parse', 'HEAD').decode().strip()
     return dict(manifest=m, baseline=str(baseline), product=str(product), source_commit=commit,
                 release_source_commit=release_commit, native_source_commit=native_source,
                 accepted_source_commit=source, native_sanitized_source_commit=selected_native,
@@ -232,8 +232,7 @@ def assemble(manifest_path, output, repository):
         engine = app / 'Contents/Resources/engine'
         if engine.exists():
             shutil.rmtree(engine)
-        archive = subprocess.run(['git', '-C', str(repository), 'archive', p['source_commit'], 'engine'],
-                                 check=True, capture_output=True).stdout
+        archive = publication_safety.git(repository, 'archive', p['source_commit'], 'engine')
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             for member in tar.getmembers():
                 parts = Path(member.name).parts

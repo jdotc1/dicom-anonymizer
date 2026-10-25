@@ -94,3 +94,17 @@ class HistoryProvenanceTests(unittest.TestCase):
         self.qualification['accepted_verification_reused'] = False
         self.save_qualification()
         with self.assertRaises(ValueError): r.plan(self.manifest_path, self.repo)
+
+    def test_replacement_ref_cannot_redirect_qualified_engine_archive(self):
+        self.qualify()
+        (self.repo / 'engine/worker.py').write_text('replacement engine must not ship\n')
+        self.git('add', 'engine/worker.py')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'replacement')
+        replacement = self.git('rev-parse', 'HEAD').strip()
+        self.git('checkout', '--detach', self.commit)
+        self.git('replace', self.commit, replacement)
+        info = self.assemble()
+        self.assertEqual(info['engine_source_commit'], self.commit)
+        self.assertEqual(info['release_source_commit'], self.commit)
+        self.assertEqual((self.output / 'DICOM Anonymizer 2.0.app/Contents/Resources/engine/worker.py').read_text(),
+                         'accepted engine\n')
