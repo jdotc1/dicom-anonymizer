@@ -417,6 +417,12 @@ class SafetyTests(unittest.TestCase):
                 self.assertEqual('accepted', receipts['texts']['prior-success'])
                 self.assertEqual(safety.POLICY, receipts['policy'])
 
+    def test_public_suffix_heading_allowed_but_private_messages_refused(self):
+        safety.payload_check(gzip.compress(b'// ===BEGIN PRIVATE DOMAINS==='), 'public data fixture')
+        for text in ('BEGIN' + '_PRIVATE', 'BEGIN ' + 'PRIVATE MESSAGE', 'BEGIN ' + 'PRIVATE CORRESPONDENCE'):
+            with self.assertRaisesRegex(ValueError, 'private-correspondence'):
+                safety.check(text.encode(), 'fixture')
+
 
 if __name__ == '__main__':
     unittest.main()

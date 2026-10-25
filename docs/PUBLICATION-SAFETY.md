@@ -112,3 +112,5 @@ sanitized-history acceptance instead of scanning that history again.
 ## Bounded gzip support
 
 The first guarded assembly encountered the bundled runtime's compressed public-suffix data. The gate stopped before signing. Bounded gzip inspection now checks expanded content, rejects corruption and enforces expansion/depth limits. Four new synthetic methods cover this boundary. Scanner version 2 explicitly carries forward successful version-1 receipts: version 1 rejected every gzip payload, so none of those successful inspections depended on the new capability. This additive migration does not bypass a failed inspection or repeat unchanged accepted checks.
+
+The standard Public Suffix List private-domain section heading is permitted; it is public runtime data, not private correspondence. A dedicated new fixture confirms that exception while private-message markers remain refused. Successful receipts from the earlier, stricter marker rule are compatible; failed checks are never imported.

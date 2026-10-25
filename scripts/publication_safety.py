@@ -42,11 +42,14 @@ RULES = {
     'credential': r'(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})',
 }
 # Bump when inspection semantics change, even if the pattern set stays the same.
-SCANNER_VERSION = 2
+SCANNER_VERSION = 3
 POLICY = hashlib.sha256(json.dumps([SCANNER_VERSION, RULES], sort_keys=True).encode()).hexdigest()
-# Version 2 only adds bounded gzip support. Version 1 rejected every gzip
-# payload; its previously successful objects remain valid without rescanning.
-COMPATIBLE_POLICIES = {hashlib.sha256(json.dumps([1, RULES], sort_keys=True).encode()).hexdigest()}
+# Versions 2/3 only expand accepted formats and exclude a public-data heading.
+# Previously successful checks remain valid; failed inputs are never imported.
+_PRIOR_RULES = dict(RULES)
+_PRIOR_RULES['private-correspondence'] = RULES['private-correspondence'].replace('(?! DOMAINS)', '')
+COMPATIBLE_POLICIES = {hashlib.sha256(json.dumps([version, rules], sort_keys=True).encode()).hexdigest()
+                       for version, rules in ((1, _PRIOR_RULES), (2, _PRIOR_RULES))}
 PATTERNS = {name: re.compile(value, re.I) for name, value in RULES.items()}
 MAX_FILE = 512 * 1024 * 1024
 MAX_ARCHIVE = 2 * 1024 * 1024 * 1024
