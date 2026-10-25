@@ -256,16 +256,26 @@ enum InterruptionRecovery {
         if let pid = record["pid"] as? Int, ownerIsRunning(pid) { return nil }
         let output = URL(fileURLWithPath: outputPath).standardizedFileURL
         if ["publishing", "published"].contains(phase) && matches(output, record) {
-            return InterruptionNotice(message: "A previous batch appears to have been published, but completion was not acknowledged. Review the output before retrying.", location: output, ownedStaging: false, publicationPossible: true)
+            return InterruptionNotice(message: "Confirmed: the output folder matches the recorded staging identity. Unconfirmed: the app did not acknowledge completion, so this notice does not establish that the batch and report are ready to share. Next: review the output and its anonymization report before retrying; avoid creating a duplicate batch.", location: output, ownedStaging: false, publicationPossible: true)
         }
         if let path = record["staging"] as? String, path.hasPrefix("/") {
             let staging = URL(fileURLWithPath: path).standardizedFileURL
             if staging.deletingLastPathComponent() == output.deletingLastPathComponent(),
                staging.lastPathComponent.hasPrefix(".dicom-batch-"), matches(staging, record) {
-                return InterruptionNotice(message: "A previous batch was interrupted and its staging identity still matches the recovery record. Review the incomplete staging folder before starting again. Nothing will be resumed or deleted automatically.", location: staging, ownedStaging: true, publicationPossible: false)
+                return InterruptionNotice(message: "Confirmed: the incomplete staging folder matches this operation’s recovery record. Unconfirmed: a completed batch at \(output.path). Next: inspect the staging folder shown here and the intended output before retrying. Nothing will be resumed or deleted automatically.", location: staging, ownedStaging: true, publicationPossible: false)
             }
         }
-        return InterruptionNotice(message: "A previous batch was interrupted, but its staging or publication outcome cannot be confirmed. Inspect the output location before retrying; no automatic cleanup was attempted.", location: output.deletingLastPathComponent(), ownedStaging: false, publicationPossible: true)
+        let parent = output.deletingLastPathComponent()
+        let parentValues = try? parent.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+        let explanation: String
+        if parentValues?.isDirectory != true || parentValues?.isSymbolicLink != false {
+            explanation = "The output location could not be inspected as a regular folder. It may be disconnected, moved, or inaccessible. Next: reconnect or locate it, then inspect the intended output before retrying."
+        } else if FileManager.default.fileExists(atPath: output.path) {
+            explanation = "An item exists at the intended output, but its identity could not be confirmed as matching the recovery record. Its presence does not confirm this operation completed. Next: inspect that item and its report; do not treat it as this operation’s accepted output or delete it based on this notice."
+        } else {
+            explanation = "The output parent was identified as a folder, but the recorded staging and intended output could not be matched. A folder may have been moved, removed, or replaced. Next: inspect the output parent and locate any moved batch before retrying."
+        }
+        return InterruptionNotice(message: "Unconfirmed: this operation’s publication outcome. Intended output: \(output.path). \(explanation) No automatic cleanup was attempted.", location: parent, ownedStaging: false, publicationPossible: true)
     }
     struct RecordIdentity: Equatable {
         let device: UInt64
@@ -298,7 +308,7 @@ enum InterruptionRecovery {
         var hasLiveOwners = false
         for file in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where file.pathExtension == "json" {
             guard let identity = recordIdentity(file), let entry = record(file) else {
-                notices.append(InterruptionNotice(message: "A local recovery record could not be read safely. Inspect the recovery location and output before retrying; no automatic cleanup was attempted.", location: directory, ownedStaging: false, publicationPossible: true))
+                notices.append(InterruptionNotice(message: "Unconfirmed: the operation described by recovery record \(file.lastPathComponent). This record could not be read safely, so no staging ownership or publication outcome can be established. Next: inspect the recovery location and any known output before retrying. No automatic cleanup was attempted.", location: directory, ownedStaging: false, publicationPossible: true))
                 continue
             }
             if let pid = entry["pid"] as? Int, ownerIsRunning(pid) { hasLiveOwners = true; continue }
@@ -547,12 +557,15 @@ final class BatchModel: ObservableObject {
         interruptionMessage = "Review every location listed above before starting another batch. Recovery records are local notices; no batch data is removed automatically."
     }
 
-    private func launch(arguments: [String], isScan: Bool, output: URL?) {
+    // Internal worker/directory injection keeps headless integration on the same
+    // launch/event/exit path while production uses the bundled worker and records.
+    func launch(arguments: [String], isScan: Bool, output: URL?,
+                worker: EngineRunner = EngineRunner(), journalDirectory: URL? = InterruptionRecovery.directory) {
         beginRunState(isScan: isScan, output: output)
-        let worker = EngineRunner(); runner = worker
+        runner = worker
         var workerArguments = arguments
         activeJournal = nil
-        if !isScan, let directory = InterruptionRecovery.directory {
+        if !isScan, let directory = journalDirectory {
             let journal = directory.appendingPathComponent(UUID().uuidString + ".json")
             activeJournal = journal
             workerArguments += ["--journal", journal.path]

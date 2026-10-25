@@ -36,3 +36,7 @@ The unified public app is delivered as **Preview 20/build 24**, using `scripts/p
 Accepted verification was reused: 10 recovery-lifecycle cases, 10 headless worker process cases, four affected interruption cases and existing engine/policy/self-audit, sidecar/r2, worker/model, runtime, dependency and icon receipts. No functional test or native build was repeated for delivery. The public UI structure and engine policy are unchanged. No GUI use, native app launch or installation occurred. Live timer scheduling, recovery/sidecar interaction, responsiveness and layout acceptance remain pending.
 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.20). Prior receipts retain their historical scope.
+
+## 2026-10-24 — local recovery explanations and worker-to-model increment
+
+Seven new explanation cases and eight new worker-to-model integration cases passed as composite evidence. Failed synthetic cancellation fixtures were diagnosed and corrected; only failed/changed cases were repeated. Read-only review corrected fallback wording that overstated metadata/identity evidence. Actual optimized native target compiled with warnings as errors. Accepted engine, lifecycle, worker/model, sidecar, runtime and Preview 20 distribution receipts reused. No GUI use, native app launch, installation or publication. See `RECOVERY-EXPLANATIONS.md` for scope and limits.
