@@ -4,6 +4,8 @@ This source-only increment adds receipt-driven assembly and explicit resumable
 signing, notarization, and final archive steps. It does not change application
 interfaces or engine policy. At that source-only checkpoint it had not been used to produce a real release.
 
+Sixteen assembly fixture cases and ten shared distribution-stage cases supplied focused evidence. Successful unchanged cases were reused; only changed fixtures and affected paths were checked again.
+
 Coverage includes accepted Git engine selection instead of working-tree contents,
 resource and nested-signature preservation, variant/metadata/build guards, unsafe
 symlink rejection, rollback, root-only signing arguments, cached stages, locking,

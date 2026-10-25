@@ -232,6 +232,8 @@ and pull requests. Do not post patient files, original filenames, identifiers,
 or unredacted logs. Follow [CONTRIBUTING.md](CONTRIBUTING.md); security-sensitive
 reports use the private reporting route in [SECURITY.md](SECURITY.md).
 
+Project source is [MIT-licensed](LICENSE). Dependencies retain their own terms. Preserve the complete notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) when redistributing them.
+
 ## Release tooling
 
 Receipt-driven packaging and explicit resumable distribution steps are documented in

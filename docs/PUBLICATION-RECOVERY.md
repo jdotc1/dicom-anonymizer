@@ -22,6 +22,8 @@ Quit during processing requests cancellation as before. If cleanup fails or publ
 
 ## Focused evidence
 
+Fifteen focused engine lifecycle checks cover cancellation, staging ownership, cleanup and post-publication failures. These mocked checks do not process imaging data or repeat policy/self-audit verification.
+
 Thirteen model checks passed. They cover late cancellation with successful completion, acknowledged cancellation, failed cleanup and pending Quit, preservation of a processing failure despite Cancel, uncertain exits, the complete-plus-successful-exit requirement, malformed/unrelated/source/destination cleanup paths, state reset, and successful/pre-start-cancelled Quit replies. Preferences are isolated; these checks do not start the worker or process DICOM data.
 
 The optimized native target compiled with Swift 6.4.2, Xcode 27.2 build 27B48 and SDK 27.2, in Swift 6 mode with warnings as errors, targeting arm64/macOS 13. Only the new PublicationRecoveryChecks executable ran.
