@@ -4,9 +4,12 @@ import json
 from pathlib import Path
 import plistlib
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 
 spec = importlib.util.spec_from_file_location('release', Path(__file__).resolve().parents[1] / 'scripts/release.py')
 r = importlib.util.module_from_spec(spec)
@@ -220,10 +223,15 @@ class AssemblyTests(unittest.TestCase):
 
 class DistributionTests(unittest.TestCase):
     def setUp(self):
+        for name in ('app_gate', 'archive_gate', 'ledger'):
+            gate = patch.object(r.publication_safety, name)
+            gate.start()
+            self.addCleanup(gate.stop)
         self.temp = tempfile.TemporaryDirectory(prefix='release-stages-')
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         r.write(self.root / 'state.json', dict(schema=1, app='fixture.app', steps={}))
+        r.write(self.root / 'assembly.json', dict(release_source_commit='a' * 40, release='fixture', bundle_build='1'))
 
     def test_sign_resume_reuses_completed_checks(self):
         with patch.object(r, 'run', return_value='') as run:

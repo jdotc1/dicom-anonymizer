@@ -16,6 +16,10 @@ import retire_artifacts as retire
 
 class RetirementTests(unittest.TestCase):
     def setUp(self):
+        for name in ('app_gate', 'archive_gate', 'ledger'):
+            gate = patch.object(retire.release.publication_safety, name)
+            gate.start()
+            self.addCleanup(gate.stop)
         temporary = tempfile.TemporaryDirectory(prefix='retirement-')
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve()

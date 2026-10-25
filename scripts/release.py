@@ -14,6 +14,8 @@ import subprocess
 import tarfile
 import tempfile
 
+import publication_safety
+
 
 def read(path):
     return json.loads(Path(path).read_text())
@@ -97,7 +99,8 @@ def plan(manifest_path, repository):
     m = read(manifest_path)
     profile = read(repository / 'scripts/release-profile.json')
     if run(['git', '-C', str(repository), 'status', '--porcelain', '--untracked-files=all', '--',
-            'scripts/release.py', 'scripts/release-profile.json']).strip():
+            'scripts/release.py', 'scripts/release-profile.json', 'scripts/publication.py',
+            'scripts/publication_safety.py', '.githooks/pre-push']).strip():
         raise ValueError('Commit release tooling and profile before selecting release provenance')
     if m['schema'] != 1 or m['variant'] != profile['variant']:
         raise ValueError('Manifest schema or app variant mismatch')
@@ -257,6 +260,10 @@ def distribute(root, action, identity=None, profile=None, submission_id=None):
     with locked(root):
         state = read(root / 'state.json')
         app = root / state['app']
+        if action in ('sign', 'notarize', 'finalize'):
+            assembly = read(root / 'assembly.json')
+            publication_safety.app_gate(Path(__file__).resolve().parents[1],
+                                       assembly['release_source_commit'], app)
         if action == 'sign':
             if not identity or not identity.startswith('Developer ID Application:'):
                 raise ValueError('Explicit Developer ID Application identity required')
@@ -276,6 +283,8 @@ def distribute(root, action, identity=None, profile=None, submission_id=None):
                 state['submission_id'] = submission_id
                 write(root / 'state.json', state)
             if 'submission_id' not in state:
+                with publication_safety.ledger(Path(__file__).resolve().parents[1]) as receipts:
+                    publication_safety.archive_gate(upload, receipts)
                 result = json.loads(step(root, state, 'submit', ['xcrun', 'notarytool', 'submit', str(upload), '--keychain-profile', profile, '--output-format', 'json']))
                 state['submission_id'] = result['id']
                 write(root / 'state.json', state)
@@ -290,12 +299,34 @@ def distribute(root, action, identity=None, profile=None, submission_id=None):
             new_download = 'download' not in state['steps']
             if new_download and ((root / 'artifact-ownership.json').exists() or (root / 'artifact-ownership.json').is_symlink()):
                 raise ValueError('Ownership record already exists; do not replace it')
+            if new_download:
+                state['ownership_pending'] = True
+                write(root / 'state.json', state)
             step(root, state, 'staple', ['xcrun', 'stapler', 'staple', str(app)])
             step(root, state, 'staple_validation', ['xcrun', 'stapler', 'validate', str(app)])
             step(root, state, 'gatekeeper', ['/usr/sbin/spctl', '--assess', '--type', 'execute', '--verbose=2', str(app)])
             step(root, state, 'download', ['/usr/bin/ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(app), str(root / 'download.zip')])
-            if new_download:
-                record_artifact_ownership(root)
+            with publication_safety.ledger(Path(__file__).resolve().parents[1]) as receipts:
+                publication_safety.archive_gate(root / 'download.zip', receipts)
+            if state.get('ownership_pending'):
+                ownership = root / 'artifact-ownership.json'
+                if ownership.exists() or ownership.is_symlink():
+                    if ownership.is_symlink():
+                        raise ValueError('Unsafe pending ownership record')
+                    recorded = read(ownership)
+                    if (recorded['source'] != assembly['release_source_commit'] or
+                            recorded['release'] != assembly['release'] or
+                            recorded['build'] != str(assembly['bundle_build']) or
+                            set(recorded['artifacts']) != {name for name in
+                              ('DICOM Anonymizer 2.0.app', 'download.zip', 'notarization-upload.zip')
+                              if (root / name).exists()} or
+                            recorded['artifacts'] != {name: artifact_identity(root / name)
+                              for name in recorded['artifacts']}):
+                        raise ValueError('Pending ownership differs; preserve journal')
+                else:
+                    record_artifact_ownership(root)
+                state.pop('ownership_pending')
+                write(root / 'state.json', state)
         return state
 
 

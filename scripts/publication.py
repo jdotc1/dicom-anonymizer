@@ -9,6 +9,7 @@ import time
 import uuid
 
 import release
+import publication_safety
 
 REPOSITORY = 'jdotc1/dicom-anonymizer'
 
@@ -80,6 +81,8 @@ def publish(root, title, notes, authorize=False, retry_absent=False, api=gh, wai
     root = Path(root).resolve()
     with release.locked(root):
         bound = selection(root)
+        publication_safety.release_gate(Path(__file__).resolve().parents[1],
+                                        bound['target'], title, notes, root / 'download.zip')
         path = root / 'publication.json'
         current = dict(selection=bound, title=title, notes=notes, operations={}, asset_label="publication-" + uuid.uuid4().hex)
         state = release.read(path) if path.exists() else current
