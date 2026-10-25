@@ -91,6 +91,30 @@ final class EngineEventDelivery {
     private(set) var malformed = false
     private(set) var sawComplete = false
     private(set) var sawError = false
+    private(set) var terminalConflict = false
+    private var completionCounts: [String: Int] = [:]
+    private var lastError: [String: Any]?
+
+    private func terminal(_ json: [String: Any], name: String) {
+        if name == "complete" {
+            if sawError { terminalConflict = true }
+            for key in ["processed", "total_files", "patients", "excluded_files", "audited_files",
+                        "sidecar_files", "sidecar_audited_files"] {
+                guard let value = eventCount(json[key]) else { continue }
+                if let prior = completionCounts[key], prior != value { terminalConflict = true }
+                completionCounts[key] = value
+            }
+            sawComplete = true
+        } else if name == "error" {
+            if sawComplete { terminalConflict = true }
+            sawError = true
+            // Retain cleanup ownership information even if a later generic error
+            // omits it. This remains one bounded event, not an event history.
+            if lastError?["cleanup_failed"] as? Bool != true || json["cleanup_failed"] as? Bool == true {
+                lastError = json
+            }
+        }
+    }
 
     private func advances(_ previous: [String: Any], _ next: [String: Any]) -> Bool {
         guard let name = previous["event"] as? String, name == next["event"] as? String else { return false }
@@ -128,21 +152,29 @@ final class EngineEventDelivery {
                 if let previous = progress { event(previous) }
                 progress = json
             }
-            if name == "complete" { sawComplete = true }
-            if name == "error" { sawError = true }
+            terminal(json, name: name)
         }
         if let progress { event(progress) }
     }
 
     func finish(code: Int32, cancelled: Bool, event: ([String: Any]) -> Void,
                 finished: (Int32, Bool) -> Void) {
-        if malformed && (!sawError || sawComplete) {
+        if sawComplete && code != 0 { terminalConflict = true }
+        if terminalConflict {
+            var failure = lastError ?? ["event": "error"]
+            let detail = (failure["message"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            let recovery = "Completion could not be confirmed. Check the output location before retrying; a completed batch may already be present."
+            failure["message"] = detail.map { $0 + " " + recovery } ?? recovery
+            failure["output_published"] = true
+            failure["protocol_failure"] = true
+            event(failure)
+        } else if malformed && (!sawError || sawComplete) {
             // A valid complete event means publication happened. Without a safe
             // engine error, the output state is also uncertain: never claim no output.
-            event(["event": "error", "output_published": true,
+            event(["event": "error", "output_published": true, "protocol_failure": true,
                    "message": "The engine response could not be fully read. Check the batch and output location before retrying; completed output may already be present."])
         }
-        finished(malformed && code == 0 ? 1 : code, cancelled)
+        finished((malformed || terminalConflict || sawError) && code == 0 ? 1 : code, cancelled)
     }
 }
 
@@ -410,6 +442,22 @@ enum OutputIssue: String { case space, permissions, unavailable, conflict, unkno
 enum BatchProcessingPhase { case writing, auditing, finalizing }
 enum SidecarProcessingPhase { case writing, auditing }
 
+struct ErrorDetails {
+    let version: String
+    let build: String
+    let phase: String
+    let category: String
+    let outcome: String
+    let message: String
+
+    var text: String {
+        func label(_ value: String) -> String {
+            value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "unknown" : value
+        }
+        return "DICOM Anonymizer \(label(version)) (build \(label(build)))\nOperation: \(phase)\nCategory: \(category)\nOutcome: \(outcome)\n\n\(message)"
+    }
+}
+
 @MainActor
 final class BatchModel: ObservableObject {
     // ObservableObject retains the original app's macOS 13 deployment target.
@@ -448,6 +496,10 @@ final class BatchModel: ObservableObject {
     @Published var runStarted: Date?
     @Published var summary: CompletionSummary?
     private var runner: EngineRunner?
+    private var lastOperationPhase: String?
+    private var workerProtocolFailure = false
+    private var diagnosticWorkerContext = false
+    private var finishingWorker = false
     static let outputDefaultsKey = "OutputParentPath"
 
     private let defaults: UserDefaults
@@ -636,6 +688,9 @@ final class BatchModel: ObservableObject {
     }
 
     func beginRunState(isScan: Bool, output: URL?) {
+        lastOperationPhase = nil
+        workerProtocolFailure = false
+        diagnosticWorkerContext = false
         pendingAcknowledgementWarning = nil
         resetProcessingProgress()
         examiningInput = true; scanFilesExamined = 0; scanFoldersExamined = 0
@@ -680,10 +735,13 @@ final class BatchModel: ObservableObject {
 
     // Engine events and process exit are reduced in one place, including quit replies.
     func finishRun(code: Int32, cancelled: Bool, isScan: Bool, output: URL?) {
+        finishingWorker = true
+        defer { finishingWorker = false }
+        lastOperationPhase = diagnosticOperationPhase
         var outcomeUncertain = false
         let elapsed = runStarted.map { Date().timeIntervalSince($0) } ?? 0
         busy = false; scanning = false; examiningInput = false; cancelling = false; runner = nil; activePatient = nil; runStarted = nil
-        if code == 0 && !isScan && completeReceived, let output {
+        if code == 0 && !isScan && completeReceived && errorMessage == nil && !cleanupIncomplete, let output {
             completedOutput = output
             summary = CompletionSummary(patients: completedPatients ?? patients.count, files: processed,
                                              excluded: excluded, output: output, elapsed: elapsed,
@@ -697,7 +755,7 @@ final class BatchModel: ObservableObject {
         } else if cleanupIncomplete {
             ready = false
             status = "Incomplete output needs attention."
-        } else if engineCancelled || (cancelled && code == 130 && errorMessage == nil) {
+        } else if !publishedWithoutConfirmation && (engineCancelled || (cancelled && code == 130 && errorMessage == nil)) {
             status = "Cancelled. No completed batch was published."
             clearProblem()
             if isScan { ready = false }
@@ -706,7 +764,7 @@ final class BatchModel: ObservableObject {
             // scans again before writing when the user retries the batch.
             ready = ready || (scanReceived && !patients.isEmpty && total > 0)
             status = problemTitle + "."
-        } else if code == 0 && isScan && scanReceived {
+        } else if code == 0 && isScan && scanReceived && errorMessage == nil {
             ready = true
             status = "Ready · \(patients.count) patients and \(total) DICOM files."
         } else {
@@ -821,11 +879,13 @@ final class BatchModel: ObservableObject {
                written == sidecarFiles, checked == written {
                 completedSidecars = written; completedSidecarAudits = checked
             }
-            processed = eventCount(event["processed"]) ?? total
-            completedPatients = eventCount(event["patients"])
+            processed = eventCount(event["processed"]) ?? (completeReceived ? processed : total)
+            if let value = eventCount(event["patients"]) { completedPatients = value }
+            else if !completeReceived { completedPatients = nil }
             if let value = eventCount(event["excluded_files"]) { excluded = value }
             completeReceived = true
         case "error":
+            workerProtocolFailure = workerProtocolFailure || event["protocol_failure"] as? Bool == true
             outputIssue = nil
             engineCancelled = event["cancelled"] as? Bool == true
             publishedWithoutConfirmation = event["output_published"] as? Bool == true
@@ -844,11 +904,42 @@ final class BatchModel: ObservableObject {
         }
     }
 
+    private var diagnosticOperationPhase: String {
+        if scanning { return "Checking input" }
+        if examiningInput { return checkingSidecars ? "Checking JSON sidecars" : "Checking input" }
+        if sidecarPhase == .auditing { return "Auditing JSON sidecars" }
+        if sidecarPhase == .writing { return "Writing JSON sidecars" }
+        switch processingPhase {
+        case .writing: return "Writing DICOM files"
+        case .auditing: return "Auditing DICOM files"
+        case .finalizing: return "Finalizing output"
+        }
+    }
+
+    func errorDetails(version: String, build: String) -> String? {
+        guard let errorMessage else { return nil }
+        let phase: String
+        switch problem {
+        case .input: phase = "Input selection"
+        case .report: phase = "Report or recovery record"
+        case .output: phase = busy ? diagnosticOperationPhase : (lastOperationPhase ?? "Output location")
+        case .processing: phase = busy ? diagnosticOperationPhase : (lastOperationPhase ?? "Processing")
+        }
+        let category = cleanupIncomplete ? "cleanup" : problem == .input ? "input" :
+            problem == .report ? "report" : outputIssue.map { "output-" + $0.rawValue } ??
+            (problem == .output ? "output" : workerProtocolFailure ? "worker-protocol" : "processing")
+        let outcome = summary != nil && completedOutput != nil ? "Completed output confirmed" :
+            publishedWithoutConfirmation && (diagnosticWorkerContext || interruptionMessage != nil) ? "Output publication uncertain" : busy ? "Operation in progress" :
+            engineCancelled && diagnosticWorkerContext ? "Cancellation acknowledged" : "Completion not confirmed"
+        return ErrorDetails(version: version, build: build, phase: phase, category: category,
+                            outcome: outcome, message: errorMessage).text
+    }
+
     func copyErrorDetails() {
-        guard let errorMessage else { return }
-        // Only the generic engine message is copied: no identifiers, paths or UIDs.
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "2.0"
-        let details = "DICOM Anonymizer \(version) error\n\(errorMessage)"
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
+        guard let details = errorDetails(version: version, build: build) else { return }
+        // Preserve the displayed recovery message, which can contain local paths.
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(details, forType: .string)
     }
@@ -942,6 +1033,9 @@ final class BatchModel: ObservableObject {
         return ready ? "Ready · \(patients.count) patients and \(total) DICOM files." : "Choose a batch folder to begin."
     }
     private func clearProblem(invalidateRecovery: Bool = true) {
+        lastOperationPhase = nil
+        workerProtocolFailure = false
+        diagnosticWorkerContext = false
         if invalidateRecovery { recoveryGeneration = UUID() }
         acknowledgementWarning = false
         lastInspectedNotice = nil
@@ -950,6 +1044,13 @@ final class BatchModel: ObservableObject {
     }
     private func presentProblem(_ kind: BatchProblem, message: String, url: URL? = nil,
                                 invalidateRecovery: Bool = true) {
+        if !busy && !finishingWorker {
+            lastOperationPhase = nil
+            workerProtocolFailure = false
+            diagnosticWorkerContext = false
+        } else {
+            diagnosticWorkerContext = true
+        }
         if invalidateRecovery { recoveryGeneration = UUID() }
         acknowledgementWarning = false
         lastInspectedNotice = nil
