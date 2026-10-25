@@ -66,3 +66,13 @@ Temporary directory moves and synthetic records establish scoped recheck/acknowl
 ## 2026-10-24 — local publication visibility reconciliation
 
 Seventeen new mocked methods passed as composite evidence. Only the affected publication-timeout resume case was repeated after adding stale-draft resume reconciliation. New cases cover delayed create/upload/publish/tag visibility, timeouts/resume, lost publish response with stale draft, conflicts, archive change and read errors. Existing publication/packaging/app receipts reused. No live GitHub call, native build, GUI use, app launch, installation or publication. See `RESUMABLE-PUBLICATION.md` for bounds and limits.
+
+## 2026-10-24 — publication visibility Preview 23/build 27
+
+The unified public app is delivered as **Preview 23/build 27**, using the bounded read-only visibility reconciliation in `scripts/publication.py`. Packaged engine/release source is `83a1b08533c60b6beb4132f6f389d67d68ca869b`; accepted native executable source is `71d934e607437779f65c9fb56f4f66a7836d9cc0`. Apple notarization `fe79275a-8326-47e4-8fb9-944e68a672f4` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,058,329 bytes.
+
+This is a tooling/distribution update; native and engine behavior are unchanged from Preview 22. Accepted verification reused: 17 publication-visibility mocked methods, nine location/model and eight record-acknowledgement cases, plus existing engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal, runtime, dependency and icon receipts. No functional tests, native builds, unchanged source hashes or dependency-signature checks were repeated for delivery.
+
+No GUI use, native app launch or installation occurred. Public UI structure and engine policy are unchanged. Live scheduling, volume behavior, recovery/sidecar interaction, responsiveness and layout remain pending. Prior synthetic evidence retains its original limits.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.23). Earlier records retain their historical scope.

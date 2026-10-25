@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 22/app build 26: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and resumable publication.
+Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 23/app build 27: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and resumable publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -36,9 +36,9 @@ Recovery explanations distinguish confirmed folder identity, uncertain publicati
 
 Valid unresolved recovery locations are rechecked through the existing guarded background chain, including restoration/replacement, with explicit protection for a newer successful output choice. Headless subprocess-to-model cases cover record acknowledgement/retention and preservation of batch data. This increment is delivered as Preview 22/build 26. See [Output-location rechecks](OUTPUT-LOCATION-RECHECKS.md).
 
-## Current local tooling increment
+## Publication visibility delivery
 
-Publication tooling now reconciles delayed release/asset/published-tag visibility through bounded reads and preserves the existing journal, archive selection and ownership safeguards. Seventeen new mocked methods passed as composite evidence; live timing remains untested and no new app build or release was performed. See [Resumable publication](RESUMABLE-PUBLICATION.md).
+Publication tooling now reconciles delayed release/asset/published-tag visibility through bounded reads and preserves the existing journal, archive selection and ownership safeguards. Seventeen new mocked methods passed as composite evidence; the changed tooling is used for the Preview 23 release, with the accepted native executable reused. Mock timing guarantees remain separate from live service behavior. See [Resumable publication](RESUMABLE-PUBLICATION.md).
 
 ## Decision-dependent future scope
 

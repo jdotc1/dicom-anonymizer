@@ -1,6 +1,16 @@
 # macOS release acceptance
 
-## Current release — Preview 22, build 26
+## Current release — Preview 23, build 27
+
+The unified public app is delivered as **Preview 23/build 27**, using the bounded read-only visibility reconciliation in `scripts/publication.py`. Packaged engine/release source is `83a1b08533c60b6beb4132f6f389d67d68ca869b`; accepted native executable source is `71d934e607437779f65c9fb56f4f66a7836d9cc0`. Apple notarization `fe79275a-8326-47e4-8fb9-944e68a672f4` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,058,329 bytes.
+
+This is a tooling/distribution update; native and engine behavior are unchanged from Preview 22. Accepted verification reused: 17 publication-visibility mocked methods, nine location/model and eight record-acknowledgement cases, plus existing engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal, runtime, dependency and icon receipts. No functional tests, native builds, unchanged source hashes or dependency-signature checks were repeated for delivery.
+
+No GUI use, native app launch or installation occurred. Public UI structure and engine policy are unchanged. Live scheduling, volume behavior, recovery/sidecar interaction, responsiveness and layout remain pending. Prior synthetic evidence retains its original limits.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.23). Earlier records retain their historical scope.
+
+## Previous release — Preview 22, build 26
 
 The unified public app is delivered as **Preview 22/build 26**, using `scripts/publication.py`. Packaged engine/release source is `34e8dec7c8ebb1caf69b1f75cb1844fa56587410`; accepted native executable source is `71d934e607437779f65c9fb56f4f66a7836d9cc0`. Apple notarization `804435d2-ae0e-4a09-9a54-faef4d35d743` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,058,325 bytes.
 

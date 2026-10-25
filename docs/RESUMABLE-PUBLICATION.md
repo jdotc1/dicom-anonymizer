@@ -78,7 +78,7 @@ The owned draft was temporarily absent from immediate readback. The tool stopped
 
 Preview 20/build 24 was published through the same tooling, reusing accepted verification. Delayed draft visibility was reconciled through the existing journal, then upload/publication readback completed without duplicate creation or an absent-operation override. No publication tests were repeated. See `RECOVERY-LIFECYCLE.md` for delivery provenance and limits.
 
-## Automatic delayed-visibility reconciliation — local tooling increment
+## Automatic delayed-visibility reconciliation — delivered in Preview 23
 
 After Preview 22, visibility reconciliation repeats **reads only**. Each phase
 uses at most four observations, separated by 1-, 2- and 4-second waits. It covers
@@ -119,3 +119,15 @@ was repeated after the resumed-publication source change. All other passing
 unchanged cases and accepted publication/packaging/app receipts were reused.
 Read-only review found no blockers; its identified branch-coverage gaps were
 covered by the two new tag/metadata cases.
+
+## Authorized live delivery — Preview 23
+
+The unified public app is delivered as **Preview 23/build 27**, using the bounded read-only visibility reconciliation in `scripts/publication.py`. Packaged engine/release source is `83a1b08533c60b6beb4132f6f389d67d68ca869b`; accepted native executable source is `71d934e607437779f65c9fb56f4f66a7836d9cc0`. Apple notarization `fe79275a-8326-47e4-8fb9-944e68a672f4` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,058,329 bytes.
+
+This is a tooling/distribution update; native and engine behavior are unchanged from Preview 22. Accepted verification reused: 17 publication-visibility mocked methods, nine location/model and eight record-acknowledgement cases, plus existing engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal, runtime, dependency and icon receipts. No functional tests, native builds, unchanged source hashes or dependency-signature checks were repeated for delivery.
+
+No GUI use, native app launch or installation occurred. Public UI structure and engine policy are unchanged. Live scheduling, volume behavior, recovery/sidecar interaction, responsiveness and layout remain pending. Prior synthetic evidence retains its original limits.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.23). Earlier records retain their historical scope.
+
+The changed tooling completed this live delivery in one invocation, without a manual resume or an absent-operation override. Create, upload and publish are all recorded completed in the original journal. No per-observation trace was collected, so this receipt does not claim which visibility delays occurred or establish service-wide latency bounds.
