@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 25 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 28/app build 32: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and guarded publication.
+Updated 25 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 29/app build 33: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and guarded publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -55,9 +55,8 @@ Conservative artifact retirement plans first, protects current release inputs an
 ## Decision-dependent future scope
 
 Terminal-event consistency and improved diagnostics in the existing Copy Details
-action are in local development, preserving the public UI and engine policy.
-See [Terminal diagnostics](TERMINAL-DIAGNOSTICS.md). This work is not part of the
-Preview 28 download.
+action are delivered in Preview 29/build 33, preserving the public UI and engine
+policy. See [Terminal diagnostics](TERMINAL-DIAGNOSTICS.md).
 
 Bounded worker-event buffering and monitored release-storage admission are
 delivered in Preview 28/build 32, reusing focused headless evidence and the

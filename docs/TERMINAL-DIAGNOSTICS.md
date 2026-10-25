@@ -1,7 +1,6 @@
 # Terminal-event consistency and Copy Details
 
-Local implementation; not released. The current download remains Preview 28 /
-build 32. Public view structure, controls, engine metadata policy and sidecar
+Delivered in Preview 29/build 33. Public view structure, controls, engine metadata policy and sidecar
 defaults are unchanged.
 
 ## Terminal evidence
@@ -55,6 +54,22 @@ changed. The existing process fixture for completion followed by exit 7 now
 expects the uncertainty error as well as the completion event; only that affected
 older case was run. Accepted unchanged suites were not repeated.
 
-No GUI use, application launch, installation, signing, notarization or publication
-is part of this local increment. Build products and logs are retained locally;
+Local acceptance involved no GUI use, application launch, installation, signing,
+notarization or publication. The subsequent authorized delivery is recorded below. Build products and logs are retained locally;
 the task's compiler cache is disposable after compilation completes.
+
+## Guarded delivery
+
+Preview 29/build 33 was assembled from the accepted native executable without
+rebuilding or repeating functional checks. Release/engine source is
+`0746b70e230a0668d2df1cfcd39de9228b882ba3`; native source is
+`281d9164d9b53ba697ff04fbf133364452c2be11`. The 26 new cases, affected process case,
+native compile and prior engine/runtime/dependency/icon evidence were reused.
+
+The guarded workflow admitted and monitored assembly, signing, notarization and
+finalization. New source/app/upload/text/download sanitation boundaries and new
+root signature, stapled ticket and Gatekeeper checks passed. Apple notarization
+`f7668439-61ac-49e2-b414-0edcc3c58346` was Accepted. Publication completed in one
+invocation without manual retry. The ZIP is 29,077,421 bytes and HTTPS delivery
+returned HTTP 200. No GUI use, app launch or installation occurred. Live clipboard,
+report-opening, layout and interaction acceptance remain pending.

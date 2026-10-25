@@ -6,7 +6,31 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 28, build 32
+## Current release — Preview 29, build 33
+
+Preview 29/build 33 delivers terminal-event consistency and improved text from
+existing Copy Details controls. Release/engine source:
+`0746b70e230a0668d2df1cfcd39de9228b882ba3`; native source:
+`281d9164d9b53ba697ff04fbf133364452c2be11`.
+
+Accepted verification was reused: 26 new terminal/diagnostic cases, one affected
+process case, the native compile and prior unchanged engine/self-audit/sidecar/
+runtime/dependency/icon/storage/publication evidence. No native rebuild or
+functional suite rerun occurred during delivery.
+
+The guarded workflow admitted and monitored assembly, signing, notarization and
+finalization. New assembly metadata and source/app/upload/release-text/download
+sanitation checks passed. Root signature, stapled ticket validation and Gatekeeper
+passed for this new package. Apple notarization
+`f7668439-61ac-49e2-b414-0edcc3c58346` was Accepted. The ZIP is 29,077,421 bytes;
+its HTTPS route returned HTTP 200. Publication completed in one invocation with
+no manual retry or verification bypass. No GUI use, app launch or installation
+occurred. Public UI structure, engine policy and sidecar defaults are unchanged;
+live clipboard/interaction/layout acceptance retains its documented limits.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.29).
+
+## Previous release — Preview 28, build 32
 
 Preview 28/build 32 delivers bounded worker events and monitored release writes.
 Release/engine source: `82f1950d3b943ca8e2cff1bac7c736ecd50bd994`.

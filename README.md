@@ -1,6 +1,6 @@
 # DICOM Anonymizer
 
-**Current release: Preview 28/build 32.** Worker-event buffering is bounded, and allocating release actions use authenticated storage admission and monitoring. The guarded workflow reuses accepted verification. See [Worker and storage bounds](docs/BOUNDED-WORKER-STORAGE.md) and the [release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.28).
+**Current release: Preview 29/build 33.** Terminal-event consistency preserves uncertain output and cleanup guidance, and the existing Copy Details action includes version/build and operation context. See [Terminal diagnostics](docs/TERMINAL-DIAGNOSTICS.md) and the [release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.29).
 
 **Resilience delivery:** Preview 19/build 23 adds interruption recovery and ships through the resumable publication tooling; consolidation cleanup is complete. See [Interruption recovery](docs/INTERRUPTION-RECOVERY.md).
 
