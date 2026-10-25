@@ -8,6 +8,8 @@
 
 **Output-location recovery:** Preview 22/build 26 delivers guarded recovery-location rechecks, with accepted headless record acknowledgement coverage. See [Output-location rechecks](docs/OUTPUT-LOCATION-RECHECKS.md).
 
+**Local tooling increment:** bounded read-only reconciliation handles delayed release/asset visibility and stale publication resumes while preserving journal/ownership safeguards. Mock acceptance is complete; Preview 22 remains the public download. See [Resumable publication](docs/RESUMABLE-PUBLICATION.md).
+
 **Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
 
 **Unified public app:** ongoing development now uses this self-contained public SwiftUI implementation. Preview 16 adds detailed folder-conflict recovery and optional MRI JSON-sidecar cleaning. Live sidecar GUI acceptance remains pending. See [Consolidation](docs/PUBLIC-CONSOLIDATION.md) and [MRI JSON sidecars](docs/MRI-JSON-SIDECARS.md).

@@ -62,3 +62,7 @@ Accepted verification was reused: nine output-location/model cases, eight synthe
 Temporary directory moves and synthetic records establish scoped recheck/acknowledgement behavior, not real volume mounting or engine processing/audit/publication/durability. Record-retention cases do not establish rejection of a completion summary. Live scheduling, volume behavior, recovery/sidecar interaction, responsiveness and layout remain pending.
 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.22). Earlier records retain their historical scope.
+
+## 2026-10-24 — local publication visibility reconciliation
+
+Seventeen new mocked methods passed as composite evidence. Only the affected publication-timeout resume case was repeated after adding stale-draft resume reconciliation. New cases cover delayed create/upload/publish/tag visibility, timeouts/resume, lost publish response with stale draft, conflicts, archive change and read errors. Existing publication/packaging/app receipts reused. No live GitHub call, native build, GUI use, app launch, installation or publication. See `RESUMABLE-PUBLICATION.md` for bounds and limits.

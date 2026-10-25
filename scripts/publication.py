@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import time
 import uuid
 
 import release
@@ -53,7 +54,27 @@ def selection(root):
                 archive=str(archive), identity=identity(archive))
 
 
-def publish(root, title, notes, authorize=False, retry_absent=False, api=gh):
+_UNOBSERVED = object()
+
+
+def reconcile(read, ready, operation, wait, first=_UNOBSERVED, allow_absent=False):
+    """Observe eventual visibility; never repeat a remote mutation."""
+    observed = read() if first is _UNOBSERVED else first
+    for delay in (1, 2, 4):
+        if ready(observed):
+            return observed
+        wait(delay)
+        observed = read()
+    if ready(observed) or allow_absent:
+        return observed
+    raise ValueError(operation + ': visibility timeout after four observations; '
+                     'publication.json was preserved. Resume by rerunning the identical '
+                     'publication command with the same --output, --title, --notes-file '
+                     'and --authorize-publish. No mutation was retried; inspect remote '
+                     'state before explicitly using --retry-absent.')
+
+
+def publish(root, title, notes, authorize=False, retry_absent=False, api=gh, wait=time.sleep):
     if not authorize:
         raise ValueError('Explicit --authorize-publish is required for remote changes')
     root = Path(root).resolve()
@@ -110,6 +131,9 @@ def publish(root, title, notes, authorize=False, retry_absent=False, api=gh):
         if resolved is not None and resolved != bound['target']:
             raise ValueError('Existing tag points to another commit')
         matches = releases()
+        if not matches and 'create' in state['operations']:
+            matches = reconcile(releases, bool, 'create', wait, first=matches,
+                                allow_absent=retry_absent)
         if matches and 'create' not in state['operations']:
             raise ValueError('Existing release is not owned by this publication journal')
         if len(matches) > 1:
@@ -119,7 +143,7 @@ def publish(root, title, notes, authorize=False, retry_absent=False, api=gh):
             mutation('create', [base + '/releases', '--method', 'POST',
                      '-f', 'tag_name=' + bound['tag'], '-f', 'target_commitish=' + bound['target'],
                      '-f', 'name=' + title, '-f', 'body=' + notes, '-F', 'draft=true', '-F', 'prerelease=true'], False)
-            matches = releases()
+            matches = reconcile(releases, bool, 'create', wait)
         if len(matches) != 1:
             raise ValueError('Created release not yet visible; resume to reconcile')
         item = matches[0]
@@ -127,6 +151,9 @@ def publish(root, title, notes, authorize=False, retry_absent=False, api=gh):
                 item['target_commitish'] != bound['target']):
             raise ValueError('Remote release metadata differs; no mutation permitted')
         resolved = tag_commit()
+        if resolved is None and not item['draft'] and 'publish' in state['operations']:
+            resolved = reconcile(tag_commit, lambda value: value is not None, 'publish tag', wait,
+                                 first=resolved)
         if resolved != bound['target'] and not (resolved is None and item['draft']):
             raise ValueError('Release tag is not the selected commit')
         mutation('create', [], True)
@@ -140,10 +167,16 @@ def publish(root, title, notes, authorize=False, retry_absent=False, api=gh):
                 if len(batch) < 100:
                     return assets
             raise ValueError('Asset listing too large')
-        assets = list_assets()
-        exact = [a for a in assets if a['name'] == bound['asset']]
-        if len(exact) > 1 or (exact and (exact[0]['size'] != bound['identity'][2] or exact[0]['state'] != 'uploaded' or exact[0].get('label') != state['asset_label'])):
-            raise ValueError('Existing asset conflicts; never overwrite or delete it')
+        def selected_assets():
+            exact = [a for a in list_assets() if a['name'] == bound['asset']]
+            if len(exact) > 1 or (exact and (exact[0]['size'] != bound['identity'][2] or
+                    exact[0]['state'] != 'uploaded' or exact[0].get('label') != state['asset_label'])):
+                raise ValueError('Existing asset conflicts; never overwrite or delete it')
+            return exact
+        exact = selected_assets()
+        if not exact and 'upload' in state['operations']:
+            exact = reconcile(selected_assets, bool, 'upload', wait, first=exact,
+                              allow_absent=retry_absent)
         if not item['draft'] and not exact:
             raise ValueError('Published release is missing the selected asset; manual reconciliation required')
         if identity(Path(bound['archive'])) != bound['identity']:
@@ -151,9 +184,7 @@ def publish(root, title, notes, authorize=False, retry_absent=False, api=gh):
         mutation('upload', ['https://uploads.github.com/' + endpoint + '/assets?name=' + bound['asset'] + '&label=' + state['asset_label'], '--hostname', 'github.com',
                            '--method', 'POST', '-H', 'Content-Type: application/zip', '--input', bound['archive']], bool(exact))
         # Always read back after upload; do not publish from a successful response alone.
-        confirmed = list_assets()
-        if not any(a['name'] == bound['asset'] and a['size'] == bound['identity'][2] and a['state'] == 'uploaded' and a.get('label') == state['asset_label'] for a in confirmed):
-            raise ValueError('Upload not confirmed; resume to reconcile')
+        reconcile(selected_assets, bool, 'upload', wait)
         mutation('upload', [], True)
         if identity(Path(bound['archive'])) != bound['identity']:
             raise ValueError('Selected archive changed during upload')
@@ -163,10 +194,24 @@ def publish(root, title, notes, authorize=False, retry_absent=False, api=gh):
         resolved = tag_commit()
         if resolved is not None and resolved != bound['target']:
             raise ValueError('Tag changed before publication')
-        mutation('publish', [endpoint, '--method', 'PATCH', '-F', 'draft=false'], not item['draft'])
-        final = api([endpoint])
-        if final['draft'] or final['tag_name'] != bound['tag'] or tag_commit() != bound['target']:
-            raise ValueError('Publication not confirmed; resume to reconcile')
+        def published():
+            final = api([endpoint])
+            if any(final.get(key) != item.get(key) for key in
+                   ('id', 'tag_name', 'target_commitish', 'name', 'body', 'prerelease')):
+                raise ValueError('Remote release metadata differs during publication readback')
+            resolved = tag_commit()
+            if resolved is not None and resolved != bound['target']:
+                raise ValueError('Publication tag points to another commit')
+            return final if not final['draft'] and resolved == bound['target'] else None
+        final = None
+        if 'publish' in state['operations'] and latest['draft']:
+            # A resumed publication can still look like a draft. Observe the
+            # existing operation before the mutation guard considers any retry.
+            final = reconcile(published, lambda value: value is not None, 'publish', wait,
+                              allow_absent=retry_absent)
+        if final is None:
+            mutation('publish', [endpoint, '--method', 'PATCH', '-F', 'draft=false'], not latest['draft'])
+            final = reconcile(published, lambda value: value is not None, 'publish', wait)
         mutation('publish', [], True)
         state['url'] = final['html_url']
         release.write(path, state)

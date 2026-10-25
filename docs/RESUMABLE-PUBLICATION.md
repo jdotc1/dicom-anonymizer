@@ -77,3 +77,45 @@ The owned draft was temporarily absent from immediate readback. The tool stopped
 ## Subsequent live delivery — Preview 20
 
 Preview 20/build 24 was published through the same tooling, reusing accepted verification. Delayed draft visibility was reconciled through the existing journal, then upload/publication readback completed without duplicate creation or an absent-operation override. No publication tests were repeated. See `RECOVERY-LIFECYCLE.md` for delivery provenance and limits.
+
+## Automatic delayed-visibility reconciliation — local tooling increment
+
+After Preview 22, visibility reconciliation repeats **reads only**. Each phase
+uses at most four observations, separated by 1-, 2- and 4-second waits. It covers
+the created release, selected uploaded asset, final published state/tag and
+published-journal resume while a tag or draft view is stale. The existing local
+lock remains held throughout, preserving one local publisher per journal.
+
+An operation is still journaled before its mutation. A missing result never
+causes an automatic create/upload/publish retry. A resumed publish that still
+looks like a draft is observed before the mutation guard considers an explicit
+retry. `--retry-absent` retains its inspection prerequisite; completed operations
+that remain missing are refused even with that flag. The archive selection,
+text, target, unique asset label and original journal remain unchanged.
+
+Conflicting release metadata, asset ownership/size/state, duplicate selected
+assets, changed tags and changed archive identity stop progression. Post-upload
+confirmation now rejects duplicate/conflicting selected assets explicitly.
+Final publication observations validate the full expected release metadata.
+Authentication, permission and network/read errors propagate immediately; they
+are not treated as absence or silently retried.
+
+If visibility never arrives, the error names the phase and instructs the owner
+to rerun the identical command with the same `--output`, `--title`,
+`--notes-file` and `--authorize-publish`. The journal is preserved. Do not delete
+it or use an absent-operation override without inspecting remote state.
+
+The bound applies to observation count and intentional waits, not total
+wall-clock duration: individual `gh` requests retain their existing execution
+behavior. Mock checks do not establish live GitHub timing. No new CLI flags,
+app interfaces or engine policies are introduced.
+
+### Focused evidence
+
+Seventeen new mocked methods passed as composite evidence: thirteen initial
+cases, two new lost-response/stale-draft resume cases, and two new published-tag
+resume/final-metadata cases. Only the affected publication-timeout resume case
+was repeated after the resumed-publication source change. All other passing
+unchanged cases and accepted publication/packaging/app receipts were reused.
+Read-only review found no blockers; its identified branch-coverage gaps were
+covered by the two new tag/metadata cases.
