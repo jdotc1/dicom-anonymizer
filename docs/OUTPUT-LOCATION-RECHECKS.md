@@ -2,7 +2,7 @@
 
 ## Scope — 24 October 2026
 
-Local source increment after delivered Preview 21/build 25. Public views/controls, engine metadata and sidecar policies, bundled runtime, and arm64/macOS 13 target are unchanged. No automatic processing retry, resume or batch-data deletion is added.
+Source increment after Preview 21/build 25, now delivered as Preview 22/build 26. Public views/controls, engine metadata and sidecar policies, bundled runtime, and arm64/macOS 13 target are unchanged. No automatic processing retry, resume or batch-data deletion is added.
 
 ## Output-location rechecks
 
@@ -35,4 +35,14 @@ Accepted engine/policy/self-audit, sidecar/r2, prior lifecycle/worker/model/jour
 
 Tests simulate disappearance/restoration by moving temporary directories; they do not mount/unmount a real volume. Model snapshots establish refresh decisions and stale-result protection, not live app timer scheduling. The synthetic worker writes a fixture record/output directly, so it does not establish real engine processing, self-audit, atomic publication or durability. Existing receipts retain their original scope.
 
-No GUI use, native app launch, installation, signing, notarization, push or publication occurred. Preview 21/build 25 remains the public download. Live scheduling, recovery/sidecar interaction, volume behavior, responsiveness and layout acceptance remain pending.
+No GUI use, native app launch, installation, signing, notarization, push or publication occurred. Preview 22/build 26 is the public download. Live scheduling, recovery/sidecar interaction, volume behavior, responsiveness and layout acceptance remain pending.
+
+## Authorized distribution
+
+The unified public app is delivered as **Preview 22/build 26**, using `scripts/publication.py`. Packaged engine/release source is `34e8dec7c8ebb1caf69b1f75cb1844fa56587410`; accepted native executable source is `71d934e607437779f65c9fb56f4f66a7836d9cc0`. Apple notarization `804435d2-ae0e-4a09-9a54-faef4d35d743` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,058,325 bytes.
+
+Accepted verification was reused: nine output-location/model cases, eight synthetic subprocess/model/record acknowledgement cases and existing engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal, runtime, dependency, icon and publication-tooling receipts. No functional test or native build was repeated for delivery. Public UI structure and engine policy are unchanged. No GUI use, native app launch or installation occurred.
+
+Temporary directory moves and synthetic records establish scoped recheck/acknowledgement behavior, not real volume mounting or engine processing/audit/publication/durability. Record-retention cases do not establish rejection of a completion summary. Live scheduling, volume behavior, recovery/sidecar interaction, responsiveness and layout remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.22). Earlier records retain their historical scope.

@@ -6,7 +6,7 @@
 
 **Recovery explanations:** Preview 21/build 25 adds clearer confirmed/uncertain recovery guidance, with accepted headless worker-to-model integration coverage. See [Recovery explanations](docs/RECOVERY-EXPLANATIONS.md).
 
-**Local source increment:** guarded output-location rechecks and headless recovery-record acknowledgement coverage are complete; Preview 21 remains the public download. See [Output-location rechecks](docs/OUTPUT-LOCATION-RECHECKS.md).
+**Output-location recovery:** Preview 22/build 26 delivers guarded recovery-location rechecks, with accepted headless record acknowledgement coverage. See [Output-location rechecks](docs/OUTPUT-LOCATION-RECHECKS.md).
 
 **Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
 
@@ -42,7 +42,7 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: [Preview 21 (app build 25)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.21).** Unified public app with ownership-aware interruption recovery, worker-event reliability, sidecar feedback, detailed folder recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
+**Current download: [Preview 22 (app build 26)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.22).** Unified public app with ownership-aware interruption recovery, worker-event reliability, sidecar feedback, detailed folder recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
 
 Preview 14 introduced allocation-aware estimates. Allocation-aware disk-space estimates account for metadata growth, destination allocation, output folders and the report while preserving the interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 

@@ -52,3 +52,13 @@ Accepted verification was reused: seven recovery-explanation cases, eight headle
 ## 2026-10-24 — local output-location rechecks and acknowledgement
 
 Nine new location/model cases and eight new synthetic subprocess/model/record-acknowledgement cases passed as composite evidence. Source review found and resolved successful output selection retaining old refresh ownership; two new regression cases cover that change. Passing unchanged checks and accepted engine/policy, sidecar, lifecycle, worker/model/journal, runtime and Preview 21 distribution evidence reused. Optimized native target compiled with warnings as errors; no GUI use, native app launch, installation or publication. See `OUTPUT-LOCATION-RECHECKS.md` for limits.
+
+## 2026-10-24 — output-location rechecks Preview 22/build 26
+
+The unified public app is delivered as **Preview 22/build 26**, using `scripts/publication.py`. Packaged engine/release source is `34e8dec7c8ebb1caf69b1f75cb1844fa56587410`; accepted native executable source is `71d934e607437779f65c9fb56f4f66a7836d9cc0`. Apple notarization `804435d2-ae0e-4a09-9a54-faef4d35d743` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,058,325 bytes.
+
+Accepted verification was reused: nine output-location/model cases, eight synthetic subprocess/model/record acknowledgement cases and existing engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal, runtime, dependency, icon and publication-tooling receipts. No functional test or native build was repeated for delivery. Public UI structure and engine policy are unchanged. No GUI use, native app launch or installation occurred.
+
+Temporary directory moves and synthetic records establish scoped recheck/acknowledgement behavior, not real volume mounting or engine processing/audit/publication/durability. Record-retention cases do not establish rejection of a completion summary. Live scheduling, volume behavior, recovery/sidecar interaction, responsiveness and layout remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.22). Earlier records retain their historical scope.
