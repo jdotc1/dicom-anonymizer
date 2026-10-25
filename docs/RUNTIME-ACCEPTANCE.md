@@ -1,6 +1,14 @@
 # macOS release acceptance
 
-## Current release — Preview 20, build 24
+## Current release — Preview 21, build 25
+
+The unified public app is delivered as **Preview 21/build 25**, using `scripts/publication.py`. Packaged engine/release source is `54972ffb0bd4aa38d4a703fdc8ef72876bb11c32`; accepted native executable source is `1c198174ac0927337e7a1d40d59a0fb229e6eb09`. Apple notarization `6d5b7b80-2587-4948-8c58-6361a8f0633f` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,057,708 bytes.
+
+Accepted verification was reused: seven recovery-explanation cases, eight headless worker-to-model cases and existing engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal, runtime, dependency, icon and publication-tooling evidence. No functional test or native build was repeated for delivery. Public UI structure and engine policy are unchanged. No GUI use, native app launch or installation occurred. Synthetic subprocess cases do not establish real Python processing, filesystem publication, journal acknowledgement or live UI behavior. Live scheduling, recovery/sidecar interaction, responsiveness and layout acceptance remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.21). Earlier records retain their historical scope.
+
+## Previous release — Preview 20, build 24
 
 The unified public app is delivered as **Preview 20/build 24**, using `scripts/publication.py`. Packaged engine/release source is `0e1868263a1b461e4530708d19a26176e06b1193`; accepted native executable source is `923828ab436daf06205857626e401503a29e0375`. Apple notarization `e24b8bff-915d-41be-8d8a-021c4de071eb` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,055,052 bytes.
 

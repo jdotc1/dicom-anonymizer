@@ -4,7 +4,7 @@
 
 **Recovery lifecycle:** Preview 20/build 24 delivers combined recovery notices, safe local-record retirement and guarded live-owner reinspection, with accepted headless worker process coverage. See [Recovery lifecycle](docs/RECOVERY-LIFECYCLE.md).
 
-**Local source increment:** clearer recovery explanations and headless worker-to-model integration coverage are complete; Preview 20 remains the public download. See [Recovery explanations](docs/RECOVERY-EXPLANATIONS.md).
+**Recovery explanations:** Preview 21/build 25 adds clearer confirmed/uncertain recovery guidance, with accepted headless worker-to-model integration coverage. See [Recovery explanations](docs/RECOVERY-EXPLANATIONS.md).
 
 **Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
 
@@ -40,7 +40,7 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: [Preview 20 (app build 24)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.20).** Unified public app with ownership-aware interruption recovery, worker-event reliability, sidecar feedback, detailed folder recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
+**Current download: [Preview 21 (app build 25)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.21).** Unified public app with ownership-aware interruption recovery, worker-event reliability, sidecar feedback, detailed folder recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
 
 Preview 14 introduced allocation-aware estimates. Allocation-aware disk-space estimates account for metadata growth, destination allocation, output folders and the report while preserving the interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 

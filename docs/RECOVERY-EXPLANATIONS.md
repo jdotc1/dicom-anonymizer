@@ -2,7 +2,7 @@
 
 ## Scope — 24 October 2026
 
-Local source increment after delivered Preview 20/build 24. The existing public views, recovery controls, macOS 13/arm64 target, engine metadata policy and default-off sidecar policy are unchanged. No automatic batch deletion or resume is added.
+Source increment after Preview 20/build 24, now delivered as Preview 21/build 25. The existing public views, recovery controls, macOS 13/arm64 target, engine metadata policy and default-off sidecar policy are unchanged. No automatic batch deletion or resume is added.
 
 ## Recovery explanations
 
@@ -40,4 +40,12 @@ Seven new explanation cases and eight new worker-to-model cases passed as compos
 
 Read-only review corrected two overstatements in fallback text: parent metadata does not prove content access, and unavailable identity does not prove mismatch. Only the two affected explanation cases were rerun after that wording change. Passing unchanged cases, lifecycle/worker process suites, engine policy/self-audit, sidecar/r2, runtime, dependencies, icon, publication-tooling and Preview 20 distribution receipts were reused.
 
-No GUI use, native app launch, installation, signing, notarization, push or release occurred for this source increment. Preview 20/build 24 remains the public download. Live recovery/sidecar interaction, scheduling, responsiveness and layout acceptance remain pending.
+No GUI use, native app launch, installation, signing, notarization, push or release occurred for this source increment. Preview 21/build 25 is the public download. Live recovery/sidecar interaction, scheduling, responsiveness and layout acceptance remain pending.
+
+## Authorized distribution
+
+The unified public app is delivered as **Preview 21/build 25**, using `scripts/publication.py`. Packaged engine/release source is `54972ffb0bd4aa38d4a703fdc8ef72876bb11c32`; accepted native executable source is `1c198174ac0927337e7a1d40d59a0fb229e6eb09`. Apple notarization `6d5b7b80-2587-4948-8c58-6361a8f0633f` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,057,708 bytes.
+
+Accepted verification was reused: seven recovery-explanation cases, eight headless worker-to-model cases and existing engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal, runtime, dependency, icon and publication-tooling evidence. No functional test or native build was repeated for delivery. Public UI structure and engine policy are unchanged. No GUI use, native app launch or installation occurred. Synthetic subprocess cases do not establish real Python processing, filesystem publication, journal acknowledgement or live UI behavior. Live scheduling, recovery/sidecar interaction, responsiveness and layout acceptance remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.21). Earlier records retain their historical scope.

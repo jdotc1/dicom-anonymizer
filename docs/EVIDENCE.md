@@ -40,3 +40,11 @@ Accepted verification was reused: 10 recovery-lifecycle cases, 10 headless worke
 ## 2026-10-24 — local recovery explanations and worker-to-model increment
 
 Seven new explanation cases and eight new worker-to-model integration cases passed as composite evidence. Failed synthetic cancellation fixtures were diagnosed and corrected; only failed/changed cases were repeated. Read-only review corrected fallback wording that overstated metadata/identity evidence. Actual optimized native target compiled with warnings as errors. Accepted engine, lifecycle, worker/model, sidecar, runtime and Preview 20 distribution receipts reused. No GUI use, native app launch, installation or publication. See `RECOVERY-EXPLANATIONS.md` for scope and limits.
+
+## 2026-10-24 — recovery explanations Preview 21/build 25
+
+The unified public app is delivered as **Preview 21/build 25**, using `scripts/publication.py`. Packaged engine/release source is `54972ffb0bd4aa38d4a703fdc8ef72876bb11c32`; accepted native executable source is `1c198174ac0927337e7a1d40d59a0fb229e6eb09`. Apple notarization `6d5b7b80-2587-4948-8c58-6361a8f0633f` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,057,708 bytes.
+
+Accepted verification was reused: seven recovery-explanation cases, eight headless worker-to-model cases and existing engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal, runtime, dependency, icon and publication-tooling evidence. No functional test or native build was repeated for delivery. Public UI structure and engine policy are unchanged. No GUI use, native app launch or installation occurred. Synthetic subprocess cases do not establish real Python processing, filesystem publication, journal acknowledgement or live UI behavior. Live scheduling, recovery/sidecar interaction, responsiveness and layout acceptance remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.21). Earlier records retain their historical scope.

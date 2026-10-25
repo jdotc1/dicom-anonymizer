@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 20/app build 24: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and resumable publication.
+Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 21/app build 25: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and resumable publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -28,9 +28,9 @@ Interruption recovery records operation ownership/publication state and uses the
 
 Recovery records are aggregated in the existing area, cleaned local records are retired with identity checks, and live owners trigger guarded background reinspection. A headless harness covers the real worker process/pipe boundary. This increment is delivered in Preview 20/build 24; accepted engine/policy and unchanged runtime evidence were reused. See [Recovery lifecycle](RECOVERY-LIFECYCLE.md).
 
-## Current local source increment
+## Recovery explanation delivery
 
-Recovery explanations distinguish confirmed folder identity, uncertain publication and the next inspection step. New headless cases cover the actual worker launch through the batch model’s final state, including cancellation, malformed output and nonzero exits. Source acceptance is separate from live interaction; this increment is not yet released. See [Recovery explanations](RECOVERY-EXPLANATIONS.md).
+Recovery explanations distinguish confirmed folder identity, uncertain publication and the next inspection step. New headless cases cover the actual worker launch through the batch model’s final state, including cancellation, malformed output and nonzero exits. Source acceptance is separate from live interaction; this increment is delivered as Preview 21/build 25. See [Recovery explanations](RECOVERY-EXPLANATIONS.md).
 
 ## Decision-dependent future scope
 
