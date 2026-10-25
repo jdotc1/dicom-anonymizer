@@ -46,7 +46,10 @@ class ReleaseStorageTests(unittest.TestCase):
              patch.object(storage.subprocess, 'run', return_value=SimpleNamespace(returncode=0)) as run:
             storage.require_active(self.root / 'new-output')
         self.assertEqual([c.args[0] for c in run.call_args_list], [
-            [self.guard, 'active'], [self.guard, 'check', '--path', str(self.root / 'new-output')]])
+            [self.guard, 'active'], [self.guard, 'check', '--path', str(self.root / 'new-output')],
+            [self.guard, 'run', '--entry', str(Path(storage.__file__).resolve()),
+             '--interpreter', sys.executable, '--', '--admit-output', '--output', str(self.root / 'new-output')],
+            [self.guard, 'active']])
 
     def test_destination_refusal_prevents_lock_or_distribution_commands(self):
         with patch.object(storage, 'executable', return_value=self.guard), \
@@ -156,6 +159,68 @@ class ReleaseStorageTests(unittest.TestCase):
         active.assert_called_once_with(root)
         self.assertEqual(steps, state['steps'])
         self.assertEqual(before, (root / 'state.json').read_bytes())
+
+    def test_successful_preflight_warning_remains_visible(self):
+        warning = 'STORAGE WARNING: fixture destination near reserve\n'
+        responses = [SimpleNamespace(returncode=0), SimpleNamespace(returncode=0, stderr=warning),
+                     SimpleNamespace(returncode=0), SimpleNamespace(returncode=0)]
+        capture = io.StringIO()
+        with patch.object(storage, 'executable', return_value=self.guard), \
+             patch.object(storage.subprocess, 'run', side_effect=responses), \
+             contextlib.redirect_stderr(capture):
+            storage.require_active(self.root)
+        self.assertEqual(warning, capture.getvalue())
+
+    def test_direct_api_nested_admission_quota_refusal_prevents_writes(self):
+        responses = [SimpleNamespace(returncode=0), SimpleNamespace(returncode=0),
+                     SimpleNamespace(returncode=75, stderr='fixture root quota refusal\n')]
+        with patch.object(storage, 'executable', return_value=self.guard), \
+             patch.object(storage.subprocess, 'run', side_effect=responses) as run, \
+             patch.object(release, 'locked', side_effect=AssertionError('lock write')), \
+             contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaisesRegex(storage.StorageGuardError, 'admission'):
+                release.distribute(self.root, 'sign')
+        self.assertEqual(3, run.call_count)
+        self.assertIn('--admit-output', run.call_args.args[0])
+        self.assertFalse((self.root / '.release.lock').exists())
+
+    def test_parent_loss_after_nested_admission_prevents_writes(self):
+        responses = [SimpleNamespace(returncode=0), SimpleNamespace(returncode=0),
+                     SimpleNamespace(returncode=0), SimpleNamespace(returncode=1)]
+        with patch.object(storage, 'executable', return_value=self.guard), \
+             patch.object(storage.subprocess, 'run', side_effect=responses), \
+             patch.object(release, 'plan', side_effect=AssertionError('accepted source read')):
+            with self.assertRaisesRegex(storage.StorageGuardError, 'authenticated'):
+                release.assemble(self.root / 'manifest', self.root / 'output', self.root)
+        self.assertFalse((self.root / 'output').exists())
+
+    def test_admission_worker_authenticates_without_copying_or_dispatch(self):
+        with patch.object(storage, 'executable', return_value=self.guard), \
+             patch.object(storage.subprocess, 'run', return_value=SimpleNamespace(returncode=0)) as run, \
+             patch.object(release, 'main', side_effect=AssertionError('distribution dispatch')):
+            self.assertEqual(0, storage.main(['--admit-output', '--output', str(self.root / 'output')]))
+        run.assert_called_once_with([self.guard, 'active'], capture_output=True, text=True)
+        self.assertFalse((self.root / 'output').exists())
+
+    def test_admission_worker_refuses_unauthenticated_invocation(self):
+        with patch.object(storage, 'executable', return_value=self.guard), \
+             patch.object(storage.subprocess, 'run', return_value=SimpleNamespace(returncode=1)), \
+             contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as stopped:
+                storage.main(['--admit-output', '--output', str(self.root / 'output')])
+        self.assertEqual(1, stopped.exception.code)
+        self.assertFalse((self.root / 'output').exists())
+
+    def test_nested_admission_operational_warning_remains_visible(self):
+        warning = 'STORAGE WARNING: fixture nested admission\n'
+        responses = [SimpleNamespace(returncode=0), SimpleNamespace(returncode=0),
+                     SimpleNamespace(returncode=0, stderr=warning), SimpleNamespace(returncode=0)]
+        capture = io.StringIO()
+        with patch.object(storage, 'executable', return_value=self.guard), \
+             patch.object(storage.subprocess, 'run', side_effect=responses), \
+             contextlib.redirect_stderr(capture):
+            storage.require_active(self.root)
+        self.assertEqual(warning, capture.getvalue())
 
 
 if __name__ == '__main__':
