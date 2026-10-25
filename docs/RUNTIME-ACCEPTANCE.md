@@ -84,7 +84,7 @@ At that milestone, interruption recovery and resumable publication were not yet 
 
 ## Preview 14 delivery (historical) — preview 14, build 18
 
-The receipt-driven workflow delivered public Preview 14/app build 18 with accepted engine-source `80caae5` and reused native-source `b28a3df`. Release source: `e2f95de`. Apple accepted notarization `92ca3f7b-0e55-46b6-93f2-c3fceeed405e`; the new root signature, stapled ticket and Gatekeeper assessment passed once. Accepted estimate evidence (24 new checks and four affected existing checks per repository) and earlier unchanged policy, self-audit, UI/build, runtime, icon and nested-signature receipts were reused. Five new packaging fixtures per app profile passed for distinct native/engine provenance and vendor cache exclusion; source-only review found no blockers. No accepted test suite, native build, provenance hash or dependency-signature check was repeated. The standalone arm64 ZIP was published and its HTTPS delivery returned HTTP 200. The deployment target remains macOS 13, with bundled Python. See `SPACE-ESTIMATE.md`.
+The receipt-driven workflow delivered public Preview 14/app build 18 with accepted engine-source `80caae5` and reused native-source `b28a3df`. Release source: `e2f95de`. Apple accepted notarization `92ca3f7b-0e55-46b6-93f2-c3fceeed405e`; the new root signature, stapled ticket and Gatekeeper assessment passed once. Accepted estimate evidence (24 new checks and four affected existing checks for the public app) and earlier unchanged policy, self-audit, UI/build, runtime, icon and nested-signature receipts were reused. Five new packaging fixtures for the public release profile passed for distinct native/engine provenance and vendor cache exclusion; source-only review found no blockers. No accepted test suite, native build, provenance hash or dependency-signature check was repeated. The standalone arm64 ZIP was published and its HTTPS delivery returned HTTP 200. The deployment target remains macOS 13, with bundled Python. See `SPACE-ESTIMATE.md`.
 
 ## Preview 13 packaging withdrawal (historical)
 
@@ -121,6 +121,8 @@ evidence and reused verification. Distribution checks cover only the new bundle.
 `v2.0.0-preview.6` delivers focused error recovery from `4e08049` using the accepted optimized executable. It retains the independent SwiftUI interface, macOS 13 target, bundled Python and approved icon. See `ERROR-RECOVERY.md` for new focused evidence and verification reuse. Previous releases and their acceptance records remain historical.
 
 ## Preview 5 delivery (historical) — preview 5, build 9
+
+`v2.0.0-preview.5` delivers the accepted workflow polish with the existing standalone Python and icon. The existing SwiftUI interface is retained. Preview 4 remains available as the previous release; tags and earlier acceptance history are preserved.
 
 ## Preview 4 download housekeeping (historical)
 

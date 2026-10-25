@@ -58,6 +58,10 @@ changes and untracked engine files cannot leak into the distribution. Unsafe
 archive entries and mutable bundle symlinks are rejected. Assembly stages privately
 and produces the output directory only after completion.
 
+Python, nested signatures, compiled resource bundles, Assets.car,
+AppIcon.icns, and the icon plist keys are preserved. Only the copied root signature
+is removed. The result is explicitly unsigned and is not ready for distribution.
+
 `BuildInfo.json` and `ReleaseInfo.json` distinguish the accepted executable/engine
 `source_commit` from the release tooling's `release_source_commit`. Metadata is
 written freshly, avoiding stale inherited candidate claims. Only the logical
@@ -115,6 +119,12 @@ running installed app.
 
 ## Focused verification
 
+`tests/test_release_automation.py` uses disposable fake bundles, a tiny temporary
+Git repository, and mocked distribution commands. It never invokes codesign,
+notarytool, Gatekeeper, or a real app. Run only new or changed fixture cases; retain
+accepted receipts for unchanged cases. Set TMPDIR to a writable temporary
+directory in your chosen local workspace for new fixture files.
+
 The fixtures cover immutable source selection, resource preservation, variant and
 metadata rejection, symlink safety, assembly rollback, locking, cached completion,
 and interrupted-submission reconciliation. They qualify the tooling logic, not a
@@ -133,7 +143,7 @@ while `native_source_commit` records where the reused native product was built.
 `release_source_commit` separately records the release tooling tree. The actual
 compiler metadata is reused from that native product; no rebuild is implied.
 Receipts predating this distinction default both component sources to their
-single accepted source. Four new isolated fixtures per app profile cover distinct
+single accepted source. Four new isolated fixtures for the public release profile cover distinct
 sources, missing/mismatched native metadata, and legacy selection; existing
 packaging fixtures remain reused.
 

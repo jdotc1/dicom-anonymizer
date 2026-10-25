@@ -120,6 +120,11 @@ unchanged cases and accepted publication/packaging/app receipts were reused.
 Read-only review found no blockers; its identified branch-coverage gaps were
 covered by the two new tag/metadata cases.
 
+Detailed logs and verification records are retained outside the repository. No live
+GitHub calls, native builds, GUI use, app launches, installation, signing,
+notarization, push or release occurred. Preview 23/build 27 is now the public download; the authorized delivery is
+recorded below.
+
 ## Authorized live delivery — Preview 23
 
 The unified public app is delivered as **Preview 23/build 27**, using the bounded read-only visibility reconciliation in `scripts/publication.py`. Packaged engine/release source is `83a1b08533c60b6beb4132f6f389d67d68ca869b`; accepted native executable source is `71d934e607437779f65c9fb56f4f66a7836d9cc0`. Apple notarization `fe79275a-8326-47e4-8fb9-944e68a672f4` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,058,329 bytes.

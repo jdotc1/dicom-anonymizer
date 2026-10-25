@@ -49,7 +49,7 @@ candidates:
 - `notarization-upload.zip`
 
 All other files remain, including receipts, logs, source, reports and imaging
-data. The command does not sweep arbitrary caches, workspaces, private releases,
+data. The command does not sweep arbitrary caches, workspaces, unrelated releases,
 installed apps or user data. Generic cache retirement remains outside this
 version until caches have explicit creation/ownership records.
 
@@ -110,6 +110,12 @@ eligibility/deletion cases were repeated after the ownership changes; all other 
 passing cases were reused. Read-only review identified and resolved archive
 replacement, missing current inputs, traversal/mount and dangling-ledger guards;
 final focused review found no blockers.
+
+The finalization fixture mocks all external distribution commands and proves
+that fresh download creation records ownership while completed legacy steps do
+not rerun or acquire a backfilled record. CLI checks create and retire tiny
+synthetic files only. Tests use temporary directories and remove their fixtures. Detailed verification
+records remain outside the repository.
 
 No accepted package, native executable or historical evidence was rehashed or
 reverified. Existing app/engine/packaging/publication receipts were reused. No

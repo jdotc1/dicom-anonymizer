@@ -28,6 +28,8 @@ The existing completion panel and status show actual JSON files cleaned and chec
 - Actual optimized public native target and the new CLI model/stream harness compiled with warnings as errors, Apple Swift 6.4.2, Swift language mode 6, Xcode 27.2 build 27B48, SDK 27.2, arm64/macOS 13.
 - Independent source-only delta review found no blockers.
 
+Detailed verification records are retained outside the repository. The harness runs without creating NSApplication or launching the native app; it does not prove live responsiveness/layout. No GUI use or native app launch occurred. Native pipe/process integration under a running app and compact-window appearance remain pending live acceptance.
+
 Accepted policy/self-audit, sidecar parser/catalog/resource gates, previous recovery/consolidation/r2 and bundled runtime/icon/dependency evidence were reused. No passing unchanged suite, dependency/provenance hash or signature check was rerun. No merge, push, signing, notarization, release or installation occurred.
 
 ## Preview 18 distribution

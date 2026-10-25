@@ -10,8 +10,8 @@ symlink rejection, rollback, root-only signing arguments, cached stages, locking
 and interrupted notarization reconciliation. Distribution commands were mocked;
 this is tooling evidence, not real signing/notarization/runtime acceptance.
 
-The accepted storage-recovery and delivered private build15/public preview10
-receipts remain the application evidence. No unchanged app, engine, policy,
+The accepted storage-recovery and delivered Preview 10 records remain the
+application evidence for their original inputs. No unchanged app, engine, policy,
 self-audit, runtime, icon, UI, dependency, or signing verification was repeated.
 No real build, sign, notarize, publish, or install operation ran for this increment.
 Local tooling logs and the detailed tooling-receipt.json are retained in the

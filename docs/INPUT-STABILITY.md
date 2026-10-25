@@ -12,11 +12,18 @@ The interfaces, metadata policy, exclusions, audit, output layout and publicatio
 
 ## Focused verification
 
-Nine new synthetic test methods per app cover unchanged reads, pre-read changes, edits/replacements/removals/symlinks during reading, failed reads after removal, preservation of stable errors and cancellation, pre-read scan identity, scan rejection before validation, and processing rejection with owned-staging cleanup and no output publication. The mutation test contains four distinct subcases.
+Nine new synthetic test methods cover unchanged reads, pre-read changes, edits/replacements/removals/symlinks during reading, failed reads after removal, preservation of stable errors and cancellation, pre-read scan identity, scan rejection before validation, and processing rejection with owned-staging cleanup and no output publication. The mutation test contains four distinct subcases.
 
-Private: all nine passed once. Public: eight passed on the first run; the scan-success fixture incorrectly referenced a private-only helper. That test fixture was corrected and only the failed test was rerun, successfully. Passing tests were not repeated.
+Eight checks passed initially. A scan-success fixture needed correction for the current implementation; only that failed case was repeated and passed. Previously passing checks were reused.
+
+Detailed verification records are retained outside the repository. Tests use synthetic files and mocked decoded datasets; no accepted app bundle is imported or modified.
 
 ## Accepted evidence reused
+
+- Accepted allocation-estimate checks.
+- Accepted native interface and scan-progress checks.
+- Accepted cancellation/publication/cleanup checks.
+- Prior shipped package/runtime qualification, scoped to the original artifacts.
 
 No unchanged suites, dependency checks, hashes, signing or notarization checks were repeated. No native sources changed, so no native build was needed. No GUI use or app launch occurred. New package root signature, Apple notarization (b0807bd6-bd00-4f1f-b479-d9a89b363e30), stapling, ticket validation and Gatekeeper assessment passed once for this changed assembly. No app was launched or installed. The public update is Preview 15.
 

@@ -29,6 +29,8 @@ The identity/path/phase negative cases test record retention, not rejection of a
 
 Nine new location/model cases and eight new subprocess/model/filesystem acknowledgement cases passed as composite evidence. The first seven location cases and all eight acknowledgement cases passed once. Source-only review found a successful-location-choice race; the explicit ownership invalidation and two new regression cases address it. Passing unchanged cases were reused, not rerun.
 
+The actual optimized native target compiled with warnings as errors using Swift 6.4.2, Xcode 27.2 (27B48), SDK 27.2, Swift language mode 6, arm64/macOS 13. It was not launched. Detailed logs, harnesses and verification records are retained outside the repository.
+
 Accepted engine/policy/self-audit, sidecar/r2, prior lifecycle/worker/model/journal, runtime, dependency, icon and Preview 21 distribution receipts were reused. No engine suite, unchanged native suite, source hashes, dependency-signature checks or accepted release verification were repeated.
 
 ## Limits and delivery status
