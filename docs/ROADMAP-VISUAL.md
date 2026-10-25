@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 24/app build 28: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and resumable publication.
+Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 25/app build 29: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and resumable publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -44,9 +44,9 @@ Publication tooling now reconciles delayed release/asset/published-tag visibilit
 
 Recovery inspection failures are distinct from empty listings and retain prior uncertainty, including after live-owner-only observations. Successful completion with unresolved local-record acknowledgement now retains the result and shows a nonblocking warning through existing controls. This increment is delivered as Preview 24/build 28. See [Recovery-state feedback](RECOVERY-STATE-FEEDBACK.md).
 
-## Current local source increment
+## Recovery consistency delivery
 
-Outstanding acknowledgement warnings are independent of report-error presentation, and single-use generation tokens protect recovery results and scheduled refreshes from intervening actions. Fourteen new headless cases passed; this increment is not yet released. See [Recovery consistency](RECOVERY-CONSISTENCY.md).
+Outstanding acknowledgement warnings are independent of report-error presentation, and single-use generation tokens protect recovery results and scheduled refreshes from intervening actions. Fourteen new headless cases passed; this increment is delivered as Preview 25/build 29. See [Recovery consistency](RECOVERY-CONSISTENCY.md).
 
 ## Decision-dependent future scope
 

@@ -94,3 +94,13 @@ No GUI use, native app launch or installation occurred. Injected permission fail
 ## 2026-10-24 — local recovery warning/snapshot consistency
 
 Fourteen new headless cases passed once: eight report/warning transitions and six snapshot-generation cases. Read-only review found no blockers. Actual optimized native target compiled with warnings as errors. Accepted unchanged engine, sidecar, lifecycle, worker/model/record, runtime, dependency, icon and Preview 24 distribution evidence reused; no unchanged suite repeated. No GUI use, native app launch, installation or publication. See `RECOVERY-CONSISTENCY.md` for limits.
+
+## 2026-10-24 — recovery consistency Preview 25/build 29
+
+The unified public app is delivered as **Preview 25/build 29**, using bounded read-only visibility reconciliation in `scripts/publication.py`. Packaged engine/release source is `58bf002ad7f6a3f9ee5523fa831a346533d81414`; accepted native executable source is `b64ce1b2bb999c217c6c4fa9638dc872b67ad37b`. Apple notarization `058b706f-133d-4a76-9588-e2ed1bbbfa3a` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,070,680 bytes.
+
+Accepted verification reused: eight report/warning transition cases, six snapshot-generation cases and existing engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal/acknowledgement, runtime, dependency, icon and publication-tooling receipts. No functional tests, native builds, unchanged source hashes or dependency-signature checks were repeated for delivery. Public UI structure and engine policy are unchanged.
+
+No GUI use, native app launch or installation occurred. Pure report-result reducers and synthetic workers do not establish actual report opening or real engine audit/publication; prior on-disk record-retention evidence retains its scope. Live scheduling, recovery/report/sidecar interaction, volume behavior, responsiveness and layout remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.25). Earlier records retain their historical scope.
