@@ -90,3 +90,7 @@ Accepted verification reused: nine directory/model cases, eight acknowledgement-
 No GUI use, native app launch or installation occurred. Injected permission failures and synthetic worker outcomes retain their original evidence limits; they do not establish all real filesystem/volume configurations or real engine audit/publication. Live scheduling, volume behavior, recovery/sidecar interaction, responsiveness and layout remain pending.
 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.24). Earlier records retain their historical scope.
+
+## 2026-10-24 — local recovery warning/snapshot consistency
+
+Fourteen new headless cases passed once: eight report/warning transitions and six snapshot-generation cases. Read-only review found no blockers. Actual optimized native target compiled with warnings as errors. Accepted unchanged engine, sidecar, lifecycle, worker/model/record, runtime, dependency, icon and Preview 24 distribution evidence reused; no unchanged suite repeated. No GUI use, native app launch, installation or publication. See `RECOVERY-CONSISTENCY.md` for limits.

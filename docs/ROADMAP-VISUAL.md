@@ -44,6 +44,10 @@ Publication tooling now reconciles delayed release/asset/published-tag visibilit
 
 Recovery inspection failures are distinct from empty listings and retain prior uncertainty, including after live-owner-only observations. Successful completion with unresolved local-record acknowledgement now retains the result and shows a nonblocking warning through existing controls. This increment is delivered as Preview 24/build 28. See [Recovery-state feedback](RECOVERY-STATE-FEEDBACK.md).
 
+## Current local source increment
+
+Outstanding acknowledgement warnings are independent of report-error presentation, and single-use generation tokens protect recovery results and scheduled refreshes from intervening actions. Fourteen new headless cases passed; this increment is not yet released. See [Recovery consistency](RECOVERY-CONSISTENCY.md).
+
 ## Decision-dependent future scope
 
 1. **Resolve supported-input policy decisions separately.** Opaque payloads, unsupported structures, resource limits and conformance claims need explicit scope and approval before implementation.

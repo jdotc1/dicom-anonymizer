@@ -424,6 +424,8 @@ final class BatchModel: ObservableObject {
     private var lastInspectedNotice: InterruptionNotice?
     private var recoveryDirectoryObserved = false
     private var acknowledgementWarning = false
+    private var pendingAcknowledgementWarning: URL?
+    private(set) var recoveryGeneration = UUID()
     private let removeRecoveryRecord: (URL) throws -> Void
     private var interruptionRefreshAllowed = true
 
@@ -445,14 +447,21 @@ final class BatchModel: ObservableObject {
         }
     }
 
+    func beginRecoveryInspection() -> UUID {
+        recoveryGeneration = UUID()
+        return recoveryGeneration
+    }
+
     private func refreshInterruptionRecords(in directory: URL) {
+        let generation = beginRecoveryInspection()
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let snapshot = InterruptionRecovery.scan(in: directory)
             DispatchQueue.main.async {
-                guard let self, self.receiveInterruptionScan(snapshot) else { return }
+                guard let self, self.receiveInterruptionScan(snapshot, generation: generation) else { return }
+                let scheduledGeneration = self.recoveryGeneration
                 // One pending refresh; no polling while a batch or newer action owns the area.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 30) { [weak self] in
-                    guard let self, self.canRefreshInterruption else { return }
+                    guard let self, self.canRefreshInterruption, self.recoveryGeneration == scheduledGeneration else { return }
                     self.refreshInterruptionRecords(in: directory)
                 }
             }
@@ -461,15 +470,18 @@ final class BatchModel: ObservableObject {
     private var canRefreshInterruption: Bool {
         interruptionRefreshAllowed && !busy && source == nil && summary == nil && (errorMessage == nil || interruptionMessage != nil)
     }
-    @discardableResult func receiveInterruptionScan(_ snapshot: InterruptionScan) -> Bool {
+    @discardableResult func receiveInterruptionScan(_ snapshot: InterruptionScan, generation: UUID? = nil) -> Bool {
+        if let generation, generation != recoveryGeneration { return false }
         guard canRefreshInterruption else { return false }
+        // Consume the token before applying state. Duplicate delivery is stale too.
+        recoveryGeneration = UUID()
         if let directory = snapshot.unavailableDirectory {
             // An absent Operations folder is normal before the first batch.
             // Once a notice exists, absence cannot establish its resolution.
             if snapshot.directoryMissing && !recoveryDirectoryObserved && interruptionMessage == nil { return false }
             let prior = lastInspectedNotice
             let retained = prior.map { "\n\nLast available recovery notice:\n\($0.message)\nLocation: \($0.location.path)" } ?? ""
-            clearProblem()
+            clearProblem(invalidateRecovery: false)
             presentInterruption(InterruptionNotice(
                 message: "Recovery records could not be inspected. This does not establish that previous recovery issues are resolved. Restore access to the recovery location; no batch data was changed." + retained,
                 location: directory, ownedStaging: false, publicationPossible: true))
@@ -478,7 +490,7 @@ final class BatchModel: ObservableObject {
         }
         recoveryDirectoryObserved = true
         if interruptionMessage != nil {
-            clearProblem(); publishedWithoutConfirmation = false; status = idleStatus
+            clearProblem(invalidateRecovery: false); publishedWithoutConfirmation = false; status = idleStatus
         }
         if let notice = snapshot.notice { presentInterruption(notice) }
         lastInspectedNotice = snapshot.notice
@@ -506,6 +518,7 @@ final class BatchModel: ObservableObject {
         // A deliberate location choice owns the recovery area, including a
         // successful choice that leaves no error for the delayed-scan guard.
         interruptionRefreshAllowed = false
+        recoveryGeneration = UUID()
         outputParent = url.standardizedFileURL
         defaults.set(url.standardizedFileURL.path, forKey: Self.outputDefaultsKey)
         if problem == .output { clearProblem(); status = idleStatus }
@@ -591,6 +604,7 @@ final class BatchModel: ObservableObject {
     }
 
     func beginRunState(isScan: Bool, output: URL?) {
+        pendingAcknowledgementWarning = nil
         resetProcessingProgress()
         examiningInput = true; scanFilesExamined = 0; scanFoldersExamined = 0
         checkingSidecars = false; sidecarFilesExamined = 0; sidecarFoldersExamined = 0
@@ -608,7 +622,7 @@ final class BatchModel: ObservableObject {
         guard !busy, source == nil, summary == nil, errorMessage == nil else { return }
         ready = false; cleanupIncomplete = notice.ownedStaging
         publishedWithoutConfirmation = notice.publicationPossible
-        presentProblem(.output, message: notice.message, url: notice.location)
+        presentProblem(.output, message: notice.message, url: notice.location, invalidateRecovery: false)
         interruptionMessage = "Review every location listed above before starting another batch. Recovery records are local notices; no batch data is removed automatically."
     }
 
@@ -645,9 +659,8 @@ final class BatchModel: ObservableObject {
                                              auditedSidecars: cleanJSONSidecars ? completedSidecarAudits : nil)
             status = idleStatus
             if InterruptionRecovery.acknowledge(activeJournal, output: output, remove: removeRecoveryRecord) == .unresolved {
-                presentProblem(.report,
-                    message: "The batch completed, but its local recovery record could not be acknowledged safely. Your completed result is retained. A recovery notice may appear next time; review this output before retrying to avoid a duplicate batch. No batch data was deleted.", url: output)
-                acknowledgementWarning = true
+                pendingAcknowledgementWarning = output
+                showAcknowledgementWarning()
             }
         } else if cleanupIncomplete {
             ready = false
@@ -818,11 +831,11 @@ final class BatchModel: ObservableObject {
         let report = output.appendingPathComponent("anonymization-report.json")
         var directory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: report.path, isDirectory: &directory), !directory.boolValue else {
-            presentProblem(.report, message: "The anonymization report could not be found. Check whether the output batch was moved or deleted.", url: output)
+            reportOpeningFailed(message: "The anonymization report could not be found. Check whether the output batch was moved or deleted.")
             return
         }
-        if NSWorkspace.shared.open(report) { dismissReportProblem() }
-        else { presentProblem(.report, message: "The report could not be opened. Reveal the output folder and try opening it there.", url: output) }
+        if NSWorkspace.shared.open(report) { reportOpeningSucceeded() }
+        else { reportOpeningFailed(message: "The report could not be opened. Reveal the output folder and try opening it there.") }
     }
 
     var hasBlockingProblem: Bool { errorMessage != nil && problem != .report }
@@ -896,13 +909,16 @@ final class BatchModel: ObservableObject {
         }
         return ready ? "Ready · \(patients.count) patients and \(total) DICOM files." : "Choose a batch folder to begin."
     }
-    private func clearProblem() {
+    private func clearProblem(invalidateRecovery: Bool = true) {
+        if invalidateRecovery { recoveryGeneration = UUID() }
         acknowledgementWarning = false
         lastInspectedNotice = nil
         interruptionMessage = nil
         errorMessage = nil; problemURL = nil; problem = .processing; cleanupIncomplete = false; outputIssue = nil
     }
-    private func presentProblem(_ kind: BatchProblem, message: String, url: URL? = nil) {
+    private func presentProblem(_ kind: BatchProblem, message: String, url: URL? = nil,
+                                invalidateRecovery: Bool = true) {
+        if invalidateRecovery { recoveryGeneration = UUID() }
         acknowledgementWarning = false
         lastInspectedNotice = nil
         interruptionMessage = nil
@@ -915,9 +931,26 @@ final class BatchModel: ObservableObject {
         source = nil; ready = false; patients = []; total = 0; processed = 0; excluded = 0; activePatient = nil
         presentProblem(.input, message: message, url: url)
     }
+    private func showAcknowledgementWarning() {
+        guard let output = pendingAcknowledgementWarning, output == completedOutput, summary != nil else { return }
+        presentProblem(.report,
+            message: "The batch completed, but its local recovery record could not be acknowledged safely. Your completed result is retained. A recovery notice may appear next time; review this output before retrying to avoid a duplicate batch. No batch data was deleted.", url: output)
+        acknowledgementWarning = true
+    }
+
+    // Pure report-result reduction is shared by native opening and headless checks.
+    func reportOpeningFailed(message: String) {
+        guard canInspectOutput, let output = completedOutput else { return }
+        presentProblem(.report, message: message, url: output)
+    }
+    func reportOpeningSucceeded() {
+        guard !busy, problem == .report else { return }
+        clearProblem(); showAcknowledgementWarning(); status = idleStatus
+    }
     func dismissReportProblem() {
         guard !busy, problem == .report else { return }
-        clearProblem(); status = idleStatus
+        if acknowledgementWarning { pendingAcknowledgementWarning = nil }
+        clearProblem(); showAcknowledgementWarning(); status = idleStatus
     }
 
     func resetProcessingProgress() {
