@@ -47,3 +47,21 @@ changed-boundary validation on future work.
 
 No app code or engine policy changed during cleanup. No GUI use, app launch,
 installation, build, test, notarization or release was performed.
+
+## Authorized generated validation payload retirement
+
+The user subsequently authorized removal of historical generated validation
+imaging outputs. Removed 13,116 generated DICOM files from twelve historical
+output trees while retaining all twelve anonymization reports, validation
+receipts, logs, integrity records and notes. Original imaging inputs and their
+archives were not modified. The validation directory now occupies about 372 KB.
+
+This pass reduced the inventoried development folders from 4.55 GiB to
+0.28 GiB, removing a further 4.27 GiB of allocated files. Combined
+with the earlier cleanup, the reduction is approximately 15.42 GiB
+(98.2%). The allocated-block/APFS measurement limits above still apply.
+
+Historical generated output paths now contain reports only; they do not imply
+that old DICOM payloads remain available locally. Accepted verification was
+reused. No tests, builds, content hashes, signing checks, GUI use or app launches
+were performed. Current release inputs and source history remain retained.
