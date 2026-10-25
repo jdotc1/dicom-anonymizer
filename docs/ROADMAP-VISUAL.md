@@ -24,6 +24,10 @@ Allocation-aware disk-space estimates are now delivered. See [Disk-space estimat
 
 Interruption recovery records operation ownership/publication state and uses the existing recovery area without automatic resume/deletion. Resumable publication binds a finalized archive to a draft release and reconciles uncertain remote outcomes. Focused synthetic/mock evidence was reused for Preview 19; its first live authenticated publication completed using the new tooling. No GUI use or app launches occurred.
 
+## Current local source increment
+
+Recovery records are aggregated in the existing area, cleaned local records are retired with identity checks, and live owners trigger guarded background reinspection. A headless harness covers the real worker process/pipe boundary. This increment is not yet released; accepted engine policy and distribution evidence are reused. See [Recovery lifecycle](RECOVERY-LIFECYCLE.md).
+
 ## Decision-dependent future scope
 
 1. **Resolve supported-input policy decisions separately.** Opaque payloads, unsupported structures, resource limits and conformance claims need explicit scope and approval before implementation.

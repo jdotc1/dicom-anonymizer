@@ -123,6 +123,13 @@ final class EngineRunner: @unchecked Sendable {
     private let lock = NSLock()
     private var process: Process?
     private var cancelled = false
+    private let command: (@Sendable ([String]) -> (URL, [String])?)?
+
+    // Production resolves only the bundled interpreter. Headless integration
+    // checks inject a synthetic worker through the same process/pipe path.
+    init(command: (@Sendable ([String]) -> (URL, [String])?)? = nil) {
+        self.command = command
+    }
 
     func cancel() {
         lock.lock()
@@ -135,19 +142,29 @@ final class EngineRunner: @unchecked Sendable {
     func start(arguments: [String], event: @escaping @MainActor @Sendable ([String: Any]) -> Void,
                finished: @escaping @MainActor @Sendable (Int32, Bool) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async { [self] in
-            guard let resources = Bundle.main.resourceURL else {
-                DispatchQueue.main.async { event(["event": "error", "message": "The app resources are missing. Reinstall the app and retry."]); finished(1, false) }
-                return
-            }
-            let interpreter = resources.appendingPathComponent("python/bin/python3").path
-            guard FileManager.default.isExecutableFile(atPath: interpreter) else {
-                DispatchQueue.main.async { event(["event": "error", "message": "The bundled Python runtime is missing. Reinstall the app from the official release."]); finished(1, false) }
-                return
+            let executable: URL
+            let workerArguments: [String]
+            if let command {
+                guard let selected = command(arguments) else {
+                    DispatchQueue.main.async { finished(1, false) }; return
+                }
+                (executable, workerArguments) = selected
+            } else {
+                guard let resources = Bundle.main.resourceURL else {
+                    DispatchQueue.main.async { event(["event": "error", "message": "The app resources are missing. Reinstall the app and retry."]); finished(1, false) }
+                    return
+                }
+                executable = resources.appendingPathComponent("python/bin/python3")
+                guard FileManager.default.isExecutableFile(atPath: executable.path) else {
+                    DispatchQueue.main.async { event(["event": "error", "message": "The bundled Python runtime is missing. Reinstall the app from the official release."]); finished(1, false) }
+                    return
+                }
+                workerArguments = ["-I", "-B", "-u", resources.appendingPathComponent("bootstrap.py").path] + arguments
             }
             let task = Process()
             let pipe = Pipe()
-            task.executableURL = URL(fileURLWithPath: interpreter)
-            task.arguments = ["-I", "-B", "-u", resources.appendingPathComponent("bootstrap.py").path] + arguments
+            task.executableURL = executable
+            task.arguments = workerArguments
             task.standardOutput = pipe
             // Raw library diagnostics can include original identifiers or filenames.
             // The engine emits safe, structured errors on stdout instead.
@@ -189,6 +206,11 @@ struct InterruptionNotice: Sendable {
     let location: URL
     let ownedStaging: Bool
     let publicationPossible: Bool
+}
+
+struct InterruptionScan: Sendable {
+    let notice: InterruptionNotice?
+    let hasLiveOwners: Bool
 }
 
 // Records are local operational state, never part of a batch report or upload.
@@ -245,21 +267,69 @@ enum InterruptionRecovery {
         }
         return InterruptionNotice(message: "A previous batch was interrupted, but its staging or publication outcome cannot be confirmed. Inspect the output location before retrying; no automatic cleanup was attempted.", location: output.deletingLastPathComponent(), ownedStaging: false, publicationPossible: true)
     }
-    static func firstNotice(in directory: URL) -> InterruptionNotice? {
-        guard let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return nil }
+    struct RecordIdentity: Equatable {
+        let device: UInt64
+        let inode: UInt64
+        let size: UInt64
+        let modified: Date
+    }
+    static func recordIdentity(_ url: URL) -> RecordIdentity? {
+        guard let values = try? url.resourceValues(forKeys: [.isSymbolicLinkKey, .isRegularFileKey]),
+              values.isSymbolicLink == false, values.isRegularFile == true,
+              let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let device = attributes[.systemNumber] as? NSNumber,
+              let inode = attributes[.systemFileNumber] as? NSNumber,
+              let size = attributes[.size] as? NSNumber,
+              let modified = attributes[.modificationDate] as? Date else { return nil }
+        return RecordIdentity(device: device.uint64Value, inode: inode.uint64Value,
+                              size: size.uint64Value, modified: modified)
+    }
+    @discardableResult static func retire(_ url: URL, identity: RecordIdentity) -> Bool {
+        // Only the local record is removed. Never remove staging or output data.
+        guard recordIdentity(url) == identity else { return false }
+        do { try FileManager.default.removeItem(at: url); return true } catch { return false }
+    }
+    static func scan(in directory: URL, ownerIsRunning: (Int) -> Bool = { pid in
+        guard pid > 0, pid <= Int(Int32.max) else { return false }
+        return kill(pid_t(pid), 0) == 0 || errno == EPERM
+    }) -> InterruptionScan {
+        guard let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return InterruptionScan(notice: nil, hasLiveOwners: false) }
+        var notices: [InterruptionNotice] = []
+        var hasLiveOwners = false
         for file in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where file.pathExtension == "json" {
-            if record(file) == nil {
-                return InterruptionNotice(message: "A local recovery record could not be read safely. Inspect the recovery location and output before retrying; no automatic cleanup was attempted.", location: directory, ownedStaging: false, publicationPossible: true)
+            guard let identity = recordIdentity(file), let entry = record(file) else {
+                notices.append(InterruptionNotice(message: "A local recovery record could not be read safely. Inspect the recovery location and output before retrying; no automatic cleanup was attempted.", location: directory, ownedStaging: false, publicationPossible: true))
+                continue
             }
-            if let notice = inspect(file) { return notice }
+            if let pid = entry["pid"] as? Int, ownerIsRunning(pid) { hasLiveOwners = true; continue }
+            if entry["phase"] as? String == "cleaned" {
+                _ = retire(file, identity: identity)
+                continue
+            }
+            if let notice = inspect(file, ownerIsRunning: { _ in false }) { notices.append(notice) }
         }
-        return nil
+        guard let first = notices.first else { return InterruptionScan(notice: nil, hasLiveOwners: hasLiveOwners) }
+        if notices.count == 1 { return InterruptionScan(notice: first, hasLiveOwners: hasLiveOwners) }
+        let combined = InterruptionNotice(
+            message: "\(notices.count) previous batch recovery records need review. Nothing will be resumed or deleted automatically.\n\n" + notices.enumerated().map {
+                "\($0.offset + 1). \($0.element.message)\nLocation: \($0.element.location.path)"
+            }.joined(separator: "\n\n"), location: directory,
+            ownedStaging: notices.contains { $0.ownedStaging },
+            publicationPossible: notices.contains { $0.publicationPossible })
+        return InterruptionScan(notice: combined, hasLiveOwners: hasLiveOwners)
+    }
+    static func firstNotice(in directory: URL, ownerIsRunning: (Int) -> Bool = { pid in
+        guard pid > 0, pid <= Int(Int32.max) else { return false }
+        return kill(pid_t(pid), 0) == 0 || errno == EPERM
+    }) -> InterruptionNotice? {
+        scan(in: directory, ownerIsRunning: ownerIsRunning).notice
     }
     static func acknowledge(_ journal: URL?, output: URL) {
-        guard let journal, let record = record(journal), record["phase"] as? String == "published",
+        guard let journal, let identity = recordIdentity(journal),
+              let record = record(journal), record["phase"] as? String == "published",
               record["output"] as? String == output.path, matches(output, record) else { return }
         // The worker has exited and each operation has a unique record path.
-        try? FileManager.default.removeItem(at: journal)
+        _ = retire(journal, identity: identity)
     }
 }
 
@@ -310,17 +380,12 @@ final class BatchModel: ObservableObject {
 
     private let defaults: UserDefaults
     private var activeJournal: URL?
+    private var interruptionMessage: String?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         if defaults === UserDefaults.standard, let directory = InterruptionRecovery.directory {
-            DispatchQueue.global(qos: .utility).async { [weak self] in
-                let notice = InterruptionRecovery.firstNotice(in: directory)
-                DispatchQueue.main.async {
-                    guard let self, let notice, !self.busy, self.source == nil, self.summary == nil else { return }
-                    self.presentInterruption(notice)
-                }
-            }
+            refreshInterruptionRecords(in: directory)
         }
         // Restore the last chosen output location only when it is still an existing folder.
         if let path = defaults.string(forKey: Self.outputDefaultsKey) {
@@ -331,6 +396,31 @@ final class BatchModel: ObservableObject {
                 defaults.removeObject(forKey: Self.outputDefaultsKey)
             }
         }
+    }
+
+    private func refreshInterruptionRecords(in directory: URL) {
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let snapshot = InterruptionRecovery.scan(in: directory)
+            DispatchQueue.main.async {
+                guard let self, self.receiveInterruptionScan(snapshot) else { return }
+                // One pending refresh; no polling while a batch or newer action owns the area.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 30) { [weak self] in
+                    guard let self, self.canRefreshInterruption else { return }
+                    self.refreshInterruptionRecords(in: directory)
+                }
+            }
+        }
+    }
+    private var canRefreshInterruption: Bool {
+        !busy && source == nil && summary == nil && (errorMessage == nil || interruptionMessage != nil)
+    }
+    @discardableResult func receiveInterruptionScan(_ snapshot: InterruptionScan) -> Bool {
+        guard canRefreshInterruption else { return false }
+        if interruptionMessage != nil {
+            clearProblem(); publishedWithoutConfirmation = false; status = idleStatus
+        }
+        if let notice = snapshot.notice { presentInterruption(notice) }
+        return snapshot.hasLiveOwners
     }
 
     private func isDirectory(_ url: URL) -> Bool {
@@ -454,6 +544,7 @@ final class BatchModel: ObservableObject {
         ready = false; cleanupIncomplete = notice.ownedStaging
         publishedWithoutConfirmation = notice.publicationPossible
         presentProblem(.output, message: notice.message, url: notice.location)
+        interruptionMessage = "Review every location listed above before starting another batch. Recovery records are local notices; no batch data is removed automatically."
     }
 
     private func launch(arguments: [String], isScan: Bool, output: URL?) {
@@ -683,6 +774,7 @@ final class BatchModel: ObservableObject {
         }
     }
     var recoveryMessage: String {
+        if let interruptionMessage { return interruptionMessage }
         switch problem {
         case .input: return "Choose the parent folder containing numerical patient subfolders, such as 00001."
         case .output:
@@ -731,9 +823,11 @@ final class BatchModel: ObservableObject {
         return ready ? "Ready · \(patients.count) patients and \(total) DICOM files." : "Choose a batch folder to begin."
     }
     private func clearProblem() {
+        interruptionMessage = nil
         errorMessage = nil; problemURL = nil; problem = .processing; cleanupIncomplete = false; outputIssue = nil
     }
     private func presentProblem(_ kind: BatchProblem, message: String, url: URL? = nil) {
+        interruptionMessage = nil
         problem = kind; problemURL = url; errorMessage = message
         if kind == .processing { ready = false }
         if kind != .report { status = problemTitle + "." }
