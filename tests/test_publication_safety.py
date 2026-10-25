@@ -423,6 +423,15 @@ class SafetyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'private-correspondence'):
                 safety.check(text.encode(), 'fixture')
 
+    def test_portable_vendor_examples_allowed_actual_home_still_refused(self):
+        for name in ('foo', 'bar', 'user', 'username', 'example'):
+            safety.check(('/' + 'Users/' + name + '/file').encode(), 'portable fixture')
+        for name in ('fixture-person', 'user-secret', 'example-company'):
+            with self.assertRaisesRegex(ValueError, 'machine-home'):
+                safety.check(('/' + 'Users/' + name + '/file').encode(), 'personal fixture')
+        with self.assertRaisesRegex(ValueError, 'machine-home'):
+            safety.check(('/' + 'Users/foo/file ' + private_path()).encode(), 'mixed fixture')
+
 
 if __name__ == '__main__':
     unittest.main()
