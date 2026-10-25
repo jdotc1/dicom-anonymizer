@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 23/app build 27: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and resumable publication.
+Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 24/app build 28: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and resumable publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -40,9 +40,9 @@ Valid unresolved recovery locations are rechecked through the existing guarded b
 
 Publication tooling now reconciles delayed release/asset/published-tag visibility through bounded reads and preserves the existing journal, archive selection and ownership safeguards. Seventeen new mocked methods passed as composite evidence; the changed tooling is used for the Preview 23 release, with the accepted native executable reused. Mock timing guarantees remain separate from live service behavior. See [Resumable publication](RESUMABLE-PUBLICATION.md).
 
-## Current local source increment
+## Recovery-state feedback delivery
 
-Recovery inspection failures are distinct from empty listings and retain prior uncertainty, including after live-owner-only observations. Successful completion with unresolved local-record acknowledgement now retains the result and shows a nonblocking warning through existing controls. This increment is not yet released. See [Recovery-state feedback](RECOVERY-STATE-FEEDBACK.md).
+Recovery inspection failures are distinct from empty listings and retain prior uncertainty, including after live-owner-only observations. Successful completion with unresolved local-record acknowledgement now retains the result and shows a nonblocking warning through existing controls. This increment is delivered as Preview 24/build 28. See [Recovery-state feedback](RECOVERY-STATE-FEEDBACK.md).
 
 ## Decision-dependent future scope
 

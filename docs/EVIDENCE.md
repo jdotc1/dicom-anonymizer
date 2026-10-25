@@ -80,3 +80,13 @@ No GUI use, native app launch or installation occurred. Public UI structure and 
 ## 2026-10-24 — local recovery inspection and acknowledgement feedback
 
 Nine new directory/model and eight new synthetic worker/model/record-feedback cases passed as composite evidence, plus two affected older worker-to-model cases. A harness-only idle-quit assertion was corrected; product quit behavior was preserved. Review found and resolved missing-directory history after a live-owner-only scan. Optimized native target compiled with warnings as errors. Accepted unchanged engine, policy, sidecar, lifecycle, worker, runtime and Preview 23 distribution evidence reused. No GUI use, native app launch, installation or publication. See `RECOVERY-STATE-FEEDBACK.md` for limits.
+
+## 2026-10-24 — recovery-state feedback Preview 24/build 28
+
+The unified public app is delivered as **Preview 24/build 28**, using bounded read-only visibility reconciliation in `scripts/publication.py`. Packaged engine/release source is `d788bab6bdd6a846955495d2763274780f5079ae`; accepted native executable source is `5c9f2aa1c9d087674e6dac7dbcfab31df41fc000`. Apple notarization `d02a98f3-53eb-4f67-875a-8538067b2ec7` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,065,676 bytes.
+
+Accepted verification reused: nine directory/model cases, eight acknowledgement-feedback cases, two affected worker-to-model cases, and existing engine/policy/self-audit, sidecar/r2, lifecycle, worker/model/journal, runtime, dependency, icon and publication-tooling evidence. No functional tests, native builds, unchanged source hashes or dependency-signature checks were repeated for delivery. Public UI structure and engine policy are unchanged.
+
+No GUI use, native app launch or installation occurred. Injected permission failures and synthetic worker outcomes retain their original evidence limits; they do not establish all real filesystem/volume configurations or real engine audit/publication. Live scheduling, volume behavior, recovery/sidecar interaction, responsiveness and layout remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.24). Earlier records retain their historical scope.
