@@ -160,6 +160,10 @@ Removing private tags can remove vendor-specific quantitative information;
 clearing dates removes temporal information. An absent burned-in annotation flag
 does not establish that pixels contain no identifying content.
 
+For RTSTRUCT-specific handling, retained labels, reference/geometry limits and
+the focused comparison with the Stanford scripts, see
+[RTSTRUCT policy and coverage](docs/RTSTRUCT-POLICY-COMPARISON.md).
+
 Symbolic links, nonregular patient-file entries, unsupported modalities,
 duplicate instance UIDs, invalid required UIDs, declared burned-in annotations,
 and overlays stop processing. Non-DICOM sidecars, including recognized

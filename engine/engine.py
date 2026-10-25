@@ -1543,6 +1543,10 @@ def audit_dataset(ds, patient, forbidden_uids):
         if element.tag.is_private or element.tag in REMOVE_TAGS or element.tag.group & 0xFF00 == 0x5000:
             raise BatchError(AUDIT_FAILURE)
         vr, keyword = element.VR, element.keyword
+        # Mirror clean()'s existing normalization, including nested occurrences.
+        # Check before SQ handling so a malformed VR cannot bypass the invariant.
+        if keyword == 'StructureSetLabel' and (vr != 'SH' or element.value != 'Structures'):
+            raise BatchError(AUDIT_FAILURE)
         clear_value = (element.tag in CLEAR_TAGS or keyword in REMOVE_KEYS or
                        (element.tag.group == 0x0010 and keyword not in
                         {'PatientName', 'PatientID', 'PatientSex', 'PatientAge', 'PatientSize', 'PatientWeight'}) or
