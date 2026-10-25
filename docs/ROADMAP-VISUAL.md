@@ -54,6 +54,11 @@ Conservative artifact retirement plans first, protects current release inputs an
 
 ## Decision-dependent future scope
 
+Terminal-event consistency and improved diagnostics in the existing Copy Details
+action are in local development, preserving the public UI and engine policy.
+See [Terminal diagnostics](TERMINAL-DIAGNOSTICS.md). This work is not part of the
+Preview 28 download.
+
 Bounded worker-event buffering and monitored release-storage admission are
 delivered in Preview 28/build 32, reusing focused headless evidence and the
 accepted compile-only native build. See

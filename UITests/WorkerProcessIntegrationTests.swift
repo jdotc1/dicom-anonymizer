@@ -52,7 +52,7 @@ import Foundation
                 passed = result.events == ["ready", "error"] && result.code == 1
             case "completionThenExit":
                 result = await run(script: "printf '{\"event\":\"complete\"}\\n'; exit 7")
-                passed = result.events == ["complete"] && result.code == 7
+                passed = result.events == ["complete", "error"] && result.code == 7
             case "launchFailure":
                 result = await run(script: "", executable: "/nonexistent/dicom-fixture-worker")
                 passed = result.events == ["error"] && result.code == 1 && !result.cancelled
