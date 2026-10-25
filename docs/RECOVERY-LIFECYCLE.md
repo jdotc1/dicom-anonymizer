@@ -2,7 +2,7 @@
 
 ## Scope — 24 October 2026
 
-Local source increment after delivered Preview 19/build 23. Public view structure, macOS 13/arm64 target, bundled runtime and engine/sidecar policies are unchanged. No GUI use, native app launch or installation is part of this increment.
+Source increment after Preview 19/build 23, now delivered as Preview 20/build 24. Public view structure, macOS 13/arm64 target, bundled runtime and engine/sidecar policies are unchanged. No GUI use, native app launch or installation is part of this increment.
 
 ## Recovery lifecycle
 
@@ -28,4 +28,12 @@ Source review identified two gaps and both were addressed: production reinspecti
 
 ## Remaining limits
 
-Live app timer scheduling, recovery interaction, sidecar interaction, responsiveness and layout acceptance remain pending. A scan stopped by a new user workflow is not a continuous process monitor. PID reuse can conservatively defer recovery. Record removal remains a best-effort local-state operation; no automatic staging cleanup or resume is added. Preview 19 remains the public download until separately authorized delivery.
+Live app timer scheduling, recovery interaction, sidecar interaction, responsiveness and layout acceptance remain pending. A scan stopped by a new user workflow is not a continuous process monitor. PID reuse can conservatively defer recovery. Record removal remains a best-effort local-state operation; no automatic staging cleanup or resume is added. Preview 20/build 24 is the public download; the live acceptance limits above remain in force.
+
+## Authorized distribution
+
+The unified public app is delivered as **Preview 20/build 24**, using `scripts/publication.py`. Packaged engine/release source is `0e1868263a1b461e4530708d19a26176e06b1193`; accepted native executable source is `923828ab436daf06205857626e401503a29e0375`. Apple notarization `e24b8bff-915d-41be-8d8a-021c4de071eb` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,055,052 bytes.
+
+Accepted verification was reused: 10 recovery-lifecycle cases, 10 headless worker process cases, four affected interruption cases and existing engine/policy/self-audit, sidecar/r2, worker/model, runtime, dependency and icon receipts. No functional test or native build was repeated for delivery. The public UI structure and engine policy are unchanged. No GUI use, native app launch or installation occurred. Live timer scheduling, recovery/sidecar interaction, responsiveness and layout acceptance remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.20). Prior receipts retain their historical scope.

@@ -73,3 +73,7 @@ Accepted evidence was reused: 11 engine journal cases, 12 native recovery/model/
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.19). Earlier entries retain their historical scope.
 
 The owned draft was temporarily absent from immediate readback. The tool stopped, then reconciled and resumed the same journal after read-only inspection. Create, upload and publish are all recorded completed; no duplicate release, overwrite, deletion or `--retry-absent` was needed. This is live transport evidence, separate from the accepted mocked cases.
+
+## Subsequent live delivery — Preview 20
+
+Preview 20/build 24 was published through the same tooling, reusing accepted verification. Delayed draft visibility was reconciled through the existing journal, then upload/publication readback completed without duplicate creation or an absent-operation override. No publication tests were repeated. See `RECOVERY-LIFECYCLE.md` for delivery provenance and limits.
