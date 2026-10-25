@@ -4,6 +4,8 @@
 
 **Recovery lifecycle:** Preview 20/build 24 delivers combined recovery notices, safe local-record retirement and guarded live-owner reinspection, with accepted headless worker process coverage. See [Recovery lifecycle](docs/RECOVERY-LIFECYCLE.md).
 
+**Local source increment:** clearer recovery explanations and headless worker-to-model integration coverage are complete; Preview 20 remains the public download. See [Recovery explanations](docs/RECOVERY-EXPLANATIONS.md).
+
 **Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
 
 **Unified public app:** ongoing development now uses this self-contained public SwiftUI implementation. Preview 16 adds detailed folder-conflict recovery and optional MRI JSON-sidecar cleaning. Live sidecar GUI acceptance remains pending. See [Consolidation](docs/PUBLIC-CONSOLIDATION.md) and [MRI JSON sidecars](docs/MRI-JSON-SIDECARS.md).
