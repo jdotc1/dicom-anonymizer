@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 24 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 26/app build 30: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and resumable publication.
+Updated 25 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 27/app build 31: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and guarded publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -53,6 +53,12 @@ Outstanding acknowledgement warnings are independent of report-error presentatio
 Conservative artifact retirement plans first, protects current release inputs and evidence, and requires a separate apply command. Fresh finalizations record metadata ownership for future retirement; legacy unbound bundles/uploads remain retained. Twenty-six new fixture methods passed as composite evidence. This tooling is delivered with Preview 26/build 30; fresh ownership registration was exercised, and no real retirement plan was applied. See [Artifact retirement](ARTIFACT-RETIREMENT.md).
 
 ## Decision-dependent future scope
+
+Bounded worker-event buffering and monitored release-storage admission are
+implemented locally with focused headless evidence and a compile-only native
+build. They are not part of the delivered Preview 27 app. See
+[Worker and storage bounds](BOUNDED-WORKER-STORAGE.md). The dated graphic above
+remains unchanged; it was not rerendered or reverified.
 
 1. **Resolve supported-input policy decisions separately.** Opaque payloads, unsupported structures, resource limits and conformance claims need explicit scope and approval before implementation.
 
