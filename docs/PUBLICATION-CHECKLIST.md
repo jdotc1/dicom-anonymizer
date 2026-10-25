@@ -6,7 +6,28 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 31, build 35
+## Current release — Preview 32, build 36
+
+Preview 32/build 36 delivers the independent staged-file header audit. Release
+source is `bf5a119e772a166020974d39015df9dca94a1008`; accepted engine source is
+`efb02dd47d09f544ca6a2542d2d78c58ef64d742`; reused native source is
+`af9ed1b84ca905ed5b69c809b031a705814499f2`.
+
+Seven new header methods, one affected RTSTRUCT check, three modified progress
+fixtures and unchanged engine/runtime/dependency/icon/recovery receipts were
+reused. No functional test or native build was repeated for delivery. New
+source/documentation/package/release-text sanitation boundaries passed, reusing
+accepted receipts where applicable. New root signature, stapled ticket and
+Gatekeeper checks passed. Apple notarization
+`cb66d4be-01fb-4f66-81fd-3d131bfec65e` was Accepted. The ZIP is 29,079,899 bytes.
+
+Journaled publication completed without retrying a remote mutation. Existing
+releases and signed downloads remain preserved. No GUI use, app launch or
+installation occurred. See [Runtime acceptance](RUNTIME-ACCEPTANCE.md) for scope.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.32).
+
+## Previous release — Preview 31, build 35
 
 Preview 31/build 35 delivers independent audit enforcement of the existing
 StructureSetLabel replacement and focused RTSTRUCT policy/coverage documentation.

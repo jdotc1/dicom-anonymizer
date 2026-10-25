@@ -1,6 +1,6 @@
 # DICOM Anonymizer
 
-**Current release: Preview 31/build 35.** The independent audit now enforces the existing StructureSetLabel normalization, with focused RTSTRUCT coverage and a documented policy comparison. The public interface and metadata-cleaning policy are unchanged. See [RTSTRUCT policy and coverage](docs/RTSTRUCT-POLICY-COMPARISON.md) and the [release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.31).
+**Current release: Preview 32/build 36.** The independent audit now checks the writer's zeroed preamble and rebuilt file-meta guarantees. The public interface and metadata-cleaning policy are unchanged. See [Staged-file header audit](docs/FILE-HEADER-AUDIT.md) and the [release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.32).
 
 **Resilience delivery:** Preview 19/build 23 adds interruption recovery and ships through the resumable publication tooling; consolidation cleanup is complete. See [Interruption recovery](docs/INTERRUPTION-RECOVERY.md).
 
@@ -89,8 +89,8 @@ complete validity of every MR/CT/RTSTRUCT object.
 3. Open the app, choose the input batch and an output location, inspect the scan
    summary, and process the batch.
 
-The [Preview 31 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.31)
-is app version 2.0.0, build 35. Its app is Developer ID signed and Apple notarized,
+The [Preview 32 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.32)
+is app version 2.0.0, build 36. Its app is Developer ID signed and Apple notarized,
 with a stapled ticket. It includes **CPython 3.13.16 and pydicom 3.0.2** and uses
 its bundled interpreter wherever the app is moved. No Homebrew, separate Python
 installation, launch-time runtime download, or package installation is needed.

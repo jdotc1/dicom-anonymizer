@@ -1,6 +1,30 @@
 # macOS release acceptance
 
-## Current release — Preview 31, build 35
+## Current release — Preview 32, build 36
+
+Preview 32/build 36 independently audits zeroed preambles, synchronized file-meta
+SOP Class/Instance UIDs and the writer's rebuilt implementation metadata. It
+rejects reintroduced application identifiers/private information and extra fields.
+The public UI, cleaning policy, retained content, sidecar defaults and report
+schema are unchanged. See [File-header audit](FILE-HEADER-AUDIT.md).
+
+Release source is `bf5a119e772a166020974d39015df9dca94a1008`; engine source is
+`efb02dd47d09f544ca6a2542d2d78c58ef64d742`; native source remains
+`af9ed1b84ca905ed5b69c809b031a705814499f2`. Seven new header-audit methods, one
+affected RTSTRUCT round trip, three modified progress fixtures and earlier
+unchanged engine/sidecar/runtime/dependency/icon/recovery evidence were reused.
+No functional test or native build was repeated for delivery.
+
+New assembly metadata, sanitation, root signature, stapled ticket and Gatekeeper
+checks passed. Apple notarization `cb66d4be-01fb-4f66-81fd-3d131bfec65e` was
+Accepted. The ZIP is 29,079,899 bytes. Guarded publication completed without
+retrying a GitHub mutation; prior releases/downloads remain preserved.
+No GUI use, app launch or installation occurred. Existing IOD, reference-closure,
+pixel/anatomy and live-interaction limitations retain their original scope.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.32).
+
+## Previous release — Preview 31, build 35
 
 Preview 31/build 35 enforces the existing StructureSetLabel normalization in the
 independent staged-output audit. Present root/nested labels must have SH VR and

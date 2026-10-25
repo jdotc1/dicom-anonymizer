@@ -1,7 +1,6 @@
 # Independent staged-file header audit
 
-This source change is not yet released. The current download remains Preview
-31/build 35. It enforces existing file-writing guarantees without changing the
+Delivered in Preview 32/build 36. This enforces existing file-writing guarantees without changing the
 public UI, metadata-cleaning policy, ROI-label retention, sidecar defaults,
 report schema or dependencies.
 
@@ -54,5 +53,21 @@ reference closure, pixel/contour anonymity or resilience to arbitrary parser
 attacks. Existing retained-content limitations still apply.
 
 No GUI use, app launch, installation, signing, notarization or publication occurred
-for this source increment. Detailed logs and receipts remain outside the public
+during source acceptance. Detailed logs and receipts remain outside the public
 repository; no original imaging data or binary fixtures are included.
+
+## Guarded delivery
+
+Preview 32/build 36 packages accepted engine source
+`efb02dd47d09f544ca6a2542d2d78c58ef64d742` with the accepted native executable
+from `af9ed1b84ca905ed5b69c809b031a705814499f2`. Release source is
+`bf5a119e772a166020974d39015df9dca94a1008`. Existing verification was reused;
+no functional test or native build was repeated during delivery.
+
+New distribution sanitation, root signature, stapled ticket and Gatekeeper checks
+passed. Apple notarization `cb66d4be-01fb-4f66-81fd-3d131bfec65e` was Accepted.
+The 29,079,899-byte ZIP was published through the guarded journal without retrying
+a GitHub mutation. Prior releases/downloads remain preserved. No GUI use, app
+launch or installation occurred.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.32).
