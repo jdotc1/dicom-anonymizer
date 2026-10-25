@@ -104,3 +104,7 @@ Accepted verification reused: eight report/warning transition cases, six snapsho
 No GUI use, native app launch or installation occurred. Pure report-result reducers and synthetic workers do not establish actual report opening or real engine audit/publication; prior on-disk record-retention evidence retains its scope. Live scheduling, recovery/report/sidecar interaction, volume behavior, responsiveness and layout remain pending.
 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.25). Earlier records retain their historical scope.
+
+## 2026-10-24 — local conservative artifact retirement
+
+Twenty-six new tiny fixture methods passed as composite evidence; only six affected eligibility/deletion cases were repeated after ownership/traversal changes. Read-only review findings were resolved, including pre-plan archive replacement, missing current inputs, traversal errors/mounts and dangling ledger links. Finalization commands are mocked; no accepted artifacts were touched or verification rerun. No GUI use, app launch, native build, signing, notarization, installation or publication. See `ARTIFACT-RETIREMENT.md` for scope/limits.

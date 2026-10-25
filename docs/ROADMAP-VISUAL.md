@@ -48,6 +48,10 @@ Recovery inspection failures are distinct from empty listings and retain prior u
 
 Outstanding acknowledgement warnings are independent of report-error presentation, and single-use generation tokens protect recovery results and scheduled refreshes from intervening actions. Fourteen new headless cases passed; this increment is delivered as Preview 25/build 29. See [Recovery consistency](RECOVERY-CONSISTENCY.md).
 
+## Current local tooling increment
+
+Conservative artifact retirement plans first, protects current release inputs and evidence, and requires a separate apply command. Fresh finalizations record metadata ownership for future retirement; legacy unbound bundles/uploads remain retained. Twenty-six new fixture methods passed as composite evidence. This increment is not yet released. See [Artifact retirement](ARTIFACT-RETIREMENT.md).
+
 ## Decision-dependent future scope
 
 1. **Resolve supported-input policy decisions separately.** Opaque payloads, unsupported structures, resource limits and conformance claims need explicit scope and approval before implementation.

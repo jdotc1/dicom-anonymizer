@@ -9,6 +9,7 @@ from pathlib import Path
 import plistlib
 import re
 import shutil
+import stat
 import subprocess
 import tarfile
 import tempfile
@@ -32,6 +33,44 @@ def write(path, value):
     finally:
         temporary.unlink(missing_ok=True)
 
+
+
+def artifact_identity(path):
+    """Filesystem metadata only; do not follow links or cross mount boundaries."""
+    path = Path(path)
+    device = path.lstat().st_dev
+    def snapshot(item):
+        value = item.lstat()
+        if value.st_dev != device:
+            raise ValueError('Cross-device entry in artifact: ' + str(item))
+        if not (stat.S_ISREG(value.st_mode) or stat.S_ISDIR(value.st_mode) or stat.S_ISLNK(value.st_mode)):
+            raise ValueError('Special file in artifact: ' + str(item))
+        return [value.st_dev, value.st_ino, value.st_mode, value.st_size, value.st_mtime_ns, value.st_ctime_ns]
+    def failed(error):
+        raise error
+    result = {'.': snapshot(path)}
+    if path.is_dir() and not path.is_symlink():
+        for parent, directories, files in os.walk(path, followlinks=False, onerror=failed):
+            for name in directories + files:
+                child = Path(parent) / name
+                result[str(child.relative_to(path))] = snapshot(child)
+    return result
+
+
+def record_artifact_ownership(root):
+    """Called only when this finalization newly creates the distribution archive."""
+    if (root / 'artifact-ownership.json').exists() or (root / 'artifact-ownership.json').is_symlink():
+        raise ValueError('Artifact ownership already recorded; never replace it')
+    assembly = read(root / 'assembly.json')
+    artifacts = {}
+    for name in ('DICOM Anonymizer 2.0.app', 'download.zip', 'notarization-upload.zip'):
+        path = root / name
+        if path.exists():
+            if path.is_symlink():
+                raise ValueError('Artifact root cannot be a symlink')
+            artifacts[name] = artifact_identity(path)
+    write(root / 'artifact-ownership.json', dict(schema=1, release=assembly['release'],
+          source=assembly['release_source_commit'], build=str(assembly['bundle_build']), artifacts=artifacts))
 
 
 def run(argv):
@@ -248,10 +287,15 @@ def distribute(root, action, identity=None, profile=None, submission_id=None):
         elif action == 'finalize':
             if state.get('notarization', {}).get('status') != 'Accepted':
                 raise ValueError('Accepted notarization required')
+            new_download = 'download' not in state['steps']
+            if new_download and ((root / 'artifact-ownership.json').exists() or (root / 'artifact-ownership.json').is_symlink()):
+                raise ValueError('Ownership record already exists; do not replace it')
             step(root, state, 'staple', ['xcrun', 'stapler', 'staple', str(app)])
             step(root, state, 'staple_validation', ['xcrun', 'stapler', 'validate', str(app)])
             step(root, state, 'gatekeeper', ['/usr/sbin/spctl', '--assess', '--type', 'execute', '--verbose=2', str(app)])
             step(root, state, 'download', ['/usr/bin/ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(app), str(root / 'download.zip')])
+            if new_download:
+                record_artifact_ownership(root)
         return state
 
 
