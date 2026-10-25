@@ -1,5 +1,11 @@
 # Source publication record
 
+Publication now requires the shared sanitation gates described in
+`docs/PUBLICATION-SAFETY.md`. Install the local push hook using accepted history
+evidence; do not bypass the gate. Source history, release text and selected
+artifacts are distinct acceptance boundaries. Existing historical receipts below
+retain their original scope.
+
 ## Current release — Preview 26, build 30
 
 The unified public app is delivered as **Preview 26/build 30**, using bounded read-only visibility reconciliation in `scripts/publication.py`. Packaged engine/release source is `c50ae5762c641d802f9934dbcd59e9229ded253a`; reused accepted native executable source is `b64ce1b2bb999c217c6c4fa9638dc872b67ad37b`. Apple notarization `19dbf886-c264-4d4e-b49f-8941b05e6bb7` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,070,670 bytes.

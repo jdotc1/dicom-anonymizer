@@ -131,3 +131,12 @@ No GUI use, native app launch or installation occurred. Public UI structure and 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.23). Earlier records retain their historical scope.
 
 The changed tooling completed this live delivery in one invocation, without a manual resume or an absent-operation override. Create, upload and publish are all recorded completed in the original journal. No per-observation trace was collected, so this receipt does not claim which visibility delays occurred or establish service-wide latency bounds.
+
+## Sanitation prerequisite
+
+The shared sanitation gate checks the selected source, release text and archive
+before journal creation or API access. Signing, notarization and finalization
+also enforce their app/archive boundaries. Unchanged accepted sanitation inputs
+reuse private receipts. See `PUBLICATION-SAFETY.md` for setup, refusal behavior,
+cache identities and the limits of local hooks. Existing publication journals and
+mutation reconciliation remain unchanged.
