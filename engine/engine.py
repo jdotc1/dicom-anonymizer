@@ -1537,6 +1537,38 @@ def audit_values(element):
     return [str(value).strip()]
 
 
+def audit_file_header(ds):
+    """Check staged-file header guarantees without changing dataset-only policy checks."""
+    if getattr(ds, 'preamble', None) != b'\0' * 128:
+        raise BatchError(AUDIT_FAILURE)
+    meta = getattr(ds, 'file_meta', None)
+    if meta is None:
+        raise BatchError(AUDIT_FAILURE)
+    # The writer starts from these three fields and lets the pinned library add
+    # its standard implementation defaults. Recreate that expected header in
+    # isolation; never normalize or repair the staged file during its audit.
+    expected = pydicom.dataset.FileMetaDataset()
+    try:
+        expected.TransferSyntaxUID = meta.get('TransferSyntaxUID', '')
+        expected.MediaStorageSOPClassUID = ds.get('SOPClassUID', '')
+        expected.MediaStorageSOPInstanceUID = ds.get('SOPInstanceUID', '')
+        pydicom.dataset.validate_file_meta(expected, enforce_standard=True)
+    except (AttributeError, TypeError, ValueError):
+        raise BatchError(AUDIT_FAILURE) from None
+    for element in expected:
+        actual = meta.get(element.tag)
+        if actual is None or actual.VR != element.VR or actual.value != element.value:
+            raise BatchError(AUDIT_FAILURE)
+    for element in meta:
+        if element.tag == 0x00020000:  # The file writer also emits a group length.
+            if element.VR != 'UL' or not isinstance(element.value, int) or element.value < 0:
+                raise BatchError(AUDIT_FAILURE)
+        elif element.tag not in expected:
+            # This also rejects source AE titles, presentation addresses, private
+            # information and unrecognized fields the rebuilt writer never emits.
+            raise BatchError(AUDIT_FAILURE)
+
+
 def audit_dataset(ds, patient, forbidden_uids):
     """Raise BatchError unless a staged dataset meets the invariants that must hold for every output."""
     for element in ds.iterall():
@@ -1590,6 +1622,7 @@ def self_audit(staging, written, forbidden_uids, progress=None):
         try:
             ds = checked_read(path)
             validate(ds)
+            audit_file_header(ds)
         except BatchError:
             raise
         except Exception:
