@@ -2,8 +2,8 @@
 
 Allocating release actions also require authenticated shared storage-guard
 supervision before writes. See `BOUNDED-WORKER-STORAGE.md` for local setup,
-destination admission and interruption behavior. This local increment has not
-yet been released.
+destination admission and interruption behavior. This increment is delivered
+in Preview 28/build 32.
 
 The pre-push hook and release tools share `scripts/publication_safety.py`.
 No source file, app, archive, or history is rewritten by this checker. A finding

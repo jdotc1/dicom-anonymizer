@@ -1,7 +1,6 @@
 # Bounded worker events and monitored release writes
 
-Local implementation; not yet released. The current delivered app remains
-Preview 27/build 31. Public view structure, metadata policy, sidecar defaults,
+Delivered in Preview 28/build 32. Public view structure, metadata policy, sidecar defaults,
 and engine processing are unchanged.
 
 ## Worker transport
@@ -74,3 +73,22 @@ Mocked stop cases do not claim a new live low-space incident or package-monitor
 qualification; accepted shared-guard monitoring evidence retains its scope.
 No GUI use, application launch, installation or publication occurred. Live
 interaction, responsiveness and layout acceptance remain pending.
+
+## Guarded delivery
+
+Preview 28/build 32 was assembled using the accepted native executable without
+a rebuild or functional rerun. Release/engine source is
+`82f1950d3b943ca8e2cff1bac7c736ecd50bd994`; native source is
+`f07c817cf4a769e46b5624615488d2018700df8f`. The real storage adapter admitted and
+monitored assembly, signing, notarization and finalization. Source, app, upload
+ZIP, release text and final download passed their sanitation boundaries.
+
+Apple notarization `68ffcc89-7cde-4460-a40b-c0900af8300c` was Accepted. The new root
+signature, stapled ticket validation and Gatekeeper passed once. The download is
+29,071,405 bytes; HTTPS delivery returned HTTP 200. Publication completed in one
+invocation with completed create/upload/publish operations and no manual retry.
+
+Accepted 13 worker and 20 storage methods, the existing native compile and earlier
+engine/policy/self-audit/runtime/dependency/icon evidence were reused. No GUI use,
+app launch or installation occurred. This does not establish a live low-space
+stop, live UI acceptance or a new engine-policy qualification.

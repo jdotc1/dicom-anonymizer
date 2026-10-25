@@ -6,7 +6,29 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 27, build 31
+## Current release — Preview 28, build 32
+
+Preview 28/build 32 delivers bounded worker events and monitored release writes.
+Release/engine source: `82f1950d3b943ca8e2cff1bac7c736ecd50bd994`.
+Reused native source: `f07c817cf4a769e46b5624615488d2018700df8f`.
+The accepted native executable and 13 worker/20 storage methods were reused,
+alongside unchanged engine, self-audit, sidecar, runtime, dependency and icon evidence.
+No native rebuild or functional suite rerun was performed for delivery.
+
+The real storage adapter supervised assembly, signing, notarization and
+finalization. The new assembly metadata, source/app/upload/release-text/download
+sanitation boundaries, root signature, stapled ticket validation and Gatekeeper
+passed. Apple notarization `68ffcc89-7cde-4460-a40b-c0900af8300c` was Accepted.
+The ZIP is 29,071,405 bytes, and its HTTPS route returned HTTP 200. Publication
+completed in one invocation, without a manual retry or verification bypass.
+
+Public UI, engine policy and sidecar defaults are unchanged. No GUI use, app
+launch or installation occurred. Live UI/volume/low-space-stop acceptance remains
+bounded by the earlier receipts and their documented limits.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.28).
+
+## Previous release — Preview 27, build 31
 
 Preview 27/build 31 was delivered through the guarded publication workflow.
 Release/tooling source: `3ebf6ad76c2a588cb56fd40de73338c80a8fee3b`.

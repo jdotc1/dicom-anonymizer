@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 25 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 27/app build 31: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and guarded publication.
+Updated 25 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 28/app build 32: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback and guarded publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -55,8 +55,8 @@ Conservative artifact retirement plans first, protects current release inputs an
 ## Decision-dependent future scope
 
 Bounded worker-event buffering and monitored release-storage admission are
-implemented locally with focused headless evidence and a compile-only native
-build. They are not part of the delivered Preview 27 app. See
+delivered in Preview 28/build 32, reusing focused headless evidence and the
+accepted compile-only native build. See
 [Worker and storage bounds](BOUNDED-WORKER-STORAGE.md). The dated graphic above
 remains unchanged; it was not rerendered or reverified.
 
