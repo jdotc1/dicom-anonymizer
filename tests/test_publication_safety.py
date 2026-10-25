@@ -23,6 +23,9 @@ def private_path():
 
 class SafetyTests(unittest.TestCase):
     def setUp(self):
+        guard = patch.object(release.release_storage, 'require_active')
+        guard.start()
+        self.addCleanup(guard.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)

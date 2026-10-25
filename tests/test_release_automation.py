@@ -18,6 +18,9 @@ spec.loader.exec_module(r)
 
 class AssemblyTests(unittest.TestCase):
     def setUp(self):
+        guard = patch.object(r.release_storage, 'require_active')
+        guard.start()
+        self.addCleanup(guard.stop)
         self.temp = tempfile.TemporaryDirectory(prefix='release-fixture-')
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
@@ -223,6 +226,9 @@ class AssemblyTests(unittest.TestCase):
 
 class DistributionTests(unittest.TestCase):
     def setUp(self):
+        guard = patch.object(r.release_storage, 'require_active')
+        guard.start()
+        self.addCleanup(guard.stop)
         for name in ('app_gate', 'archive_gate', 'ledger'):
             gate = patch.object(r.publication_safety, name)
             gate.start()
