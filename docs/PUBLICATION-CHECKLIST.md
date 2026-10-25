@@ -9,9 +9,17 @@ retain their original scope.
 ## Current release — Preview 29, build 33
 
 Preview 29/build 33 delivers terminal-event consistency and improved text from
-existing Copy Details controls. Release/engine source:
+existing Copy Details controls. Original packaged release/engine source:
 `0746b70e230a0668d2df1cfcd39de9228b882ba3`; native source:
 `281d9164d9b53ba697ff04fbf133364452c2be11`.
+
+After history sanitation the release tag selects
+`cc2cc4b787a10eb5b5e99f6bb36b8364db10cc2e`. These original binary-source IDs
+remain historical provenance, not current sanitized selections. All 29 tags,
+26 release records and 25 signed download assets were preserved. Signed downloads
+and their accepted receipts were not replaced or reverified for the rewrite.
+Future assembly must explicitly qualify any translation from accepted original
+source to sanitized source; see [Release automation](RELEASE-AUTOMATION.md).
 
 Accepted verification was reused: 26 new terminal/diagnostic cases, one affected
 process case, the native compile and prior unchanged engine/self-audit/sidecar/

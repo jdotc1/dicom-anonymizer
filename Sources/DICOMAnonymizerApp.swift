@@ -304,11 +304,33 @@ enum InterruptionRecovery {
               let inode = attributes[.systemFileNumber] as? NSNumber else { return nil }
         return (device.uint64Value, inode.uint64Value)
     }
-    static func record(_ url: URL) -> [String: Any]? {
-        guard let values = try? url.resourceValues(forKeys: [.isSymbolicLinkKey, .isRegularFileKey, .fileSizeKey]),
-              values.isSymbolicLink == false, values.isRegularFile == true,
-              let size = values.fileSize, size > 0, size <= 65536,
-              let data = try? Data(contentsOf: url),
+    struct RecordSnapshot {
+        let identity: RecordIdentity
+        let entry: [String: Any]
+    }
+    static func snapshot(_ url: URL, afterOpen: () -> Void = {},
+                         afterRead: () -> Void = {}) -> RecordSnapshot? {
+        // A nonblocking, no-follow open also avoids waiting on a replaced FIFO.
+        let descriptor = Darwin.open(url.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
+        guard descriptor >= 0 else { return nil }
+        defer { Darwin.close(descriptor) }
+        var before = stat()
+        guard fstat(descriptor, &before) == 0, let identity = recordIdentity(before),
+              identity.size > 0, identity.size <= 65536 else { return nil }
+        afterOpen()
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        while data.count <= 65536 {
+            let count = Darwin.read(descriptor, &buffer, min(buffer.count, 65537 - data.count))
+            if count < 0 { if errno == EINTR { continue }; return nil }
+            if count == 0 { break }
+            data.append(contentsOf: buffer.prefix(count))
+        }
+        afterRead()
+        var after = stat()
+        guard data.count == identity.size, data.count <= 65536,
+              fstat(descriptor, &after) == 0, recordIdentity(after) == identity,
+              recordIdentity(url) == identity,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let schema = eventCount(json["schema"]), schema == 1,
               let operationID = json["operation_id"] as? String, UUID(uuidString: operationID) != nil,
@@ -316,7 +338,10 @@ enum InterruptionRecovery {
               ["started", "allocated", "publishing", "published", "cleaned"].contains(phase),
               let output = json["output"] as? String, output.hasPrefix("/"),
               eventCount(json["pid"]) != nil else { return nil }
-        return json
+        return RecordSnapshot(identity: identity, entry: json)
+    }
+    static func record(_ url: URL) -> [String: Any]? {
+        snapshot(url)?.entry
     }
     static func matches(_ url: URL, _ record: [String: Any]) -> Bool {
         guard let actual = identity(url), let device = record["device"] as? NSNumber,
@@ -327,7 +352,11 @@ enum InterruptionRecovery {
         guard pid > 0, pid <= Int(Int32.max) else { return false }
         return kill(pid_t(pid), 0) == 0 || errno == EPERM
     }) -> InterruptionNotice? {
-        guard let record = record(url), let phase = record["phase"] as? String,
+        guard let snapshot = snapshot(url) else { return nil }
+        return inspect(snapshot.entry, ownerIsRunning: ownerIsRunning)
+    }
+    static func inspect(_ record: [String: Any], ownerIsRunning: (Int) -> Bool) -> InterruptionNotice? {
+        guard let phase = record["phase"] as? String,
               ["started", "allocated", "publishing", "published"].contains(phase),
               let outputPath = record["output"] as? String, outputPath.hasPrefix("/") else { return nil }
         if let pid = record["pid"] as? Int, ownerIsRunning(pid) { return nil }
@@ -358,18 +387,24 @@ enum InterruptionRecovery {
         let device: UInt64
         let inode: UInt64
         let size: UInt64
-        let modified: Date
+        let modifiedSeconds: Int
+        let modifiedNanoseconds: Int
+        let changedSeconds: Int
+        let changedNanoseconds: Int
+    }
+    static func recordIdentity(_ value: stat) -> RecordIdentity? {
+        guard value.st_mode & S_IFMT == S_IFREG, value.st_size >= 0 else { return nil }
+        return RecordIdentity(device: UInt64(value.st_dev), inode: UInt64(value.st_ino),
+                              size: UInt64(value.st_size),
+                              modifiedSeconds: value.st_mtimespec.tv_sec,
+                              modifiedNanoseconds: value.st_mtimespec.tv_nsec,
+                              changedSeconds: value.st_ctimespec.tv_sec,
+                              changedNanoseconds: value.st_ctimespec.tv_nsec)
     }
     static func recordIdentity(_ url: URL) -> RecordIdentity? {
-        guard let values = try? url.resourceValues(forKeys: [.isSymbolicLinkKey, .isRegularFileKey]),
-              values.isSymbolicLink == false, values.isRegularFile == true,
-              let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-              let device = attributes[.systemNumber] as? NSNumber,
-              let inode = attributes[.systemFileNumber] as? NSNumber,
-              let size = attributes[.size] as? NSNumber,
-              let modified = attributes[.modificationDate] as? Date else { return nil }
-        return RecordIdentity(device: device.uint64Value, inode: inode.uint64Value,
-                              size: size.uint64Value, modified: modified)
+        var value = stat()
+        guard lstat(url.path, &value) == 0 else { return nil }
+        return recordIdentity(value)
     }
     @discardableResult static func retire(_ url: URL, identity: RecordIdentity,
                                           remove: (URL) throws -> Void = { try FileManager.default.removeItem(at: $0) }) -> Bool {
@@ -396,16 +431,20 @@ enum InterruptionRecovery {
         var hasLiveOwners = false
         var hasPendingLocations = false
         for file in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where file.pathExtension == "json" {
-            guard let identity = recordIdentity(file), let entry = record(file) else {
+            guard let snapshot = snapshot(file) else {
                 notices.append(InterruptionNotice(message: "Unconfirmed: the operation described by recovery record \(file.lastPathComponent). This record could not be read safely, so no staging ownership or publication outcome can be established. Next: inspect the recovery location and any known output before retrying. No automatic cleanup was attempted.", location: directory, ownedStaging: false, publicationPossible: true))
                 continue
             }
+            let identity = snapshot.identity, entry = snapshot.entry
             if let pid = entry["pid"] as? Int, ownerIsRunning(pid) { hasLiveOwners = true; continue }
             if entry["phase"] as? String == "cleaned" {
-                _ = retire(file, identity: identity)
+                if !retire(file, identity: identity) {
+                    notices.append(InterruptionNotice(message: "Unconfirmed: retirement of recovery record \(file.lastPathComponent). The record changed or could not be removed. Next: inspect the recovery location before retrying. No staging or output cleanup was attempted.", location: directory, ownedStaging: false, publicationPossible: true))
+                    hasPendingLocations = true
+                }
                 continue
             }
-            if let notice = inspect(file, ownerIsRunning: { _ in false }) {
+            if let notice = inspect(entry, ownerIsRunning: { _ in false }) {
                 notices.append(notice)
                 hasPendingLocations = true
             }
@@ -429,11 +468,12 @@ enum InterruptionRecovery {
     @discardableResult static func acknowledge(_ journal: URL?, output: URL,
                                                remove: (URL) throws -> Void = { try FileManager.default.removeItem(at: $0) }) -> Acknowledgement {
         guard let journal else { return .notRequested }
-        guard let identity = recordIdentity(journal),
-              let record = record(journal), record["phase"] as? String == "published",
+        guard let snapshot = snapshot(journal) else { return .unresolved }
+        let record = snapshot.entry
+        guard record["phase"] as? String == "published",
               record["output"] as? String == output.path, matches(output, record) else { return .unresolved }
         // The worker has exited and each operation has a unique record path.
-        return retire(journal, identity: identity, remove: remove) ? .retired : .unresolved
+        return retire(journal, identity: snapshot.identity, remove: remove) ? .retired : .unresolved
     }
 }
 

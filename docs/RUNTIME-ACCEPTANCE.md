@@ -1,6 +1,32 @@
 # macOS release acceptance
 
-## Current release — Preview 26, build 30
+## Current release — Preview 29, build 33
+
+Preview 29/build 33 delivers terminal-event consistency and improved diagnostics
+through the existing Copy Details action. The public UI, engine policy and
+sidecar defaults are retained. The accepted delivery reused 26 new focused
+terminal/diagnostic cases, one affected process case, the native compile and
+earlier unchanged engine, self-audit, sidecar, runtime, dependency and icon evidence.
+See [Terminal diagnostics](TERMINAL-DIAGNOSTICS.md) for the original scope.
+
+Apple notarization `f7668439-61ac-49e2-b414-0edcc3c58346` was Accepted. The signed
+download is 29,077,421 bytes. New distribution checks passed during that delivery;
+they were not repeated for subsequent source-history sanitation.
+
+The sanitized release tag selects `cc2cc4b787a10eb5b5e99f6bb36b8364db10cc2e`.
+Existing signed downloads retain their original build metadata and accepted
+receipts. A rewritten source identity does not mean a binary was rebuilt.
+All 29 tags, 26 release records and 25 signed download assets were preserved
+in the history sanitation operation. Historical source IDs below retain their
+original meaning; they are not current sanitized source selections.
+
+No GUI use, app launch or installation occurred for that delivery or sanitation.
+Live recovery/report/sidecar interaction, responsiveness and layout remain pending.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.29).
+Unreleased source changes do not change this delivered version.
+
+## Previous release — Preview 26, build 30
 
 The unified public app is delivered as **Preview 26/build 30**, using bounded read-only visibility reconciliation in `scripts/publication.py`. Packaged engine/release source is `c50ae5762c641d802f9934dbcd59e9229ded253a`; reused accepted native executable source is `b64ce1b2bb999c217c6c4fa9638dc872b67ad37b`. Apple notarization `19dbf886-c264-4d4e-b49f-8941b05e6bb7` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,070,670 bytes.
 

@@ -96,6 +96,43 @@ def resolve(base, value):
     return (base / value).resolve()
 
 
+def translated_sources(accepted, base, repository, source, native):
+    """Select an explicitly qualified history translation, never infer acceptance.
+
+    The local qualification record supplements sealed receipts; it does not
+    rewrite them or claim that a reused executable was built at a new commit.
+    """
+    selection = accepted.get('history_translation')
+    if selection is None:
+        return source, native
+    path = resolve(base, selection)
+    if path == repository.resolve() or repository.resolve() in path.parents:
+        raise ValueError('History qualification must remain outside public source')
+    record = read(path)
+    if (not isinstance(record, dict) or record.get('schema') != 1 or
+            record.get('accepted_verification_reused') is not True or
+            not isinstance(record.get('entries'), list)):
+        raise ValueError('Invalid history qualification record')
+    results = []
+    for original, scope in ((source, 'engine'), (native, 'native')):
+        matches = [entry for entry in record['entries'] if isinstance(entry, dict) and
+                   entry.get('original_commit') == original and entry.get('scope') == scope]
+        if len(matches) != 1:
+            raise ValueError('History qualification must select exactly one ' + scope + ' mapping')
+        entry = matches[0]
+        target = entry.get('sanitized_commit')
+        if (entry.get('accepted') is not True or
+                not isinstance(entry.get('qualification'), str) or not entry['qualification'].strip() or
+                not isinstance(target, str) or not re.fullmatch('[0-9a-f]{40}', target)):
+            raise ValueError('History mapping requires explicit scoped qualification')
+        resolved = run(['git', '-C', str(repository), 'rev-parse', target + '^{commit}']).strip()
+        if resolved != target:
+            raise ValueError('History target must be an immutable commit')
+        run(['git', '-C', str(repository), 'merge-base', '--is-ancestor', target, 'HEAD'])
+        results.append(target)
+    return tuple(results)
+
+
 def plan(manifest_path, repository):
     manifest_path = Path(manifest_path).resolve()
     m = read(manifest_path)
@@ -150,12 +187,16 @@ def plan(manifest_path, repository):
     if (not isinstance(native_source, str) or not re.fullmatch('[0-9a-f]{40}', native_source)
             or metadata.get('native_source_commit', metadata['source_commit']) != native_source):
         raise ValueError('Accepted native product source does not match its metadata')
-    if native_source != source:
-        run(['git', '-C', str(repository), 'rev-parse', native_source + '^{commit}'])
-    commit = run(['git', '-C', str(repository), 'rev-parse', source + '^{commit}']).strip()
+    selected_source, selected_native = translated_sources(m['accepted'], manifest_path.parent,
+                                                         repository, source, native_source)
+    if selected_native != selected_source:
+        run(['git', '-C', str(repository), 'rev-parse', selected_native + '^{commit}'])
+    commit = run(['git', '-C', str(repository), 'rev-parse', selected_source + '^{commit}']).strip()
     release_commit = run(['git', '-C', str(repository), 'rev-parse', 'HEAD']).strip()
     return dict(manifest=m, baseline=str(baseline), product=str(product), source_commit=commit,
-                release_source_commit=release_commit, native_source_commit=native_source, metadata=metadata, profile=profile)
+                release_source_commit=release_commit, native_source_commit=native_source,
+                accepted_source_commit=source, native_sanitized_source_commit=selected_native,
+                metadata=metadata, profile=profile)
 
 
 def assemble(manifest_path, output, repository):
@@ -210,6 +251,9 @@ def assemble(manifest_path, output, repository):
         provenance.update(source_commit=p['source_commit'], engine_source_commit=p['source_commit'],
                           native_source_commit=p['native_source_commit'], release_source_commit=p['release_source_commit'],
                           release=m['release'], bundle_build=str(m['build']))
+        if m['accepted'].get('history_translation') is not None:
+            provenance.update(accepted_source_commit=p['accepted_source_commit'],
+                              native_sanitized_source_commit=p['native_sanitized_source_commit'])
         evidence = dict(schema=1, variant=m['variant'], **provenance,
                         accepted_evidence=m['evidence_label'], verification='Accepted verification reused; no tests rerun',
                         nested_signatures='Preserved; unchanged dependencies not reverified',
