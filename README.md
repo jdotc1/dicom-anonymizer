@@ -164,6 +164,10 @@ For RTSTRUCT-specific handling, retained labels, reference/geometry limits and
 the focused comparison with the Stanford scripts, see
 [RTSTRUCT policy and coverage](docs/RTSTRUCT-POLICY-COMPARISON.md).
 
+The independent [staged-file header audit](docs/FILE-HEADER-AUDIT.md) also has
+focused source coverage for the writer's existing preamble and file-meta guarantees;
+its delivery status and evidence scope are recorded separately.
+
 Symbolic links, nonregular patient-file entries, unsupported modalities,
 duplicate instance UIDs, invalid required UIDs, declared burned-in annotations,
 and overlays stop processing. Non-DICOM sidecars, including recognized

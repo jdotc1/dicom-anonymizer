@@ -37,6 +37,7 @@ class AuditProgressTests(unittest.TestCase):
 
         with patch.object(engine, 'checked_read', return_value=object()), \
              patch.object(engine, 'validate'), \
+             patch.object(engine, 'audit_file_header'), \
              patch.object(engine, 'audit_dataset', side_effect=lambda *args: checked.append(True)):
             result = engine.self_audit(self.root, self.written(25), set(), progress=progress)
         self.assertEqual(events, [0, 10, 20, 25])
@@ -55,6 +56,7 @@ class AuditProgressTests(unittest.TestCase):
 
         with patch.object(engine, 'checked_read', return_value=object()), \
              patch.object(engine, 'validate'), \
+             patch.object(engine, 'audit_file_header'), \
              patch.object(engine, 'audit_dataset', side_effect=audit):
             with self.assertRaisesRegex(engine.BatchError, 'Synthetic audit failure'):
                 engine.self_audit(self.root, self.written(11), set(),
@@ -65,6 +67,7 @@ class AuditProgressTests(unittest.TestCase):
     def test_three_argument_call_remains_silent(self):
         with patch.object(engine, 'checked_read', return_value=object()), \
              patch.object(engine, 'validate'), patch.object(engine, 'audit_dataset'), \
+             patch.object(engine, 'audit_file_header'), \
              patch.object(engine, 'emit') as emit:
             result = engine.self_audit(self.root, self.written(1), set())
         emit.assert_not_called()
