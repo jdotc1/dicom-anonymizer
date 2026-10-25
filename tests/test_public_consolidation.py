@@ -1,4 +1,4 @@
-"""Public conflict-recovery integration checks."""
+"""Conflict-recovery coverage for the public batch-processing interface."""
 import importlib.util
 import json
 import os
