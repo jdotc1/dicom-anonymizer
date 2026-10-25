@@ -6,7 +6,30 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 30, build 34
+## Current release — Preview 31, build 35
+
+Preview 31/build 35 delivers independent audit enforcement of the existing
+StructureSetLabel replacement and focused RTSTRUCT policy/coverage documentation.
+Release source is `7be2548531f9d65d88bf893a35dcac6eb44008d0`; engine source is
+`b50ac4dcc8d39ad6b1f94343ec7c8ca3548f49ff`; reused native source is
+`af9ed1b84ca905ed5b69c809b031a705814499f2`.
+
+Accepted eleven-method composite RTSTRUCT coverage, the native executable and
+unchanged engine/sidecar/runtime/dependency/icon/recovery receipts were reused.
+No functional tests or native builds were repeated for delivery. New source,
+documentation, package and public release-text sanitation boundaries passed;
+accepted receipts were reused where applicable. New root signature, stapled
+ticket and Gatekeeper checks passed. Apple notarization
+`10c54229-3d93-483d-ae16-3d9a3e3dda5c` was Accepted. The ZIP is 29,079,491 bytes.
+
+The journaled publication completed without retrying a remote mutation. Earlier
+releases and signed downloads remain preserved. No GUI use, app launch or
+installation occurred. Public UI, metadata-cleaning policy and retained-label
+limitations remain unchanged. See [Runtime acceptance](RUNTIME-ACCEPTANCE.md).
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.31).
+
+## Previous release — Preview 30, build 34
 
 Preview 30/build 34 delivers bounded recovery-record reads and qualified release
 provenance with the existing interface and engine policy. Release source is

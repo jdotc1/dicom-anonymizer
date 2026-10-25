@@ -1,6 +1,31 @@
 # macOS release acceptance
 
-## Current release — Preview 30, build 34
+## Current release — Preview 31, build 35
+
+Preview 31/build 35 enforces the existing StructureSetLabel normalization in the
+independent staged-output audit. Present root/nested labels must have SH VR and
+decoded value `Structures`; absent labels remain accepted. The public UI,
+metadata-cleaning policy, ROI-label retention, sidecar defaults and report schema
+are unchanged. See [RTSTRUCT policy and coverage](RTSTRUCT-POLICY-COMPARISON.md).
+
+Release source is `7be2548531f9d65d88bf893a35dcac6eb44008d0`; engine source is
+`b50ac4dcc8d39ad6b1f94343ec7c8ca3548f49ff`; the reused native executable was built
+at `af9ed1b84ca905ed5b69c809b031a705814499f2`. Accepted composite RTSTRUCT evidence
+covers eleven methods, including five selected enforcement methods and eighteen
+invalid-value/VR subcases. Six unaffected RTSTRUCT methods and earlier unchanged
+engine/sidecar/runtime/dependency/icon/recovery evidence were reused.
+
+No functional test or native build was repeated during delivery. New assembly
+metadata, sanitation, root signature, stapled ticket and Gatekeeper checks passed.
+Apple notarization `10c54229-3d93-483d-ae16-3d9a3e3dda5c` was Accepted. The ZIP is
+29,079,491 bytes. Guarded publication completed without retrying a GitHub mutation.
+No existing release or signed download was replaced. No GUI use, app launch or
+installation occurred; live interaction/volume and complete RTSTRUCT IOD,
+reference-closure and anatomical validation are not established by this evidence.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.31).
+
+## Previous release — Preview 30, build 34
 
 Preview 30/build 34 delivers bounded, identity-checked recovery-record reads and
 qualified history-aware release provenance. Public UI, engine policy and sidecar

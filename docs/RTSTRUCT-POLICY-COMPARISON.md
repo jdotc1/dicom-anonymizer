@@ -1,8 +1,8 @@
 # RTSTRUCT policy comparison and synthetic coverage
 
 This is a source-level comparison with focused synthetic coverage and independent
-audit enforcement of the existing StructureSetLabel normalization. The current
-download remains Preview 30/build 34; the audit change is not yet released.
+audit enforcement of the existing StructureSetLabel normalization. This is
+delivered in Preview 31/build 35.
 The UI, metadata-cleaning policy, report schema and runtime dependencies are
 unchanged. No external anonymizer code or imaging fixtures are vendored.
 
@@ -112,5 +112,18 @@ temporary and removed after each case. No imaging data is committed.
 Existing generic PN/date/private-tag/UID evidence, the single CT/RTSTRUCT linkage
 test, cross-patient frame-collision tests and prior native/runtime/UI evidence
 are reused without reruns. No native build, external Java/Docker execution, GUI
-use, app launch, signing, notarization or publication is part of this increment.
+use or app launch was part of source acceptance. Signing, notarization and
+publication followed separately through the guarded delivery below.
 Detailed operational receipts and logs remain outside the source repository.
+
+## Guarded delivery
+
+Preview 31/build 35 packages the accepted engine change with the existing accepted
+native executable. Source/functional evidence was reused without a native rebuild
+or test rerun. New distribution sanitation, root signature, stapled ticket and
+Gatekeeper checks passed. Apple notarization
+`10c54229-3d93-483d-ae16-3d9a3e3dda5c` was Accepted. The 29,079,491-byte ZIP was
+published without retrying a GitHub mutation. No GUI use, app launch or installation
+occurred; prior releases and signed downloads remain preserved.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.31).

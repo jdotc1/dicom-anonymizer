@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 25 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 30/app build 34: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback, bounded recovery-record reads and guarded publication.
+Updated 25 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 31/app build 35: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback, bounded recovery-record reads, RTSTRUCT label audit enforcement and guarded publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -22,11 +22,12 @@ Allocation-aware disk-space estimates are now delivered. See [Disk-space estimat
 
 ## Latest delivered increment
 
-The latest app delivery is Preview 30/build 34: qualified history-aware release
-selection and bounded recovery-record reads, retaining terminal-event consistency
-and Copy Details diagnostics. Existing releases and signed downloads remain
+The latest app delivery is Preview 31/build 35: independent audit enforcement of
+the existing StructureSetLabel normalization, focused RTSTRUCT coverage and a
+documented policy comparison. Existing recovery, publication, terminal-event and
+Copy Details behavior is retained. Prior releases and signed downloads remain
 preserved. Accepted source/functional evidence was reused; only new distribution
-boundaries were checked. See [Recovery-record reads](RECOVERY-RECORD-READS.md).
+boundaries were checked. See [RTSTRUCT policy](RTSTRUCT-POLICY-COMPARISON.md).
 The graphic remains a historical snapshot, and live interaction acceptance
 remains pending.
 
