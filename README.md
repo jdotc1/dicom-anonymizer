@@ -10,6 +10,8 @@
 
 **Release tooling:** Preview 23/build 27 ships through bounded read-only reconciliation of delayed release/asset visibility and stale publication resumes, preserving journal/ownership safeguards. See [Resumable publication](docs/RESUMABLE-PUBLICATION.md).
 
+**Local source increment:** recovery-directory inspection failures retain uncertainty, and failed local-record acknowledgement preserves completion with a nonblocking warning. Preview 23 remains the public download. See [Recovery-state feedback](docs/RECOVERY-STATE-FEEDBACK.md).
+
 **Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
 
 **Unified public app:** ongoing development now uses this self-contained public SwiftUI implementation. Preview 16 adds detailed folder-conflict recovery and optional MRI JSON-sidecar cleaning. Live sidecar GUI acceptance remains pending. See [Consolidation](docs/PUBLIC-CONSOLIDATION.md) and [MRI JSON sidecars](docs/MRI-JSON-SIDECARS.md).

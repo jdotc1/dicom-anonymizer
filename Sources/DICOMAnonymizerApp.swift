@@ -212,16 +212,22 @@ struct InterruptionScan: Sendable {
     let notice: InterruptionNotice?
     let hasLiveOwners: Bool
     let hasPendingLocations: Bool
+    let unavailableDirectory: URL?
+    let directoryMissing: Bool
 
-    init(notice: InterruptionNotice?, hasLiveOwners: Bool, hasPendingLocations: Bool = false) {
+    init(notice: InterruptionNotice?, hasLiveOwners: Bool, hasPendingLocations: Bool = false,
+         unavailableDirectory: URL? = nil, directoryMissing: Bool = false) {
         self.notice = notice
         self.hasLiveOwners = hasLiveOwners
         self.hasPendingLocations = hasPendingLocations
+        self.unavailableDirectory = unavailableDirectory
+        self.directoryMissing = directoryMissing
     }
 }
 
 // Records are local operational state, never part of a batch report or upload.
 enum InterruptionRecovery {
+    enum Acknowledgement { case notRequested, retired, unresolved }
     static var directory: URL? {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
             .appendingPathComponent("DICOM Anonymizer/Operations", isDirectory: true)
@@ -301,16 +307,27 @@ enum InterruptionRecovery {
         return RecordIdentity(device: device.uint64Value, inode: inode.uint64Value,
                               size: size.uint64Value, modified: modified)
     }
-    @discardableResult static func retire(_ url: URL, identity: RecordIdentity) -> Bool {
+    @discardableResult static func retire(_ url: URL, identity: RecordIdentity,
+                                          remove: (URL) throws -> Void = { try FileManager.default.removeItem(at: $0) }) -> Bool {
         // Only the local record is removed. Never remove staging or output data.
         guard recordIdentity(url) == identity else { return false }
-        do { try FileManager.default.removeItem(at: url); return true } catch { return false }
+        do { try remove(url); return true } catch { return false }
     }
     static func scan(in directory: URL, ownerIsRunning: (Int) -> Bool = { pid in
         guard pid > 0, pid <= Int(Int32.max) else { return false }
         return kill(pid_t(pid), 0) == 0 || errno == EPERM
+    }, listDirectory: (URL) throws -> [URL] = {
+        try FileManager.default.contentsOfDirectory(at: $0, includingPropertiesForKeys: nil)
     }) -> InterruptionScan {
-        guard let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return InterruptionScan(notice: nil, hasLiveOwners: false) }
+        let files: [URL]
+        do { files = try listDirectory(directory) }
+        catch {
+            let failure = error as NSError
+            let missing = failure.domain == NSCocoaErrorDomain &&
+                [NSFileNoSuchFileError, NSFileReadNoSuchFileError].contains(failure.code)
+            return InterruptionScan(notice: nil, hasLiveOwners: false,
+                                    unavailableDirectory: directory, directoryMissing: missing)
+        }
         var notices: [InterruptionNotice] = []
         var hasLiveOwners = false
         var hasPendingLocations = false
@@ -345,12 +362,14 @@ enum InterruptionRecovery {
     }) -> InterruptionNotice? {
         scan(in: directory, ownerIsRunning: ownerIsRunning).notice
     }
-    static func acknowledge(_ journal: URL?, output: URL) {
-        guard let journal, let identity = recordIdentity(journal),
+    @discardableResult static func acknowledge(_ journal: URL?, output: URL,
+                                               remove: (URL) throws -> Void = { try FileManager.default.removeItem(at: $0) }) -> Acknowledgement {
+        guard let journal else { return .notRequested }
+        guard let identity = recordIdentity(journal),
               let record = record(journal), record["phase"] as? String == "published",
-              record["output"] as? String == output.path, matches(output, record) else { return }
+              record["output"] as? String == output.path, matches(output, record) else { return .unresolved }
         // The worker has exited and each operation has a unique record path.
-        _ = retire(journal, identity: identity)
+        return retire(journal, identity: identity, remove: remove) ? .retired : .unresolved
     }
 }
 
@@ -402,10 +421,16 @@ final class BatchModel: ObservableObject {
     private let defaults: UserDefaults
     private var activeJournal: URL?
     private var interruptionMessage: String?
+    private var lastInspectedNotice: InterruptionNotice?
+    private var recoveryDirectoryObserved = false
+    private var acknowledgementWarning = false
+    private let removeRecoveryRecord: (URL) throws -> Void
     private var interruptionRefreshAllowed = true
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard,
+         removeRecoveryRecord: @escaping (URL) throws -> Void = { try FileManager.default.removeItem(at: $0) }) {
         self.defaults = defaults
+        self.removeRecoveryRecord = removeRecoveryRecord
         if defaults === UserDefaults.standard, let directory = InterruptionRecovery.directory {
             refreshInterruptionRecords(in: directory)
         }
@@ -438,10 +463,25 @@ final class BatchModel: ObservableObject {
     }
     @discardableResult func receiveInterruptionScan(_ snapshot: InterruptionScan) -> Bool {
         guard canRefreshInterruption else { return false }
+        if let directory = snapshot.unavailableDirectory {
+            // An absent Operations folder is normal before the first batch.
+            // Once a notice exists, absence cannot establish its resolution.
+            if snapshot.directoryMissing && !recoveryDirectoryObserved && interruptionMessage == nil { return false }
+            let prior = lastInspectedNotice
+            let retained = prior.map { "\n\nLast available recovery notice:\n\($0.message)\nLocation: \($0.location.path)" } ?? ""
+            clearProblem()
+            presentInterruption(InterruptionNotice(
+                message: "Recovery records could not be inspected. This does not establish that previous recovery issues are resolved. Restore access to the recovery location; no batch data was changed." + retained,
+                location: directory, ownedStaging: false, publicationPossible: true))
+            lastInspectedNotice = prior
+            return true
+        }
+        recoveryDirectoryObserved = true
         if interruptionMessage != nil {
             clearProblem(); publishedWithoutConfirmation = false; status = idleStatus
         }
         if let notice = snapshot.notice { presentInterruption(notice) }
+        lastInspectedNotice = snapshot.notice
         return snapshot.hasLiveOwners || snapshot.hasPendingLocations
     }
 
@@ -604,7 +644,11 @@ final class BatchModel: ObservableObject {
                                              sidecars: cleanJSONSidecars ? completedSidecars : nil,
                                              auditedSidecars: cleanJSONSidecars ? completedSidecarAudits : nil)
             status = idleStatus
-            InterruptionRecovery.acknowledge(activeJournal, output: output)
+            if InterruptionRecovery.acknowledge(activeJournal, output: output, remove: removeRecoveryRecord) == .unresolved {
+                presentProblem(.report,
+                    message: "The batch completed, but its local recovery record could not be acknowledged safely. Your completed result is retained. A recovery notice may appear next time; review this output before retrying to avoid a duplicate batch. No batch data was deleted.", url: output)
+                acknowledgementWarning = true
+            }
         } else if cleanupIncomplete {
             ready = false
             status = "Incomplete output needs attention."
@@ -798,7 +842,7 @@ final class BatchModel: ObservableObject {
             default: return "Output location unavailable"
             }
         case .processing: return "Batch needs attention"
-        case .report: return "Report unavailable"
+        case .report: return acknowledgementWarning ? "Batch completed; recovery record needs attention" : "Report unavailable"
         }
     }
     var recoveryMessage: String {
@@ -824,7 +868,9 @@ final class BatchModel: ObservableObject {
                 return "Reconnect the output volume or choose another existing folder, then try again."
             }
         case .processing: return "Correct the reported problem, then check again. You can change the batch folder or output location."
-        case .report: return "Reveal the output location to look for the report, or dismiss this message. The completed-batch record is kept."
+        case .report:
+            if acknowledgementWarning { return "Reveal the completed output to review it, or dismiss this local-record warning. Dismissing keeps the completed result and does not remove the unresolved recovery record." }
+            return "Reveal the output location to look for the report, or dismiss this message. The completed-batch record is kept."
         }
     }
     var recoveryTitle: String {
@@ -851,10 +897,14 @@ final class BatchModel: ObservableObject {
         return ready ? "Ready · \(patients.count) patients and \(total) DICOM files." : "Choose a batch folder to begin."
     }
     private func clearProblem() {
+        acknowledgementWarning = false
+        lastInspectedNotice = nil
         interruptionMessage = nil
         errorMessage = nil; problemURL = nil; problem = .processing; cleanupIncomplete = false; outputIssue = nil
     }
     private func presentProblem(_ kind: BatchProblem, message: String, url: URL? = nil) {
+        acknowledgementWarning = false
+        lastInspectedNotice = nil
         interruptionMessage = nil
         problem = kind; problemURL = url; errorMessage = message
         if kind == .processing { ready = false }

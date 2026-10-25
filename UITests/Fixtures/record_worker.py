@@ -28,6 +28,16 @@ if mode == 'replacedOutput':
     output.rename(output.parent / 'original-output')
     output.mkdir()
     (output / 'replacement-marker.txt').write_text('unrelated output preserved\n')
+if mode == 'missingRecord':
+    journal.unlink()
+if mode == 'pendingQuit':
+    def complete_on_cancel(signum, frame):
+        print(json.dumps(dict(event='complete', processed=2, patients=1, excluded_files=0)), flush=True)
+        sys.exit(0)
+    signal.signal(signal.SIGTERM, complete_on_cancel)
+    print(json.dumps(dict(event='progress', processed=1, total_files=2)), flush=True)
+    while True:
+        time.sleep(0.02)
 if mode == 'cancelled':
     print(json.dumps(dict(event='progress', processed=1, total_files=2)), flush=True)
     while True:
