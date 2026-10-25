@@ -7,7 +7,8 @@ Do not redact executable paths blindly, delete journals, or disable the gate.
 
 ## Push boundary
 
-The installed `.githooks/pre-push` examines every non-deletion ref supplied by
+A persistent dispatcher copied from `.githooks/pre-push` into the private Git
+common directory examines every non-deletion ref supplied by
 Git, including annotated tags. All newly exposed reachable objects are checked,
 so deleting a sensitive file in a later commit does not hide its earlier content.
 Commit author/committer metadata, complete messages, tag messages, changed path
@@ -32,6 +33,8 @@ python3 scripts/publication_safety.py install \
 The installer preserves unrelated custom hook configurations by refusing to
 replace them. The disabled hooks setting may be replaced with this requested
 hook. The hook path is configured locally and is not embedded in tracked files.
+The dispatcher remains installed across branch switches; a branch without the
+checker is refused rather than silently becoming unguarded.
 Normal `git push` now runs the gate; this command does not perform a push.
 
 ## Release boundaries
@@ -90,12 +93,12 @@ claimed remote enforcement or live publication acceptance.
 
 ## Focused implementation evidence
 
-Thirty-seven new synthetic sanitation methods passed as composite evidence,
+Thirty-eight new synthetic sanitation methods passed as composite evidence,
 including Git/history/tag boundaries, receipt reuse and invalidation, binary and
 nested-archive inspection, private file types, symlink/overlay handling, lifecycle
 refusal and recovery. Six affected existing publication/distribution/ownership
-methods also passed. A new notarization-order fixture initially used an unresolved
-temporary path; only that failed fixture was corrected and repeated. Other
+methods also passed. Two new fixtures initially mixed canonical and unresolved temporary paths;
+only those failed fixtures were corrected and repeated. Other
 repetitions followed relevant implementation changes. Existing app, engine,
 self-audit, runtime, dependency, signing and publication evidence was reused.
 No native build, real artifact scan, GUI use, app launch, installation, signing,

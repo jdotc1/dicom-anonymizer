@@ -372,6 +372,16 @@ class SafetyTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 safety.check(b'RestrictedFixtureTool', 'fixture')
 
+    def test_installed_dispatcher_survives_branches_without_tracked_checker(self):
+        hooks = Path(self.git('config', '--get', 'core.hooksPath'))
+        self.assertTrue(hooks.is_relative_to((self.repo / '.git').resolve()))
+        dispatcher = hooks / 'pre-push'
+        self.assertTrue(dispatcher.is_file())
+        # This fixture intentionally has no tracked checker; no push is invoked.
+        result = subprocess.run([str(dispatcher)], cwd=self.repo, capture_output=True, text=True)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn('checker missing', result.stderr)
+
 
 if __name__ == '__main__':
     unittest.main()

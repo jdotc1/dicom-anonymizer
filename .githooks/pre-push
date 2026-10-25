@@ -1,4 +1,8 @@
 #!/bin/sh
 set -eu
 repo=$(git rev-parse --show-toplevel)
+if [ ! -f "$repo/scripts/publication_safety.py" ]; then
+    echo "Sanitation checker missing; switch to a guarded branch before pushing" >&2
+    exit 1
+fi
 exec python3 "$repo/scripts/publication_safety.py" pre-push --repository "$repo"

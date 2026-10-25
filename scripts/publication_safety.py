@@ -308,9 +308,11 @@ def install(repository, accepted, evidence):
     # This is a local configuration action, never a remote operation.
     oid = git(repository, 'rev-parse', accepted + '^{commit}').decode().strip()
     git(repository, 'merge-base', '--is-ancestor', oid, 'HEAD')
-    hook = Path(repository).resolve() / '.githooks'
+    root = cache_root(repository)
+    hook = root / 'hooks'
     existing = subprocess.run(['git', '-C', str(repository), 'config', '--get', 'core.hooksPath'], capture_output=True, text=True).stdout.strip()
-    if existing not in ('', '/dev/null', str(hook), '.githooks'):
+    if existing not in ('', '/dev/null', str(hook), '.githooks',
+                         str(Path(repository).resolve() / '.githooks')):
         raise ValueError('Existing hooks configuration requires explicit integration')
     root = cache_root(repository)
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -320,6 +322,11 @@ def install(repository, accepted, evidence):
     if target.exists() and json.loads(target.read_text()) != record:
         raise ValueError('Accepted baseline already selected; preserve it')
     save(target, record)
+    hook.mkdir(exist_ok=True, mode=0o700)
+    template = Path(__file__).resolve().parents[1] / '.githooks/pre-push'
+    dispatcher = hook / 'pre-push'
+    dispatcher.write_bytes(template.read_bytes())
+    dispatcher.chmod(0o700)
     git(repository, 'config', '--local', 'core.hooksPath', str(hook))
 
 
