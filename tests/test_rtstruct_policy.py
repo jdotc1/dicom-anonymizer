@@ -205,13 +205,52 @@ class RTStructPolicyTests(unittest.TestCase):
         self.assertFalse(self.output.exists())
         self.assertEqual(list(self.root.glob('.dicom-batch-*')), [])
 
-    def test_audit_normalized_structure_label_limit_is_explicit(self):
+    def test_audit_rejects_reintroduced_structure_label(self):
         forbidden, _ = self.cleaned()
         self.assertEqual(self.rt.StructureSetLabel, 'Structures')
         self.rt.StructureSetLabel = 'SYNTH_REINSERTED'
-        # Characterization of a known independent-audit gap, not a safety claim.
+        with self.assertRaisesRegex(engine.BatchError, 'self-audit'):
+            engine.audit_dataset(self.rt, self.patient, forbidden)
+
+    def test_structure_label_rejects_noncanonical_values_and_vrs_recursively(self):
+        forbidden, _ = self.cleaned()
+        cases = [('replacement', 'SH', 'SYNTH_CHANGED'), ('empty', 'SH', ''),
+                 ('whitespace', 'SH', 'Structures '),
+                 ('multiple', 'SH', ['Structures', 'Structures']),
+                 ('wrong_text_vr', 'LO', 'Structures'), ('sequence_vr', 'SQ', Sequence([]))]
+        for location in ('root', 'roi', 'observation'):
+            for name, vr, value in cases:
+                with self.subTest(location=location, case=name):
+                    candidate = deepcopy(self.rt)
+                    context = {'root': candidate, 'roi': candidate.StructureSetROISequence[1],
+                               'observation': candidate.RTROIObservationsSequence[1]}[location]
+                    context.add_new(0x30060002, vr, value)
+                    with self.assertRaisesRegex(engine.BatchError, 'self-audit'):
+                        engine.audit_dataset(candidate, self.patient, forbidden)
+
+    def test_structure_label_canonical_nested_and_absent_remain_accepted(self):
+        self.rt.StructureSetROISequence[1].StructureSetLabel = 'SYNTH_NESTED'
+        self.rt.RTROIObservationsSequence[1].StructureSetLabel = 'SYNTH_NESTED'
+        forbidden, _ = self.cleaned()
+        for context in (self.rt, self.rt.StructureSetROISequence[1], self.rt.RTROIObservationsSequence[1]):
+            self.assertEqual(context.StructureSetLabel, 'Structures')
         engine.audit_dataset(self.rt, self.patient, forbidden)
-        self.assertEqual(self.rt.StructureSetLabel, 'SYNTH_REINSERTED')
+        # clean() normalizes present labels; it does not require or add this tag.
+        for context in (self.rt, self.rt.StructureSetROISequence[1], self.rt.RTROIObservationsSequence[1]):
+            del context.StructureSetLabel
+        engine.audit_dataset(self.rt, self.patient, forbidden)
+
+    def test_reintroduced_structure_label_blocks_batch_publication(self):
+        original_clean = engine.clean
+        def reinject(ds, patient, mapping):
+            original_clean(ds, patient, mapping)
+            if ds.get('Modality') == 'RTSTRUCT':
+                ds.StructureSetLabel = 'SYNTH_REINSERTED'
+        with patch.object(engine, 'clean', side_effect=reinject):
+            with self.assertRaisesRegex(engine.BatchError, 'self-audit'):
+                self.run_batch()
+        self.assertFalse(self.output.exists())
+        self.assertEqual(list(self.root.glob('.dicom-batch-*')), [])
 
 
 if __name__ == '__main__':

@@ -1,9 +1,10 @@
 # RTSTRUCT policy comparison and synthetic coverage
 
-This is a source-level comparison and a focused test-only increment. The current
-download remains Preview 30/build 34. No UI, engine, policy, report schema or
-runtime dependency changes are included. No external anonymizer code or imaging
-fixtures are vendored.
+This is a source-level comparison with focused synthetic coverage and independent
+audit enforcement of the existing StructureSetLabel normalization. The current
+download remains Preview 30/build 34; the audit change is not yet released.
+The UI, metadata-cleaning policy, report schema and runtime dependencies are
+unchanged. No external anonymizer code or imaging fixtures are vendored.
 
 The comparison uses the app's policy at `e4755ed` and the following pinned
 Stanford repository revision, `33b761fe1dfc4b415de7207b0a8ad2869706fe14`:
@@ -29,7 +30,7 @@ do not establish that the complete example pipeline supports that modality.
 | Referenced/Related Frame of Reference UID, including (3006,0024)/(3006,00C2) | Recursively remapped. | Explicit hash rules. | Add RT frame-relationship coverage. |
 | SOP class identifiers | Preserved as structural identifiers. | Explicit keep rules. | Existing linkage evidence reused. |
 | StructureSetDate / StructureSetTime; ROI DateTime / ROI Observation DateTime | DA/DT/TM values emptied recursively. | Structure-set date uses DATEINC; general date rules use JITTER. | Intentional policy difference; do not import date shifting. |
-| StructureSetLabel | Replaced with `Structures`. | No explicit RT-specific rule found. | Add normal-path coverage; audit limitation below. |
+| StructureSetLabel | Replaced with `Structures`; independent audit now enforces the present SH value. | No explicit RT-specific rule found. | Existing normalization invariant enforced; see below. |
 | StructureSetName / StructureSetDescription | Cleared. | No explicit corresponding RT rules found. | Add actual RT sequence-context coverage. |
 | ROIDescription / ROIGenerationDescription / ROIObservationDescription | Cleared. | No explicit corresponding RT rules found. | Add multi-item and audit coverage. |
 | ROIInterpreter and other PN values | Emptied recursively, except folder PatientName. | No explicit ROIInterpreter rule found. | Add actual observations-item coverage. |
@@ -60,15 +61,21 @@ that every ROI reference is valid, or that contours align anatomically. The app
 does not perform complete RTSTRUCT IOD, reference-closure or geometric validation.
 The new polygon and matrix cases check preservation, not anatomical correctness.
 
-### Independent-audit limitation
+### Independent-audit normalization invariant
 
-The cleaner normalizes StructureSetLabel to `Structures`, but the independent
-self-audit does not currently require that exact value. A synthetic arbitrary
-SH label reinserted after cleaning passes unless another existing audit rule
-rejects it. The new characterization case records this limitation explicitly.
-It does not represent the label as safe, and this increment does not change
-production enforcement. A focused follow-up can enforce the already-defined
-normalization invariant without deciding a new ROI-label policy.
+The comparison identified a gap: the cleaner normalized StructureSetLabel to
+`Structures`, while the independent self-audit did not enforce that exact value.
+The follow-up closes that gap. Every present occurrence must have SH VR and the
+decoded scalar value `Structures`, including inside sequence items. Empty,
+reintroduced, whitespace-altered, multi-valued and wrong-VR values are rejected
+with the existing self-audit failure. The check precedes sequence handling so a
+malformed SQ value cannot bypass it. This is decoded-value validation, not a
+requirement on DICOM's normal on-disk space padding.
+
+Absent labels remain accepted: the existing cleaner normalizes present values
+and does not add the attribute. This does not assert RTSTRUCT IOD conformance.
+The change enforces an existing replacement rule without broadening the
+metadata-cleaning policy or adding general label classification.
 
 This differs from ROIName and ROIObservationLabel: their retention is an explicit
 policy choice. Synthetic identifier-like labels survive the new round-trip test
@@ -77,7 +84,7 @@ not general text-identifier detection.
 
 ## New and reused evidence
 
-`tests/test_rtstruct_policy.py` adds eight new methods:
+`tests/test_rtstruct_policy.py` contains eleven focused methods:
 
 1. RT-specific text and date/time handling across two ROI and observation items.
 2. Identifier-like and Unicode label retention, with the report's limitation retained.
@@ -86,11 +93,18 @@ not general text-identifier detection.
 5. Consistent related-frame UID remapping with an unchanged retired transformation matrix.
 6. Four reinjection cases: observation description, creator sequence, interpreter sequence and a source UID in a retained ROI label; the audit rejects each.
 7. A reintroduced RT observation description blocks whole-batch publication and leaves no staging output.
-8. The normalized-structure-label independent-audit limitation, characterized explicitly.
+8. Reintroduction of a noncanonical StructureSetLabel is rejected by the audit.
+9. Eighteen noncanonical-value/VR cases across root, ROI and observation contexts, including a sequence-VR bypass attempt, are rejected.
+10. Canonical labels at root/nested levels and absence of labels remain accepted.
+11. A reintroduced StructureSetLabel blocks batch publication and leaves no staging output.
 
-All eight methods passed as focused composite evidence on newly generated
+The initial eight methods passed as focused composite evidence on newly generated
 synthetic inputs. Three methods gained explicit sequence-length assertions
-during review; only those changed methods were repeated. The cases
+during review; only those changed methods were repeated. The follow-up replaced
+the original gap characterization with a rejection assertion and added three
+methods. Only those four new/modified methods and the directly affected normal
+RTSTRUCT round-trip method ran for enforcement; all five passed. Six unaffected
+RTSTRUCT methods and earlier generic evidence were reused. The cases
 exercise the current Python engine and staged-file audit; fixtures are small
 examples, not complete conformant clinical RTSTRUCT objects. Generated files are
 temporary and removed after each case. No imaging data is committed.
