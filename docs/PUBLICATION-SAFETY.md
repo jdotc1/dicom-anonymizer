@@ -116,3 +116,7 @@ The first guarded assembly encountered the bundled runtime's compressed public-s
 The standard Public Suffix List private-domain section heading is permitted; it is public runtime data, not private correspondence. A dedicated new fixture confirms that exception while private-message markers remain refused. Successful receipts from the earlier, stricter marker rule are compatible; failed checks are never imported.
 
 Exact generic path components used in portable third-party examples are distinguished from personal machine identities; real usernames and lookalike names remain refused, including when mixed with an example. A new fixture covers both outcomes. This only widens acceptance for generic examples, so successful stricter-version receipts remain reusable.
+
+## First guarded delivery
+
+Preview 27/build 31 completed source/push, app, upload-archive, release-text and final-archive boundaries. Six additional synthetic methods cover the observed format/example corrections; the original 38 methods and accepted integration/app/engine evidence were reused. The new package was signed, notarized, stapled and published without bypassing the guard or repeating accepted functional/native checks. The unchanged runtime was retained. No GUI use, app launch or installation occurred. The release record is in `PUBLICATION-CHECKLIST.md`.

@@ -1,5 +1,7 @@
 # DICOM Anonymizer
 
+**Current release: Preview 27/build 31.** The guarded workflow checks newly exposed Git history, release text and app/archive contents, reusing accepted sanitation receipts for unchanged inputs. See [Publication safety](docs/PUBLICATION-SAFETY.md) and the [release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.27).
+
 **Resilience delivery:** Preview 19/build 23 adds interruption recovery and ships through the resumable publication tooling; consolidation cleanup is complete. See [Interruption recovery](docs/INTERRUPTION-RECOVERY.md).
 
 **Recovery lifecycle:** Preview 20/build 24 delivers combined recovery notices, safe local-record retirement and guarded live-owner reinspection, with accepted headless worker process coverage. See [Recovery lifecycle](docs/RECOVERY-LIFECYCLE.md).

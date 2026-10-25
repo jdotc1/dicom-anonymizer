@@ -6,7 +6,34 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 26, build 30
+## Current release — Preview 27, build 31
+
+Preview 27/build 31 was delivered through the guarded publication workflow.
+Release/tooling source: `3ebf6ad76c2a588cb56fd40de73338c80a8fee3b`.
+Engine selection: `942eff6770f98a52c12617e66b8e71f5d52bf093`.
+Reused native source in sanitized history: `34416c21f4adeae1b639b5f3338f7ec700804275`.
+The native source is unchanged across the existing history rewrite and this release;
+accepted verification and the executable were reused without rebuilding.
+
+The guard stopped before signing on an unsupported compressed runtime data file
+and two portable vendor-data/example false positives. Focused corrections added
+bounded gzip inspection and precise public-data/example handling. Six new methods
+and affected format/policy-reuse cases passed; the earlier 38 new methods, six
+integration methods and all unchanged app/engine/runtime/dependency evidence were
+reused. Successful stricter-version sanitation receipts were carried forward;
+failed inspections were never accepted. No guard bypass or history rescan was used.
+
+The new app, upload ZIP, release text and final ZIP passed sanitation. Root signing,
+root signature verification, stapled ticket validation and Gatekeeper passed for
+the new package. Apple notarization `040bc92a-8ae9-4f73-a712-4c267e7a097e` was
+Accepted. The archive is 29,070,722 bytes and its HTTPS download returned HTTP 200.
+Create, upload and publish completed in one publication invocation without a
+manual retry. No GUI use, app launch or installation occurred. Public UI, engine
+policy and sidecar defaults are unchanged; live acceptance retains its existing limits.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.27).
+
+## Previous release — Preview 26, build 30
 
 The unified public app is delivered as **Preview 26/build 30**, using bounded read-only visibility reconciliation in `scripts/publication.py`. Packaged engine/release source is `c50ae5762c641d802f9934dbcd59e9229ded253a`; reused accepted native executable source is `b64ce1b2bb999c217c6c4fa9638dc872b67ad37b`. Apple notarization `19dbf886-c264-4d4e-b49f-8941b05e6bb7` was Accepted. New assembly/archive checks, root signature, stapled ticket validation, Gatekeeper, uploaded asset metadata and download HTTP 200 passed. Archive size: 29,070,670 bytes.
 
