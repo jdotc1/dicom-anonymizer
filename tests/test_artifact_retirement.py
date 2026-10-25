@@ -16,6 +16,9 @@ import retire_artifacts as retire
 
 class RetirementTests(unittest.TestCase):
     def setUp(self):
+        guard = patch.object(retire.release.release_storage, 'require_active')
+        guard.start()
+        self.addCleanup(guard.stop)
         for name in ('app_gate', 'archive_gate', 'ledger'):
             gate = patch.object(retire.release.publication_safety, name)
             gate.start()

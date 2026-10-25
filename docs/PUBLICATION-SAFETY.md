@@ -1,5 +1,10 @@
 # Enforced publication sanitation
 
+Allocating release actions also require authenticated shared storage-guard
+supervision before writes. See `BOUNDED-WORKER-STORAGE.md` for local setup,
+destination admission and interruption behavior. This local increment has not
+yet been released.
+
 The pre-push hook and release tools share `scripts/publication_safety.py`.
 No source file, app, archive, or history is rewritten by this checker. A finding
 stops the operation. Repair the changed input locally, then check that change.

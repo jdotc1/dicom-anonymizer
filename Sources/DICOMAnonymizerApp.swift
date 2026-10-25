@@ -41,16 +41,45 @@ func elapsedText(_ interval: TimeInterval) -> String {
 // Framing is independent of JSON and retains partial UTF-8 bytes across reads.
 struct EngineEventStream {
     private var pending = Data()
+    private var discarding = false
+    private let maxFrameBytes: Int
+    var bufferedByteCount: Int { pending.count }
+
+    init(maxFrameBytes: Int = 8 * 1024 * 1024) {
+        self.maxFrameBytes = max(1, maxFrameBytes)
+    }
+
     mutating func append(_ chunk: Data) -> [Data] {
-        pending.append(chunk)
         var lines: [Data] = []
-        while let boundary = pending.firstIndex(of: 10) {
-            lines.append(Data(pending[..<boundary]))
-            pending.removeSubrange(...boundary)
+        var cursor = chunk.startIndex
+        while cursor < chunk.endIndex {
+            let newline = chunk[cursor...].firstIndex(of: 10)
+            let end = newline ?? chunk.endIndex
+            if !discarding {
+                let count = chunk.distance(from: cursor, to: end)
+                if count > maxFrameBytes - pending.count {
+                    pending.removeAll(keepingCapacity: false)
+                    discarding = true
+                    // A bounded invalid JSON marker enters the existing malformed
+                    // protocol path. Never retain or display the oversized data.
+                    lines.append(Data([0]))
+                } else {
+                    pending.append(contentsOf: chunk[cursor..<end])
+                }
+            }
+            guard let newline else { break }
+            if discarding {
+                discarding = false
+            } else {
+                lines.append(pending)
+                pending = Data()
+            }
+            cursor = chunk.index(after: newline)
         }
         return lines
     }
     mutating func finish() -> [Data] {
+        discarding = false
         guard !pending.isEmpty else { return [] }
         let tail = pending; pending.removeAll()
         return [tail]
@@ -124,11 +153,14 @@ final class EngineRunner: @unchecked Sendable {
     private var process: Process?
     private var cancelled = false
     private let command: (@Sendable ([String]) -> (URL, [String])?)?
+    private let maxFrameBytes: Int
 
     // Production resolves only the bundled interpreter. Headless integration
     // checks inject a synthetic worker through the same process/pipe path.
-    init(command: (@Sendable ([String]) -> (URL, [String])?)? = nil) {
+    init(command: (@Sendable ([String]) -> (URL, [String])?)? = nil,
+         maxFrameBytes: Int = 8 * 1024 * 1024) {
         self.command = command
+        self.maxFrameBytes = maxFrameBytes
     }
 
     func cancel() {
@@ -179,7 +211,7 @@ final class EngineRunner: @unchecked Sendable {
                 return
             }
             lock.unlock()
-            var stream = EngineEventStream()
+            var stream = EngineEventStream(maxFrameBytes: maxFrameBytes)
             let delivery = DispatchQueue.main.sync { EngineEventDelivery() }
             while true {
                 let chunk = pipe.fileHandleForReading.availableData

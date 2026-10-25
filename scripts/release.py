@@ -11,10 +11,12 @@ import re
 import shutil
 import stat
 import subprocess
+import sys
 import tarfile
 import tempfile
 
 import publication_safety
+import release_storage
 
 
 def read(path):
@@ -100,7 +102,7 @@ def plan(manifest_path, repository):
     profile = read(repository / 'scripts/release-profile.json')
     if run(['git', '-C', str(repository), 'status', '--porcelain', '--untracked-files=all', '--',
             'scripts/release.py', 'scripts/release-profile.json', 'scripts/publication.py',
-            'scripts/publication_safety.py', '.githooks/pre-push']).strip():
+            'scripts/publication_safety.py', 'scripts/release_storage.py', '.githooks/pre-push']).strip():
         raise ValueError('Commit release tooling and profile before selecting release provenance')
     if m['schema'] != 1 or m['variant'] != profile['variant']:
         raise ValueError('Manifest schema or app variant mismatch')
@@ -157,6 +159,7 @@ def plan(manifest_path, repository):
 
 
 def assemble(manifest_path, output, repository):
+    release_storage.require_active(output)
     p = plan(manifest_path, repository)
     output = Path(output).absolute()
     if output.exists() or output.is_symlink():
@@ -256,6 +259,7 @@ def step(root, state, name, command, runner=None):
 
 
 def distribute(root, action, identity=None, profile=None, submission_id=None):
+    release_storage.require_active(root)
     root = Path(root).resolve()
     with locked(root):
         state = read(root / 'state.json')
@@ -330,7 +334,7 @@ def distribute(root, action, identity=None, profile=None, submission_id=None):
         return state
 
 
-def main():
+def main(arguments=None, monitored=False):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=('plan', 'assemble', 'sign', 'notarize', 'finalize', 'status'))
     parser.add_argument('--manifest', type=Path)
@@ -338,9 +342,17 @@ def main():
     parser.add_argument('--identity')
     parser.add_argument('--keychain-profile')
     parser.add_argument('--submission-id', help='Reconcile an interrupted submission; never resubmit blindly')
-    args = parser.parse_args()
+    arguments = list(sys.argv[1:] if arguments is None else arguments)
+    args = parser.parse_args(arguments)
+    allocating = args.action in ('assemble', 'sign', 'notarize', 'finalize')
+    if allocating and args.output is None:
+        parser.error('allocating actions require --output')
+    if args.action == 'assemble' and args.manifest is None:
+        parser.error('assemble requires --manifest')
     repo = Path(__file__).resolve().parents[1]
     try:
+        if allocating and not monitored:
+            return release_storage.supervise(arguments)
         if args.action == 'plan':
             result = plan(args.manifest, repo)
         elif args.action == 'assemble':
@@ -356,4 +368,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
