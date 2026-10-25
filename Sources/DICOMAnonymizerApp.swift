@@ -412,6 +412,54 @@ enum InterruptionRecovery {
         guard recordIdentity(url) == identity else { return false }
         do { try remove(url); return true } catch { return false }
     }
+    struct NoticeAccumulator {
+        // Reserve space for the total/omitted counts and recovery instructions.
+        static let messageByteLimit = 16 * 1024
+        static let detailLimit = 8
+        private var details: [String] = []
+        private var detailBytes = 0
+        private var total = 0
+        private var first: InterruptionNotice?
+        private var ownedStaging = false
+        private var publicationPossible = false
+
+        mutating func append(_ notice: InterruptionNotice) {
+            total += 1
+            ownedStaging = ownedStaging || notice.ownedStaging
+            publicationPossible = publicationPossible || notice.publicationPossible
+            if total > 1 { first = nil }
+            guard details.count < Self.detailLimit else { return }
+            let prefix = "\(total). "
+            let location = notice.location.path
+            let separator = details.isEmpty ? 0 : 2
+            let available = Self.messageByteLimit - 512 - detailBytes - separator
+            let fixedBytes = prefix.utf8.count + "\nLocation: ".utf8.count
+            guard available >= fixedBytes,
+                  notice.message.utf8.count <= available - fixedBytes,
+                  location.utf8.count <= available - fixedBytes - notice.message.utf8.count else { return }
+            // Never construct or retain an oversized detail, or clip a path.
+            let detail = prefix + notice.message + "\nLocation: " + location
+            detailBytes += separator + detail.utf8.count
+            details.append(detail)
+            if total == 1 { first = notice }
+        }
+
+        func notice(in directory: URL) -> InterruptionNotice? {
+            guard total > 0 else { return nil }
+            if total == 1, let first { return first }
+            let noun = total == 1 ? "record needs" : "records need"
+            var message = "\(total) previous batch recovery \(noun) review. Nothing will be resumed or deleted automatically.\n\n"
+            message += details.joined(separator: "\n\n")
+            let omitted = total - details.count
+            if omitted > 0 {
+                let remaining = omitted == 1 ? "record needs" : "records need"
+                message += "\n\n\(omitted) additional recovery \(remaining) review. Details are limited; inspect the recovery location for every record before starting another batch."
+            }
+            return InterruptionNotice(message: message, location: directory,
+                                      ownedStaging: ownedStaging, publicationPossible: publicationPossible)
+        }
+    }
+
     static func scan(in directory: URL, ownerIsRunning: (Int) -> Bool = { pid in
         guard pid > 0, pid <= Int(Int32.max) else { return false }
         return kill(pid_t(pid), 0) == 0 || errno == EPERM
@@ -427,7 +475,7 @@ enum InterruptionRecovery {
             return InterruptionScan(notice: nil, hasLiveOwners: false,
                                     unavailableDirectory: directory, directoryMissing: missing)
         }
-        var notices: [InterruptionNotice] = []
+        var notices = NoticeAccumulator()
         var hasLiveOwners = false
         var hasPendingLocations = false
         for file in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where file.pathExtension == "json" {
@@ -449,15 +497,8 @@ enum InterruptionRecovery {
                 hasPendingLocations = true
             }
         }
-        guard let first = notices.first else { return InterruptionScan(notice: nil, hasLiveOwners: hasLiveOwners) }
-        if notices.count == 1 { return InterruptionScan(notice: first, hasLiveOwners: hasLiveOwners, hasPendingLocations: hasPendingLocations) }
-        let combined = InterruptionNotice(
-            message: "\(notices.count) previous batch recovery records need review. Nothing will be resumed or deleted automatically.\n\n" + notices.enumerated().map {
-                "\($0.offset + 1). \($0.element.message)\nLocation: \($0.element.location.path)"
-            }.joined(separator: "\n\n"), location: directory,
-            ownedStaging: notices.contains { $0.ownedStaging },
-            publicationPossible: notices.contains { $0.publicationPossible })
-        return InterruptionScan(notice: combined, hasLiveOwners: hasLiveOwners, hasPendingLocations: hasPendingLocations)
+        return InterruptionScan(notice: notices.notice(in: directory), hasLiveOwners: hasLiveOwners,
+                                hasPendingLocations: hasPendingLocations)
     }
     static func firstNotice(in directory: URL, ownerIsRunning: (Int) -> Bool = { pid in
         guard pid > 0, pid <= Int(Int32.max) else { return false }

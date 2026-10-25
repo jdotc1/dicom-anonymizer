@@ -168,6 +168,10 @@ The independent [staged-file header audit](docs/FILE-HEADER-AUDIT.md) also has
 focused source coverage for the writer's existing preamble and file-meta guarantees;
 its delivery status and evidence scope are recorded separately.
 
+See [Bounded recovery messages](docs/BOUNDED-RECOVERY-MESSAGES.md) for the
+unreleased source change that limits accumulated notice text while retaining
+recovery records and uncertainty from omitted details.
+
 Symbolic links, nonregular patient-file entries, unsupported modalities,
 duplicate instance UIDs, invalid required UIDs, declared burned-in annotations,
 and overlays stop processing. Non-DICOM sidecars, including recognized
