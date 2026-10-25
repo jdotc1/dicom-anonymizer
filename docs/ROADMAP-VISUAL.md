@@ -22,6 +22,15 @@ Allocation-aware disk-space estimates are now delivered. See [Disk-space estimat
 
 ## Latest delivered increment
 
+The latest app delivery is Preview 29/build 33: terminal-event consistency and
+Copy Details diagnostics. Subsequent history sanitation preserved the existing
+releases and signed downloads; it did not create a new app build. Current local
+development adds qualified history-aware release selection and bounded recovery
+record reads. This work has not been released. The graphic remains a historical
+snapshot, and live interaction acceptance remains pending.
+
+## Earlier resilience milestone
+
 Interruption recovery records operation ownership/publication state and uses the existing recovery area without automatic resume/deletion. Resumable publication binds a finalized archive to a draft release and reconciles uncertain remote outcomes. Focused synthetic/mock evidence was reused for Preview 19; its first live authenticated publication completed using the new tooling. No GUI use or app launches occurred.
 
 ## Recovery lifecycle delivery

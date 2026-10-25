@@ -41,6 +41,41 @@ that executable was accepted; never substitute the current compiler's version.
 No host compiler or dependency lookup is performed. The new build number must
 increase from the selected baseline.
 
+## Accepted evidence after source-history sanitation
+
+Keep sealed receipts and build metadata unchanged. If an accepted original commit
+was rewritten, set `accepted.history_translation` in the local manifest to a
+qualification JSON file outside the repository. Paths resolve relative to the
+manifest. The file supplements acceptance; a raw Git rewrite map alone is not
+qualification and must not silently authorize reuse.
+
+The record has `schema: 1`, `accepted_verification_reused: true` and an `entries`
+array. Each selected scope requires exactly one entry with:
+
+- `original_commit`: the full commit selected by the sealed receipt.
+- `sanitized_commit`: its full, qualified replacement commit, reachable from HEAD.
+- `scope`: `engine` or `native`; both entries are required even for one shared commit.
+- `accepted: true` and a nonempty `qualification` reference to the existing scoped review.
+
+The release owner must select qualification that covers the exact original/target
+pair and scope. The tool checks association, explicit acceptance, immutable Git
+targets and reachability. It does not authenticate the qualification record or
+repeat source comparisons, tests, hashes or signature verification. Missing,
+duplicate, unaccepted, non-commit or unreachable mappings fail closed. Original
+metadata must still match the original receipt; a mapping cannot repair mismatches.
+Source resolution, ancestry checks and engine extraction disable Git replacement
+objects and grafts, matching the sanitation gate's view of immutable history.
+
+Assembly extracts the engine from the sanitized selection. `source_commit` and
+`engine_source_commit` name that selection. `native_source_commit` continues to
+name the commit where the reused executable was actually built;
+`native_sanitized_source_commit` records its qualified sanitized counterpart, and
+`accepted_source_commit` preserves the original receipt's source selection.
+The local qualification file, references and paths are kept in local selection
+metadata and are not copied into the app's public provenance. Existing signed
+downloads and historical publication journals are never rewritten or resumed
+under translated identities; create a new selection for a newly authorized release.
+
 ## Plan and assemble
 
 Run from the checkout, substituting your private workspace paths:
