@@ -37,7 +37,12 @@ class SafetyTests(unittest.TestCase):
         self.base = self.commit('readme', 'portable source', 'Initial')
         self.evidence = self.root / 'accepted.json'
         self.evidence.write_text('{"status":"previously accepted"}')
-        safety.install(self.repo, self.base, self.evidence)
+        self.private_rules = self.root / 'private-rules.json'
+        self.private_rules.write_text(json.dumps({'schema':1, 'rules':{
+            'personal-email': safety.RULES['personal-email'],
+            'private-correspondence': safety.RULES['private-correspondence'],
+            'unrelated-internal-app': r'\bRestrictedFixtureTool\b'}}))
+        safety.install(self.repo, self.base, self.evidence, self.private_rules)
 
     def git(self, *args):
         return safety.git(self.repo, *args).decode().strip()
@@ -107,7 +112,7 @@ class SafetyTests(unittest.TestCase):
 
     def test_encoded_paths_and_private_markers(self):
         for text in ('%2f' + 'Users%2ffixture/foo', '~/' + 'Developer/secret',
-                     'BEGIN' + '_PRIVATE', 'From ' + 'Claude (handoff)',
+                     'BEGIN' + '_PRIVATE', '<private-' + 'message>',
                      'ghp_' + 'x' * 35):
             with self.subTest(text=text[:8]), self.assertRaises(ValueError):
                 safety.check(text.encode(), 'fixture')
@@ -173,7 +178,7 @@ class SafetyTests(unittest.TestCase):
     def test_policy_change_invalidates_generated_receipts(self):
         self.commit('source', 'portable', 'Change')
         self.gate()
-        with patch.object(safety, 'POLICY', 'changed'), patch.object(safety, 'check', wraps=safety.check) as checker:
+        with patch.object(safety, 'policy_identity', return_value='changed'), patch.object(safety, 'check', wraps=safety.check) as checker:
             self.gate()
             self.assertTrue(checker.called)
 
@@ -371,10 +376,9 @@ class SafetyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'machine-home'):
             safety.release_gate(self.repo, self.base, 'Public release', 'Public notes', archive)
 
-    def test_unrelated_internal_application_names_refused(self):
-        with patch.dict(safety.PATTERNS, {'unrelated-internal-app': safety.re.compile(r'\bRestrictedFixtureTool\b')}):
-            with self.assertRaises(ValueError):
-                safety.check(b'RestrictedFixtureTool', 'fixture')
+    def test_local_restricted_fixture_name_refused(self):
+        with safety.ledger(self.repo), self.assertRaisesRegex(ValueError, 'unrelated-internal-app'):
+            safety.check(b'RestrictedFixtureTool', 'fixture')
 
     def test_installed_dispatcher_survives_branches_without_tracked_checker(self):
         hooks = Path(self.git('config', '--get', 'core.hooksPath'))
@@ -412,13 +416,13 @@ class SafetyTests(unittest.TestCase):
         self.gate(self.base)
         path = safety.cache_root(self.repo) / 'receipts.json'
         value = json.loads(path.read_text())
-        value['policy'] = next(iter(safety.COMPATIBLE_POLICIES))
+        value['policy'] = next(iter(safety.compatible_policies(safety.effective_rules(self.repo))))
         value['texts']['prior-success'] = 'accepted'
         path.write_text(json.dumps(value))
         with patch.object(safety, 'check', side_effect=AssertionError('repeat scan')):
             with safety.ledger(self.repo) as receipts:
                 self.assertEqual('accepted', receipts['texts']['prior-success'])
-                self.assertEqual(safety.POLICY, receipts['policy'])
+                self.assertEqual(safety.policy_identity(safety.effective_rules(self.repo)), receipts['policy'])
 
     def test_public_suffix_heading_allowed_but_private_messages_refused(self):
         safety.payload_check(gzip.compress(b'// ===BEGIN PRIVATE DOMAINS==='), 'public data fixture')
