@@ -24,3 +24,7 @@ The unified public app is delivered as **Preview 19/build 23**, using the new re
 Accepted evidence was reused: 11 engine journal cases, 12 native recovery/model/filesystem cases, 12 mocked publication methods and the existing policy, self-audit, sidecar/r2, worker-feedback, runtime, icon and dependency receipts. No functional test or native build was repeated for delivery. No GUI use, native app launch or installation occurred. Live startup/recovery, sidecar interaction, responsiveness and compact-window acceptance remain pending.
 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.19). Earlier entries retain their historical scope.
+
+## 2026-10-24 — local recovery lifecycle and worker process increment
+
+See `RECOVERY-LIFECYCLE.md`. Twenty new headless cases passed as composite evidence, plus four affected existing interruption cases; only changed-boundary cases were repeated after follow-up fixes. Actual optimized native target compiled with warnings as errors. Engine/policy, unchanged native/model/runtime and Preview 19 distribution receipts reused. No GUI use, native app launch, installation, signing, notarization or publication. Live interaction/scheduling acceptance pending.
