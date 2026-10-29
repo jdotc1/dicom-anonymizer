@@ -6,6 +6,11 @@ statuses. The public interface structure, cleaning policy and audit enforcement
 are unchanged. See [Audit coverage](docs/AUDIT-COVERAGE.md) and the
 [release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.34).
 
+**Next source increment:** DICOM-only batches now receive strict staging-inventory
+checks before publication, and recovery-record updates detect ordinary concurrent
+replacement during preparation. These changes are not yet in the current download.
+See [Staging and journal protection](docs/STAGING-JOURNAL-PROTECTION.md).
+
 **Resilience delivery:** Preview 19/build 23 adds interruption recovery and ships through the resumable publication tooling; consolidation cleanup is complete. See [Interruption recovery](docs/INTERRUPTION-RECOVERY.md).
 
 **Recovery lifecycle:** Preview 20/build 24 delivers combined recovery notices, safe local-record retirement and guarded live-owner reinspection, with accepted headless worker process coverage. See [Recovery lifecycle](docs/RECOVERY-LIFECYCLE.md).

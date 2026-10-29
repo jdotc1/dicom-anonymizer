@@ -28,6 +28,11 @@ Preview 34/build 38 adds structured [audit coverage](../docs/AUDIT-COVERAGE.md)
 to completed reports, including separate DICOM/sidecar statuses and retained-content
 limitations. Existing report fields remain available.
 
+The next source increment adds [staging and journal protection](../docs/STAGING-JOURNAL-PROTECTION.md):
+strict default-mode publication inventories and conservative recovery-record
+updates. It does not enable sidecar processing or change the metadata policy,
+and is not yet included in the published app.
+
 **Policy version: 2.0-build5.** App preview/build numbers are separate. Accepted
 engine and bundled-runtime evidence, reused checks, and remaining limits are
 recorded in [runtime acceptance](../docs/RUNTIME-ACCEPTANCE.md). Later
