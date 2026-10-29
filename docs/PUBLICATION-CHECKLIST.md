@@ -6,7 +6,30 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 33, build 37
+## Current release — Preview 34, build 38
+
+Preview 34/build 38 delivers structured audit coverage in completed reports.
+Release source is `2b2ab9003ed3ae0af5d04e78477793188b5d6658`; accepted engine
+source is `56c488f8aedef11f71c4cde179f531089443ec64`; reused native source is
+`5ebaa55481308ec33169e0420fe10a8c31d9f8e4`.
+
+The five accepted report-boundary tests, optimized native executable and
+unchanged engine/audit/sidecar/runtime/dependency/icon/recovery receipts were
+reused. No functional test or native build was repeated for delivery. New
+source/documentation/package/release-text sanitation boundaries passed, reusing
+accepted receipts where applicable. New root signature, stapled ticket and
+Gatekeeper checks passed. Apple notarization
+`5ed1f52d-2d8b-424e-a8db-ed6e90b8c964` was Accepted. The ZIP is 29,080,672 bytes.
+
+Journaled publication completed without retrying a GitHub mutation. Release tag,
+source target and uploaded asset metadata were read back; the download returned
+HTTP 200 to a HEAD request without a binary redownload. Prior releases and signed
+downloads remain preserved. No GUI use, app launch or installation occurred.
+See [Audit coverage](AUDIT-COVERAGE.md) for scope and evidence limits.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.34).
+
+## Previous release — Preview 33, build 37
 
 Preview 33/build 37 delivers bounded recovery-message aggregation with complete
 record inspection and uncertainty retention. Release source is

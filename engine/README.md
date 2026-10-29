@@ -24,10 +24,9 @@ fixed text to avoid exposing source identity, and library diagnostic messages
 are suppressed. Completed output includes `anonymization-report.json` with
 aggregate counts and self-audit status.
 
-The next source increment adds structured [audit coverage](../docs/AUDIT-COVERAGE.md)
+Preview 34/build 38 adds structured [audit coverage](../docs/AUDIT-COVERAGE.md)
 to completed reports, including separate DICOM/sidecar statuses and retained-content
-limitations. Existing report fields remain available. This addition is not yet
-included in the current macOS download.
+limitations. Existing report fields remain available.
 
 **Policy version: 2.0-build5.** App preview/build numbers are separate. Accepted
 engine and bundled-runtime evidence, reused checks, and remaining limits are

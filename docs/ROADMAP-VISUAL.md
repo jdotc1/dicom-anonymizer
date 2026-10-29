@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 25 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 33/app build 37: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback, bounded recovery-record reads/messages, RTSTRUCT label enforcement, staged-file header auditing and guarded publication.
+Updated 29 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 34/app build 38: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback, bounded recovery-record reads/messages, RTSTRUCT label enforcement, staged-file header auditing, structured audit coverage and guarded publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -22,7 +22,8 @@ Allocation-aware disk-space estimates are now delivered. See [Disk-space estimat
 
 ## Latest delivered increment
 
-The latest app delivery is Preview 33/build 37: bounded recovery-message text
+The latest app delivery is Preview 34/build 38: explicit audit-coverage reporting
+with separate DICOM/sidecar statuses and retained-content limitations. Bounded recovery-message text
 while complete inspection and uncertainty flags remain in use. File-header and
 RTSTRUCT label audits remain in place. Existing publication, terminal-event and
 Copy Details behavior is retained. Prior releases and signed downloads remain
@@ -31,13 +32,14 @@ boundaries were checked. See [Bounded recovery messages](BOUNDED-RECOVERY-MESSAG
 The graphic remains a historical snapshot, and live interaction acceptance
 remains pending.
 
-## Next source increment
+## Audit-coverage delivery
 
-Structured audit coverage is implemented locally for the next release. Reports
+Structured audit coverage is delivered in Preview 34/build 38. Reports
 separate DICOM and optional JSON-sidecar audit status/counts and explicitly name
 retained-content limitations. Five new synthetic report-boundary cases passed;
 unchanged verification is reused. This changes reporting only, with no interface
-or engine-policy change. It is not part of the Preview 33 download. See
+or engine-policy change. Accepted verification was reused for guarded delivery;
+no functional test or native build was repeated. See
 [Audit coverage](AUDIT-COVERAGE.md).
 
 ## Earlier resilience milestone

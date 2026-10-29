@@ -1,6 +1,30 @@
 # macOS release acceptance
 
-## Current release — Preview 33, build 37
+## Current release — Preview 34, build 38
+
+Preview 34/build 38 adds an additive audit-coverage section to completed batch
+reports. DICOM and optional sidecar status/counts are separate, skipped checks
+are explicit, and retained-content limitations are named. Existing report fields,
+the public UI, cleaning policy, audit enforcement and sidecar default are retained.
+See [Audit coverage](AUDIT-COVERAGE.md).
+
+Release source is `2b2ab9003ed3ae0af5d04e78477793188b5d6658`; accepted engine source
+is `56c488f8aedef11f71c4cde179f531089443ec64`; the reused native executable was
+built at `5ebaa55481308ec33169e0420fe10a8c31d9f8e4`. Five new synthetic report
+tests and unchanged engine/audit/sidecar/native/runtime/dependency/icon/recovery
+evidence were reused. No functional test or native build was repeated for delivery.
+
+New assembly metadata, sanitation, root signature, stapled ticket and Gatekeeper
+checks passed. Apple notarization `5ed1f52d-2d8b-424e-a8db-ed6e90b8c964` was
+Accepted. The ZIP is 29,080,672 bytes. Journaled publication completed without
+retrying a GitHub mutation; the download returned HTTP 200 to a HEAD request.
+Prior releases/downloads remain preserved. No GUI use, app launch or installation
+occurred. Live interaction acceptance remains pending; report coverage does not
+extend the underlying audit guarantees or establish irreversible anonymity.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.34).
+
+## Previous release — Preview 33, build 37
 
 Preview 33/build 37 limits accumulated recovery-message text to eight complete
 details within a 16 KiB UTF-8 budget, while full inspection and all uncertainty

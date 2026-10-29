@@ -1,7 +1,6 @@
 # Audit coverage in batch reports
 
-Implemented in source; not yet included in a published app release. Preview 33
-remains the current download. This increment adds reporting only: the public
+Delivered in Preview 34/build 38. This increment adds reporting only: the public
 interface, supported inputs, metadata policy, audit enforcement and default-off
 JSON-sidecar setting remain unchanged.
 
@@ -49,4 +48,25 @@ report. Temporary generated inputs and outputs are removed after each case.
 Accepted cleaner, independent-audit, sidecar, recovery, worker, native, runtime,
 dependency and icon evidence is reused. No native source changed, so no native
 build was repeated. Headless engine coverage does not establish live interface
-acceptance. No GUI use, app launch, installation or publication is included.
+acceptance. Source acceptance included no GUI use, app launch, installation or
+publication; authorized delivery followed separately below.
+
+## Guarded delivery
+
+Preview 34/build 38 reuses the five accepted report-boundary tests and the
+unchanged optimized native executable. No functional test or native build was
+repeated during delivery. Accepted engine source is
+`56c488f8aedef11f71c4cde179f531089443ec64`; native source is
+`5ebaa55481308ec33169e0420fe10a8c31d9f8e4`; release source is
+`2b2ab9003ed3ae0af5d04e78477793188b5d6658`.
+
+New source/documentation, package and release-text sanitation boundaries passed,
+with accepted receipts reused where applicable. The new root signature, stapled
+ticket and Gatekeeper checks passed. Apple notarization
+`5ed1f52d-2d8b-424e-a8db-ed6e90b8c964` was Accepted. The ZIP is 29,080,672 bytes.
+Journaled publication completed without retrying a GitHub mutation; delivery
+returned HTTP 200 to a HEAD request without redownloading the binary.
+Earlier releases and signed downloads remain preserved. No GUI use, app launch
+or installation occurred.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.34).
