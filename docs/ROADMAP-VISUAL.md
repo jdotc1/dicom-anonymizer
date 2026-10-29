@@ -31,6 +31,15 @@ boundaries were checked. See [Bounded recovery messages](BOUNDED-RECOVERY-MESSAG
 The graphic remains a historical snapshot, and live interaction acceptance
 remains pending.
 
+## Next source increment
+
+Structured audit coverage is implemented locally for the next release. Reports
+separate DICOM and optional JSON-sidecar audit status/counts and explicitly name
+retained-content limitations. Five new synthetic report-boundary cases passed;
+unchanged verification is reused. This changes reporting only, with no interface
+or engine-policy change. It is not part of the Preview 33 download. See
+[Audit coverage](AUDIT-COVERAGE.md).
+
 ## Earlier resilience milestone
 
 Interruption recovery records operation ownership/publication state and uses the existing recovery area without automatic resume/deletion. Resumable publication binds a finalized archive to a draft release and reconciles uncertain remote outcomes. Focused synthetic/mock evidence was reused for Preview 19; its first live authenticated publication completed using the new tooling. No GUI use or app launches occurred.

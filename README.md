@@ -2,6 +2,11 @@
 
 **Current release: Preview 33/build 37.** Recovery-message text is bounded while every record still contributes uncertainty and scan state. The public interface structure and engine policy are unchanged. See [Bounded recovery messages](docs/BOUNDED-RECOVERY-MESSAGES.md) and the [release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.33).
 
+**Next source increment:** batch reports now distinguish completed audit checks
+from retained-content limitations, with separate DICOM and optional sidecar
+statuses. This is not yet in the current download. See
+[Audit coverage](docs/AUDIT-COVERAGE.md).
+
 **Resilience delivery:** Preview 19/build 23 adds interruption recovery and ships through the resumable publication tooling; consolidation cleanup is complete. See [Interruption recovery](docs/INTERRUPTION-RECOVERY.md).
 
 **Recovery lifecycle:** Preview 20/build 24 delivers combined recovery notices, safe local-record retirement and guarded live-owner reinspection, with accepted headless worker process coverage. See [Recovery lifecycle](docs/RECOVERY-LIFECYCLE.md).
@@ -52,7 +57,7 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: [Preview 26 (app build 30)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.26).** Unified public app with ownership-aware interruption recovery, worker-event reliability, sidecar feedback, detailed folder recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
+**Current download: [Preview 33 (app build 37)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.33).** Unified public app with bounded recovery messages, independent staged-header auditing, worker-event reliability, sidecar feedback, detailed folder recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
 
 Preview 14 introduced allocation-aware estimates. Allocation-aware disk-space estimates account for metadata growth, destination allocation, output folders and the report while preserving the interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 
