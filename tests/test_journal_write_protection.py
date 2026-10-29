@@ -191,6 +191,28 @@ class JournalWriteProtectionTests(unittest.TestCase):
         with self.assertRaises(JournalError):
             self.writer.mark('cleaned')
 
+    def test_parent_replacement_at_temporary_creation_leaves_no_unowned_path_artifact(self):
+        open_file = journal_module.os.open
+        moved = self.root / 'original-recovery'
+        changed = False
+        def change(path, *args, **kwargs):
+            nonlocal changed
+            if '.operation-' in os.fspath(path) and not changed:
+                changed = True
+                self.path.parent.rename(moved)
+                self.path.parent.mkdir()
+                self.path.write_bytes(b'foreign parent at creation')
+            return open_file(path, *args, **kwargs)
+        with patch.object(journal_module.os, 'open', side_effect=change):
+            with self.assertRaises(JournalError):
+                self.writer.mark('publishing')
+        self.assertTrue(changed)
+        self.assertEqual(self.path.read_bytes(), b'foreign parent at creation')
+        self.assertEqual((moved / 'operation.json').read_bytes(), self.before)
+        self.assertEqual(list(moved.glob('.operation-*')), [])
+        self.assert_no_temporaries()
+        self.assertEqual(self.writer.record, self.before_record)
+
 
 if __name__ == '__main__':
     unittest.main()

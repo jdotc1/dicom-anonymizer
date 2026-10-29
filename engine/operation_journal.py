@@ -3,7 +3,6 @@ import json
 import os
 from pathlib import Path
 import stat
-import tempfile
 import time
 import uuid
 
@@ -59,8 +58,13 @@ class OperationJournal:
             candidate = dict(self.record, phase=phase)
             if staging is not None:
                 candidate.update(staging=str(Path(staging).absolute()), device=identity[0], inode=identity[1])
-            descriptor, name = tempfile.mkstemp(prefix='.operation-', dir=self.path.parent)
-            temporary = Path(name)
+            # Create relative to the pinned parent: an ordinary directory swap
+            # cannot redirect this operation's temporary into a replacement.
+            name = '.operation-' + uuid.uuid4().hex
+            temporary = self.path.parent / name
+            descriptor = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
+                                 getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_CLOEXEC', 0),
+                                 0o600, dir_fd=directory)
             info = os.fstat(descriptor)
             temporary_identity = (info.st_dev, info.st_ino)
             with os.fdopen(descriptor, 'w') as stream:
