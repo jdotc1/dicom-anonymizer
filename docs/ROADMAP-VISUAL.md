@@ -23,8 +23,8 @@ Allocation-aware disk-space estimates are now delivered. See [Disk-space estimat
 ## Latest delivered increment
 
 The latest app delivery is Preview 34/build 38: explicit audit-coverage reporting
-with separate DICOM/sidecar statuses and retained-content limitations. Bounded recovery-message text
-while complete inspection and uncertainty flags remain in use. File-header and
+with separate DICOM/sidecar statuses and retained-content limitations. Recovery-message
+text remains bounded while complete inspection and uncertainty flags remain in use. File-header and
 RTSTRUCT label audits remain in place. Existing publication, terminal-event and
 Copy Details behavior is retained. Prior releases and signed downloads remain
 preserved. Accepted source/functional evidence was reused; only new distribution
@@ -41,6 +41,15 @@ unchanged verification is reused. This changes reporting only, with no interface
 or engine-policy change. Accepted verification was reused for guarded delivery;
 no functional test or native build was repeated. See
 [Audit coverage](AUDIT-COVERAGE.md).
+
+## Next source increment
+
+Strict DICOM-only staging inventories and recovery-record write protection are
+implemented locally. Twenty-seven new synthetic methods passed as focused
+evidence, with unchanged policy/native/runtime verification reused. The public
+interface and metadata policy remain unchanged. No GUI use, app launch or native
+build occurred; this increment is not part of the current Preview 34 download.
+See [Staging and journal protection](STAGING-JOURNAL-PROTECTION.md).
 
 ## Earlier resilience milestone
 

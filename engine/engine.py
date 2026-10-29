@@ -1199,8 +1199,8 @@ def clean(ds, patient, uid_map):
 
 
 def _sidecar_call(operation, *args, **kwargs):
-    # The app bootstrap puts the engine directory on the isolated runtime path.
-    # Import only for explicit opt-in; legacy DICOM-only execution is unchanged.
+    # Adapter for explicitly enabled sidecar processing. Default-mode inventory
+    # checks use a separate adapter without invoking sidecar scanning/cleaning.
     import sidecar_deid
     try:
         return operation(*args, **kwargs)
@@ -1210,6 +1210,54 @@ def _sidecar_call(operation, *args, **kwargs):
         raise BatchError(str(error)) from None
     except OSError:
         raise BatchError('JSON sidecar files cannot be read or checked. Keep input unchanged and retry.') from None
+
+
+def _inventory_module():
+    try:
+        import sidecar_deid
+        return sidecar_deid
+    except ModuleNotFoundError as error:
+        if error.name != 'sidecar_deid':
+            raise
+    # The app/CLI already include the engine directory on the module path.
+    # Preserve callers loading engine.py directly by filename without changing
+    # their process-wide sys.path or requiring sidecar processing to be enabled.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'sidecar_deid', Path(__file__).resolve().with_name('sidecar_deid.py'))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        if sys.modules.get(spec.name) is module:
+            del sys.modules[spec.name]
+        raise
+    return module
+
+
+def _seal_dicom_inventory(staging, identity, written, report_path, cancellation):
+    """Reuse the strict inventory check without enabling JSON-sidecar processing."""
+    sidecar_deid = _inventory_module()
+
+    def require_owned_root():
+        current = destination_operation(staging.lstat)
+        if not stat.S_ISDIR(current.st_mode) or (current.st_dev, current.st_ino) != identity:
+            raise BatchError('The staging location changed before publication. No output was published.')
+
+    require_owned_root()
+    try:
+        sidecar_deid.seal_staging_inventory(
+            staging, dicom_paths=[path for path, _patient in written],
+            sidecar_paths=[], report_path=report_path,
+            cancel_check=lambda: _sidecar_cancel(cancellation))
+    except sidecar_deid.SidecarDestinationError as error:
+        raise output_error(error.os_error) from None
+    except sidecar_deid.SidecarError as error:
+        raise BatchError(str(error)) from None
+    except OSError as error:
+        raise output_error(error) from None
+    require_owned_root()
 
 
 def _sidecar_output_operation(operation, *args):
@@ -1354,6 +1402,8 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None, cl
                           sidecar_paths=[item.output for item in sidecar_written], report_path=report_path,
                           sidecar_expectations=sidecar_written,
                           cancel_check=lambda: _sidecar_cancel(cancellation))
+        else:
+            _seal_dicom_inventory(staging, staging_identity, written, report_path, cancellation)
         # Recheck before publication; rename is atomic. macOS exclusive rename prevents races.
         if destination_operation(destination.exists) or destination_operation(destination.is_symlink):
             raise BatchError('The output folder appeared during processing. Choose another output folder.', output_issue='conflict')
@@ -1615,7 +1665,11 @@ def self_audit(staging, written, forbidden_uids, progress=None):
     if progress is not None:
         progress('audit_progress', audited_files=0, total_files=total)
     staged = {path for path, _ in written}
-    for root, _dirs, files in os.walk(staging):
+
+    def walk_error(error):
+        raise output_error(error) from None
+
+    for root, _dirs, files in os.walk(staging, onerror=walk_error):
         for filename in files:
             path = Path(root) / filename
             if path.suffix == '.dcm' and path not in staged:
