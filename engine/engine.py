@@ -1340,7 +1340,9 @@ def run(source, destination, progress=emit, audit=True, *, cancellation=None, cl
         forbidden_uids = None
         report = {'policy': POLICY, 'software': environment_info(), 'patients': patients,
                   'patient_count': len(patients), 'total_files': len(records), 'excluded_files': excluded,
-                  'self_audit': audit_summary}
+                  'self_audit': audit_summary,
+                  'audit_coverage': audit_coverage(audit_summary, len(written),
+                                                   sidecar_summary if clean_json_sidecars else None)}
         if clean_json_sidecars:
             report['excluded_files'] = excluded
             report['json_sidecars'] = sidecar_deid.sidecar_report(sidecar_summary)
@@ -1633,7 +1635,41 @@ def self_audit(staging, written, forbidden_uids, progress=None):
     return {'result': 'passed', 'files_audited': len(written),
             'checks': ['entire staged file decoded', 'removed attributes and curve groups absent',
                        'cleared policy attributes and free text empty', 'no uninterpreted UN attributes', 'no private tags', 'PatientName/PatientID equal folder identifier', 'no other person names',
-                       'no dates/times', 'no source instance/study/series/frame UIDs', 'file meta instance UID synchronized']}
+                       'no dates/times', 'no source instance/study/series/frame UIDs', 'file meta instance UID synchronized',
+                       '128-byte preamble zeroed', 'rebuilt file meta matches writer defaults and dataset UIDs',
+                       'present StructureSetLabel normalized to Structures']}
+
+
+def audit_coverage(dicom_audit, dicom_files, sidecars=None):
+    """Describe completed audit scope without copying source values or claiming anonymity."""
+    return {
+        'schema_version': 1,
+        'dicom': {
+            'result': dicom_audit['result'], 'files_written': dicom_files,
+            'files_audited': dicom_audit['files_audited'],
+            'checks': list(dicom_audit.get('checks', [])) if dicom_audit['result'] == 'passed' else [],
+        },
+        'json_sidecars': {
+            'enabled': sidecars is not None,
+            'result': 'passed' if sidecars is not None else 'not_requested',
+            'files_written': sidecars.files_written if sidecars is not None else 0,
+            'files_audited': sidecars.files_audited if sidecars is not None else 0,
+        },
+        'retained_content': {
+            'patient_folder_identifier': 'Exact numeric folder identifier retained as PatientName and PatientID; not an anonymity guarantee.',
+            'dicom_attributes': ['SeriesDescription', 'ProtocolName', 'SequenceName', 'ContrastBolusAgent',
+                                 'SoftwareVersions', 'Manufacturer', 'ROIName', 'ROIObservationLabel'],
+            'payloads': ['pixel data', 'contour geometry', 'quantitative measurements'],
+        },
+        'not_assessed': {
+            'pixel_and_contour_identity': 'Pixel content and contour geometry are retained; burned-in text, faces and anatomical identity are not assessed.',
+            'retained_text_identity': 'Retained series, protocol and ROI labels can contain identifying content and require review.',
+            'dicom_conformance': 'No complete DICOM IOD or confidentiality-profile conformance certification; encoded file-meta group length is not independently recomputed.',
+            'reference_closure': 'No complete cross-file reference-closure or geometric-alignment validation.',
+            'companion_file_content': 'Only supported DICOM files and explicitly enabled JSON sidecars are processed; NIfTI voxels and other companion formats are not inspected.',
+            'external_linkability': 'Retained identifiers, acquisition values and other content may remain linkable with external data.',
+        },
+    }
 
 
 def environment_info():
