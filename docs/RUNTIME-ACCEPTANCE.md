@@ -1,6 +1,33 @@
 # macOS release acceptance
 
-## Current release — Preview 34, build 38
+## Current release — Preview 35, build 39
+
+Preview 35/build 39 adds strict DICOM-only staging inventories and conservative
+recovery-record write protection. Unexpected/missing inventory entries and
+inspection failures prevent publication; ordinary record replacement during
+preparation is detected without overwriting the foreign record. Before-publication
+refusal remains distinct from uncertainty after completed output is published.
+Public controls, metadata policy, report fields and sidecar default are unchanged.
+See [Staging and journal protection](STAGING-JOURNAL-PROTECTION.md).
+
+Release source is `6fedca8f15af84656dfc5aa6404676e2964c726e`; accepted engine
+source is `4803c7b6b12845091ec5087e0618768d67acd047`; the reused native executable
+was built at `5ebaa55481308ec33169e0420fe10a8c31d9f8e4`. Accepted evidence covers
+10 inventory, 13 journal and 4 batch-integration methods. Unchanged policy,
+sidecar, worker, native, runtime, dependency, icon and recovery receipts were
+reused. No functional test or native build was repeated for delivery.
+
+New assembly metadata, sanitation, root signature, stapled ticket and Gatekeeper
+checks passed. Apple notarization `65ee9af6-a7d0-4ee2-ae8b-f32d31b40342` was
+Accepted. The ZIP is 29,082,084 bytes. Journaled publication completed without
+retrying a GitHub mutation; the download returned HTTP 200 to a HEAD request.
+Existing GitHub releases/downloads remain preserved. No GUI use, app launch or
+installation occurred. Live interaction acceptance remains pending; final
+check-to-rename races remain outside these ordinary-mutation safeguards.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.35).
+
+## Previous release — Preview 34, build 38
 
 Preview 34/build 38 adds an additive audit-coverage section to completed batch
 reports. DICOM and optional sidecar status/counts are separate, skipped checks

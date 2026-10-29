@@ -121,7 +121,8 @@ No accepted package, native executable or historical evidence was rehashed or
 reverified. Existing app/engine/packaging/publication receipts were reused. No
 GUI use, app launch, native build, signing, notarization, installation, network
 publication or real artifact deletion occurred. Fresh ownership registration was subsequently exercised during the authorized
-Preview 26 delivery below; live destructive retirement remains untested.
+Preview 26 delivery below; live destructive retirement had not been exercised
+at that stage. Subsequent bounded use is recorded below.
 
 ## Authorized distribution
 
@@ -134,3 +135,18 @@ Accepted verification reused: 26 retirement fixture methods and existing report/
 No GUI use, native app launch or installation occurred. Public UI structure and engine policy are unchanged. Live scheduling, recovery/report/sidecar interaction, volume behavior, responsiveness and layout remain pending. Ownership metadata supplies ordinary replacement detection, not cryptographic or privileged-attacker guarantees.
 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.26). Earlier records retain their historical scope.
+
+## Subsequent bounded use
+
+During Preview 35 preparation, an explicitly authorized plan retired the app,
+download ZIP and notarization-upload ZIP from one superseded finalized local
+release. The existing command checked its ownership/metadata bindings and
+protected the current release and accepted inputs. The retirement journal records
+all three completed operations. Remaining release metadata and logs were
+preserved separately, without rewriting or rehashing the receipts. Existing
+GitHub releases and signed downloads were unchanged.
+
+This is evidence of that concrete local operation, separate from the accepted
+synthetic fixture coverage. No fixture suite, app/engine acceptance, old signature
+or provenance hash was repeated for retirement. The shared storage guard's
+registry and limits were not manually changed.

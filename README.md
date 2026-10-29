@@ -1,15 +1,11 @@
 # DICOM Anonymizer
 
-**Current release: Preview 34/build 38.** Batch reports distinguish completed audit
-checks from retained-content limitations, with separate DICOM and optional sidecar
-statuses. The public interface structure, cleaning policy and audit enforcement
-are unchanged. See [Audit coverage](docs/AUDIT-COVERAGE.md) and the
-[release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.34).
-
-**Next source increment:** DICOM-only batches now receive strict staging-inventory
-checks before publication, and recovery-record updates detect ordinary concurrent
-replacement during preparation. These changes are not yet in the current download.
-See [Staging and journal protection](docs/STAGING-JOURNAL-PROTECTION.md).
+**Current release: Preview 35/build 39.** DICOM-only batches receive strict
+staging-inventory checks before publication, and recovery-record updates detect
+ordinary concurrent replacement during preparation. The public interface,
+metadata-cleaning policy, report fields and sidecar default remain unchanged.
+See [Staging and journal protection](docs/STAGING-JOURNAL-PROTECTION.md) and the
+[release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.35).
 
 **Resilience delivery:** Preview 19/build 23 adds interruption recovery and ships through the resumable publication tooling; consolidation cleanup is complete. See [Interruption recovery](docs/INTERRUPTION-RECOVERY.md).
 
@@ -61,7 +57,7 @@ source is [MIT-licensed](LICENSE).
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: [Preview 34 (app build 38)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.34).** Unified public app with structured audit-coverage reports, bounded recovery messages, independent staged-header auditing, worker-event reliability, sidecar feedback, detailed folder recovery and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
+**Current download: [Preview 35 (app build 39)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.35).** Unified public app with strict DICOM-only staging inventories, recovery-record write protection, structured audit-coverage reports, bounded recovery messages, independent staged-header auditing and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
 
 Preview 14 introduced allocation-aware estimates. Allocation-aware disk-space estimates account for metadata growth, destination allocation, output folders and the report while preserving the interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 
@@ -98,8 +94,8 @@ complete validity of every MR/CT/RTSTRUCT object.
 3. Open the app, choose the input batch and an output location, inspect the scan
    summary, and process the batch.
 
-The [Preview 34 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.34)
-is app version 2.0.0, build 38. Its app is Developer ID signed and Apple notarized,
+The [Preview 35 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.35)
+is app version 2.0.0, build 39. Its app is Developer ID signed and Apple notarized,
 with a stapled ticket. It includes **CPython 3.13.16 and pydicom 3.0.2** and uses
 its bundled interpreter wherever the app is moved. No Homebrew, separate Python
 installation, launch-time runtime download, or package installation is needed.

@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 29 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 34/app build 38: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback, bounded recovery-record reads/messages, RTSTRUCT label enforcement, staged-file header auditing, structured audit coverage and guarded publication.
+Updated 29 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 35/app build 39: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback, bounded recovery-record reads/messages, RTSTRUCT label enforcement, staged-file header auditing, structured audit coverage, strict DICOM-only staging inventories, recovery-record write protection and guarded publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -22,13 +22,14 @@ Allocation-aware disk-space estimates are now delivered. See [Disk-space estimat
 
 ## Latest delivered increment
 
-The latest app delivery is Preview 34/build 38: explicit audit-coverage reporting
-with separate DICOM/sidecar statuses and retained-content limitations. Recovery-message
+The latest app delivery is Preview 35/build 39: strict DICOM-only staging
+inventories and conservative recovery-record updates. Audit-coverage reporting
+retains separate DICOM/sidecar statuses and retained-content limitations. Recovery-message
 text remains bounded while complete inspection and uncertainty flags remain in use. File-header and
 RTSTRUCT label audits remain in place. Existing publication, terminal-event and
 Copy Details behavior is retained. Prior releases and signed downloads remain
 preserved. Accepted source/functional evidence was reused; only new distribution
-boundaries were checked. See [Bounded recovery messages](BOUNDED-RECOVERY-MESSAGES.md).
+boundaries were checked. See [Staging and journal protection](STAGING-JOURNAL-PROTECTION.md).
 The graphic remains a historical snapshot, and live interaction acceptance
 remains pending.
 
@@ -42,13 +43,13 @@ or engine-policy change. Accepted verification was reused for guarded delivery;
 no functional test or native build was repeated. See
 [Audit coverage](AUDIT-COVERAGE.md).
 
-## Next source increment
+## Staging and journal protection delivery
 
 Strict DICOM-only staging inventories and recovery-record write protection are
-implemented locally. Twenty-seven new synthetic methods passed as focused
+delivered in Preview 35/build 39. Twenty-seven new synthetic methods passed as focused
 evidence, with unchanged policy/native/runtime verification reused. The public
-interface and metadata policy remain unchanged. No GUI use, app launch or native
-build occurred; this increment is not part of the current Preview 34 download.
+interface and metadata policy remain unchanged. No GUI use, app launch, installation
+or repeated functional test/native build occurred during guarded delivery.
 See [Staging and journal protection](STAGING-JOURNAL-PROTECTION.md).
 
 ## Earlier resilience milestone

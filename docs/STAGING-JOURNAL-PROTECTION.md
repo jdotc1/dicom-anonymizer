@@ -1,7 +1,6 @@
 # Staging inventory and recovery-record write protection
 
-Implemented locally for the next release. Preview 34/build 38 remains the
-published download. The public interface, metadata-cleaning policy, supported
+Delivered in Preview 35/build 39. The public interface, metadata-cleaning policy, supported
 inputs, report fields and default-off JSON-sidecar setting remain unchanged.
 
 ## DICOM-only publication inventory
@@ -86,3 +85,22 @@ These safeguards detect ordinary concurrent mutations. They do not provide an
 atomic conditional rename, an immutable filesystem snapshot, or protection from
 every change after an audit or final identity check. No new pixel, contour,
 retained-text or DICOM-conformance guarantee is claimed.
+
+## Guarded delivery
+
+Preview 35/build 39 reuses the 27 accepted focused methods and unchanged native
+executable. No functional test or native build was repeated for delivery.
+Accepted engine source is `4803c7b6b12845091ec5087e0618768d67acd047`; native source
+is `5ebaa55481308ec33169e0420fe10a8c31d9f8e4`; release source is
+`6fedca8f15af84656dfc5aa6404676e2964c726e`.
+
+New source/documentation, package and release-text sanitation boundaries passed,
+reusing accepted receipts where applicable. The new root signature, stapled
+ticket and Gatekeeper checks passed. Apple notarization
+`65ee9af6-a7d0-4ee2-ae8b-f32d31b40342` was Accepted. The ZIP is 29,082,084 bytes.
+Journaled publication completed without retrying a GitHub mutation; the download
+returned HTTP 200 to a HEAD request without redownloading the binary. Earlier
+GitHub releases and signed downloads remain preserved. No GUI use, app launch
+or installation occurred.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.35).

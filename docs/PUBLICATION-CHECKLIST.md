@@ -6,7 +6,31 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 34, build 38
+## Current release — Preview 35, build 39
+
+Preview 35/build 39 delivers DICOM-only staging-inventory checks and recovery-record
+write protection. Release source is `6fedca8f15af84656dfc5aa6404676e2964c726e`;
+accepted engine source is `4803c7b6b12845091ec5087e0618768d67acd047`; reused native
+source is `5ebaa55481308ec33169e0420fe10a8c31d9f8e4`.
+
+The 27 accepted inventory/journal/batch methods, optimized native executable and
+unchanged engine-policy/sidecar/runtime/dependency/icon/worker/recovery receipts
+were reused. No functional test or native build was repeated for delivery. New
+source/documentation/package/release-text sanitation boundaries passed, reusing
+accepted receipts where applicable. New root signature, stapled ticket and
+Gatekeeper checks passed. Apple notarization
+`65ee9af6-a7d0-4ee2-ae8b-f32d31b40342` was Accepted. The ZIP is 29,082,084 bytes.
+
+Journaled publication completed without retrying a GitHub mutation. Release tag,
+source target and uploaded asset metadata were read back; delivery returned HTTP
+200 to a HEAD request without a binary redownload. Earlier GitHub releases and
+signed downloads remain preserved. No GUI use, app launch or installation
+occurred. See [Staging and journal protection](STAGING-JOURNAL-PROTECTION.md) for
+scope and evidence limits.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.35).
+
+## Previous release — Preview 34, build 38
 
 Preview 34/build 38 delivers structured audit coverage in completed reports.
 Release source is `2b2ab9003ed3ae0af5d04e78477793188b5d6658`; accepted engine
