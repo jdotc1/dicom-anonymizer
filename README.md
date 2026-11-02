@@ -61,13 +61,13 @@ The app creates a new audited output tree; original DICOM files remain unchanged
 
 ```mermaid
 flowchart TB
-  A["Numeric patient-folder batch"] --> B["Scan and validate identities / references"]
-  B --> C["Local DICOM pseudonymization"]
-  C --> D["UID and reference remapping"]
-  B --> E["Optional MRI JSON sidecar policy"]
-  D --> F["Stage, reread and audit output"]
+  A["DICOM batch"] --> B["Validate batch"]
+  B --> C["Pseudonymize"]
+  C --> D["Remap UIDs"]
+  B --> E["Optional JSON"]
+  D --> F["Audit output"]
   E --> F
-  F --> G["Publish new batch and report"]
+  F --> G["Publish report"]
 ```
 
 > **Metadata pseudonymization has limits.** Numeric folder identifiers remain in
