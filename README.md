@@ -7,6 +7,9 @@ metadata-cleaning policy, report fields and sidecar default remain unchanged.
 See [Staging and journal protection](docs/STAGING-JOURNAL-PROTECTION.md) and the
 [release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.35).
 
+<details>
+<summary>Earlier preview milestones</summary>
+
 **Resilience delivery:** Preview 19/build 23 adds interruption recovery and ships through the resumable publication tooling; consolidation cleanup is complete. See [Interruption recovery](docs/INTERRUPTION-RECOVERY.md).
 
 **Recovery lifecycle:** Preview 20/build 24 delivers combined recovery notices, safe local-record retirement and guarded live-owner reinspection, with accepted headless worker process coverage. See [Recovery lifecycle](docs/RECOVERY-LIFECYCLE.md).
@@ -26,6 +29,8 @@ See [Staging and journal protection](docs/STAGING-JOURNAL-PROTECTION.md) and the
 **Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
 
 **Unified public app:** ongoing development now uses this self-contained public SwiftUI implementation. Preview 16 adds detailed folder-conflict recovery and optional MRI JSON-sidecar cleaning. Live sidecar GUI acceptance remains pending. See [Consolidation](docs/PUBLIC-CONSOLIDATION.md) and [MRI JSON sidecars](docs/MRI-JSON-SIDECARS.md).
+
+</details>
 
 **Local DICOM metadata pseudonymization for imaging-data privacy.**
 
@@ -49,6 +54,21 @@ sharing.
 The standalone preview targets **Apple silicon and macOS 13+** and includes
 Python and pydicom. The Python engine is also available separately. Project
 source is [MIT-licensed](LICENSE).
+
+## Visual workflow
+
+The app creates a new audited output tree; original DICOM files remain unchanged.
+
+```mermaid
+flowchart TB
+  A["Numeric patient-folder batch"] --> B["Scan and validate identities / references"]
+  B --> C["Local DICOM pseudonymization"]
+  C --> D["UID and reference remapping"]
+  B --> E["Optional MRI JSON sidecar policy"]
+  D --> F["Stage, reread and audit output"]
+  E --> F
+  F --> G["Publish new batch and report"]
+```
 
 > **Metadata pseudonymization has limits.** Numeric folder identifiers remain in
 > PatientName and PatientID and can remain linkable. Pixels, contours, selected
