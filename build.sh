@@ -48,6 +48,16 @@ for cache in resources.rglob('__pycache__'):
 print(app)
 PY
 python3 "$PROJECT_DIR/scripts/bundle_python.py" "$APP_PATH"
+# Liquid Glass app icon: compile assets/AppIcon.icon with actool unless precompiled
+# resources are supplied (Assets.car for macOS 26 and later, AppIcon.icns for earlier systems).
+if [[ -z "${APP_ICON_RESOURCES:-}" && -d "$PROJECT_DIR/assets/AppIcon.icon" ]]; then
+  APP_ICON_RESOURCES="$BUILD_DIR/icon-compiled"
+  rm -rf "$APP_ICON_RESOURCES"
+  mkdir -p "$APP_ICON_RESOURCES"
+  /usr/bin/xcrun actool "$PROJECT_DIR/assets/AppIcon.icon" --compile "$APP_ICON_RESOURCES" \
+    --platform macosx --minimum-deployment-target 13.0 --app-icon AppIcon \
+    --output-partial-info-plist "$APP_ICON_RESOURCES/AppIcon-partial.plist" > /dev/null
+fi
 if [[ -n "${APP_ICON_RESOURCES:-}" ]]; then
   python3 "$PROJECT_DIR/scripts/apply_icon.py" "$APP_PATH" "$APP_ICON_RESOURCES"
 fi

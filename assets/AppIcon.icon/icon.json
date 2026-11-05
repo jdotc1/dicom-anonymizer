@@ -1,0 +1,171 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "linear-gradient": [
+          "srgb:0.96863,0.96471,0.98431,1.00000",
+          "srgb:0.88235,0.87451,0.93333,1.00000"
+        ],
+        "orientation": {
+          "start": {
+            "x": 0.5,
+            "y": 0.0
+          },
+          "stop": {
+            "x": 0.5,
+            "y": 1.0
+          }
+        }
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "linear-gradient": [
+          "srgb:0.11765,0.10588,0.21176,1.00000",
+          "srgb:0.04314,0.03922,0.09412,1.00000"
+        ],
+        "orientation": {
+          "start": {
+            "x": 0.5,
+            "y": 0.0
+          },
+          "stop": {
+            "x": 0.5,
+            "y": 1.0
+          }
+        }
+      }
+    }
+  ],
+  "groups": [
+    {
+      "layers": [
+        {
+          "glass": true,
+          "name": "Tiles",
+          "image-name-specializations": [
+            {
+              "value": "tiles-light.svg"
+            },
+            {
+              "appearance": "dark",
+              "value": "tiles-dark.svg"
+            }
+          ]
+        },
+        {
+          "glass": false,
+          "name": "Divider",
+          "image-name-specializations": [
+            {
+              "value": "divider-light.svg"
+            },
+            {
+              "appearance": "dark",
+              "value": "divider-dark.svg"
+            }
+          ]
+        },
+        {
+          "glass": false,
+          "name": "Lines",
+          "image-name-specializations": [
+            {
+              "value": "lines-light.svg"
+            },
+            {
+              "appearance": "dark",
+              "value": "lines-dark.svg"
+            }
+          ]
+        }
+      ],
+      "name": "2 Marks",
+      "lighting": "individual",
+      "specular": true,
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.3
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0.5
+      }
+    },
+    {
+      "layers": [
+        {
+          "glass": true,
+          "name": "Tag identity",
+          "image-name-specializations": [
+            {
+              "value": "tag-left-light.svg"
+            },
+            {
+              "appearance": "dark",
+              "value": "tag-left-dark.svg"
+            }
+          ]
+        },
+        {
+          "glass": true,
+          "name": "Tag pseudonym",
+          "image-name-specializations": [
+            {
+              "value": "tag-right-light.svg"
+            },
+            {
+              "appearance": "dark",
+              "value": "tag-right-dark.svg"
+            }
+          ]
+        }
+      ],
+      "name": "1 Tag",
+      "lighting": "individual",
+      "specular": true,
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.55
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0.5
+      }
+    },
+    {
+      "layers": [
+        {
+          "glass": false,
+          "name": "MRI slice",
+          "image-name-specializations": [
+            {
+              "value": "mri-light.png"
+            },
+            {
+              "appearance": "dark",
+              "value": "mri-dark.png"
+            }
+          ]
+        }
+      ],
+      "name": "0 MRI",
+      "lighting": "individual",
+      "specular": false,
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.4
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0.5
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "macOS"
+    ]
+  }
+}
