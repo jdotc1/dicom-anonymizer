@@ -19,7 +19,8 @@ conditions, and pseudonymization limits. No patient data or Python runtime is
 bundled in the source repository; the separately released macOS app bundles its
 runtime.
 
-JSON-line event names are `scan`, `progress`, `complete`, and `error`. Errors use
+The CLI writes JSON-line events; the complete list of flags, events, fields and
+report keys is in the [engine interface reference](../docs/ENGINE-INTERFACE.md). Errors use
 fixed text to avoid exposing source identity, and library diagnostic messages
 are suppressed. Completed output includes `anonymization-report.json` with
 aggregate counts and self-audit status.
@@ -63,6 +64,27 @@ it cannot detect an edit that stays audit-clean unless the `tree_sha256` from an
 earlier run is compared. Closure is strict: a tree whose RTSTRUCT referenced
 images that were not in the source batch fails. Trees with JSON sidecar output
 are refused. `--verify-output` cannot be combined with `--source`.
+
+## Explain mode
+
+`python engine/engine.py --explain FILE` previews what a real run would do to one
+file, without printing any dataset value and without writing anything. It uses
+the same pinned read and `validate()` as a real run, then runs the engine's own
+`clean()` on a deep copy with a throwaway UID map and a fixed UID factory, and
+compares the copy with the original. One JSON line is printed: `event: explain`,
+an `attributes` list (`path`, dictionary `keyword`, `vr`, `action`) and `counts`.
+
+Actions are `removed`, `cleared`, `pseudonym` (PatientName/PatientID),
+`uid_remapped`, `replaced` and `changed`; unchanged attributes are only counted
+as `retained`. Nested items use tag paths such as `(0008,1140)[0]/(0008,1155)`;
+elements removed with a parent sequence are only counted (`removed_with_parent`).
+Private and unknown elements show an empty keyword and are never described by
+creator or value. Refusals (unsupported modality, overlays, unreadable file)
+print the same fixed `error` event as a real run, with exit code 1.
+
+Explain covers `clean()` only. Fields a real run then sets (pseudonym identity,
+de-identification markers, rebuilt file meta, output naming) and the
+self-audit are not part of the preview, and the cleaning policy is unchanged.
 
 Rough, caveated synthetic-data timing figures and a manual benchmark script are in
 [performance notes](../docs/PERFORMANCE.md); they are not a gate.

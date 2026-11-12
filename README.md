@@ -169,8 +169,8 @@ another run.
 
 Expected output has `00001` and `00002`, three DICOM files per patient, and
 `anonymization-report.json`. Inspect the report's aggregate counts and self-audit
-status. The CLI emits JSON-line `scan`, `progress`, `complete`, and `error` events;
-see the [engine guide](engine/README.md).
+status. The CLI emits JSON-line events; see the
+[engine interface reference](docs/ENGINE-INTERFACE.md) and [engine guide](engine/README.md).
 
 ## What changes and what remains
 
