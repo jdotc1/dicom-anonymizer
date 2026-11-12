@@ -141,13 +141,14 @@ def plan(current, output, guard_policy, guard_registry, superseded=()):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--current', type=Path, required=True)
-    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--candidate-output', type=Path, required=True,
+                        help='Hypothetical future assembly path; never created or admitted by this command')
     parser.add_argument('--guard-policy', type=Path, required=True)
     parser.add_argument('--guard-registry', type=Path, required=True)
     parser.add_argument('--superseded', type=Path, nargs='*', default=[])
     args = parser.parse_args()
     try:
-        print(json.dumps(plan(args.current, args.output, args.guard_policy, args.guard_registry, args.superseded), indent=2))
+        print(json.dumps(plan(args.current, args.candidate_output, args.guard_policy, args.guard_registry, args.superseded), indent=2))
     except (ValueError, KeyError, TypeError, OSError, subprocess.CalledProcessError):
         parser.exit(1, 'Release-capacity preflight failed; inspect the explicit private metadata inputs.\n')
 

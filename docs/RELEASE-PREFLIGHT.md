@@ -8,7 +8,7 @@ and registry files for the machine that will package the app:
 ```sh
 python3 scripts/release_preflight.py \
   --current Release-Current/public \
-  --output Release-Next/public \
+  --candidate-output Release-Next/public \
   --guard-policy Guard/policy.json \
   --guard-registry Guard/state/registry.json \
   --superseded Release-Older/public
@@ -18,6 +18,10 @@ The paths above are placeholders. Keep the resulting report and supplied guard
 files private; they contain local paths. The command prints JSON to standard
 output and does not create the candidate, retirement plans, locks or files. It
 does not invoke distribution tools or modify the guard registry or thresholds.
+The planner's `--candidate-output` is a hypothetical destination, not an export
+request. It deliberately has no `--output` alias: a supervising guard can parse
+that write-shaped option as a real allocation. Actual release commands retain
+their guarded `--output` admission; the planner cannot authorize those writes.
 
 ## What the report establishes
 
@@ -70,7 +74,7 @@ retirement journals.
 
 ## Focused evidence
 
-Sixteen new tiny fixture methods cover available/full capacity, exact project
+Seventeen new tiny fixture methods cover available/full capacity, exact project
 overrides, build/export distinction, stale and active roots, active destinations,
 protected baselines, incomplete candidates, output protection, duplicate roots,
 symlink snapshots, malformed versions/shapes and absence of package traversal.
@@ -78,6 +82,11 @@ Two initial CLI cases first failed because the command did not exist, then
 passed. Fourteen additional methods passed after a duplicate-argument case first
 demonstrated an invalid retirement recipe and was corrected. The original two
 passing methods were reused rather than repeated.
+
+A follow-up CLI case first demonstrated the write-shaped option ambiguity.
+The planner now accepts only `--candidate-output`; that case and the two affected
+available/full-capacity CLI cases passed. The other fourteen accepted metadata
+cases were reused because their implementation was unchanged.
 
 Fixtures verify that guard snapshots and historical evidence remain unchanged
 and no candidate output is created. Temporary synthetic files are removed after

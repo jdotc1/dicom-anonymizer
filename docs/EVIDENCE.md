@@ -120,3 +120,7 @@ Accepted verification reused: 26 retirement fixture methods and existing report/
 No GUI use, native app launch or installation occurred. Public UI structure and engine policy are unchanged. Live scheduling, recovery/report/sidecar interaction, volume behavior, responsiveness and layout remain pending. Ownership metadata supplies ordinary replacement detection, not cryptographic or privileged-attacker guarantees.
 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.26). Earlier records retain their historical scope.
+
+## 2026-11-12 — descriptor-pinned input reads (local source)
+
+See `DESCRIPTOR-READS.md`: 12 new synthetic descriptor-read methods and the 17-method release-preflight module passed. The engine and sidecar modules affected by the change were run once. Four scan-progress methods needed a fixture correction for the pinned identity check and then passed. Ten failures in older modules come from superseded output-side wording and events; they come before this change and are recorded for separate work. No GUI use, app launch, packaging or installation. Release acceptance is pending.

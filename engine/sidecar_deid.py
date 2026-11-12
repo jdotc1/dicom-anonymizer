@@ -522,7 +522,7 @@ def _read_regular_nofollow(
     maximum: int | None = None,
     destination: bool = False,
 ) -> tuple[bytes, Fingerprint]:
-    flags = os.O_RDONLY
+    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_CLOEXEC", 0)
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
     try:
@@ -556,9 +556,12 @@ def _read_regular_nofollow(
             if remaining is not None:
                 remaining -= len(chunk)
         after = os.fstat(descriptor)
+        current = path.stat(follow_symlinks=False)
         first = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
         second = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
-        if first != second:
+        stamp = lambda info: (info.st_dev, info.st_ino, info.st_mode, info.st_size,
+                              info.st_mtime_ns, info.st_ctime_ns)
+        if first != second or stamp(before) != stamp(after) or stamp(before) != stamp(current):
             raise SidecarError(
                 "A cleaned JSON sidecar changed while it was being read from staging."
                 if destination

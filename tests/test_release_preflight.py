@@ -56,7 +56,7 @@ class ReleasePreflightTests(unittest.TestCase):
         return root
 
     def command(self, *extra):
-        return [sys.executable, '-B', str(SCRIPT), '--current', str(self.current), '--output', str(self.output), '--guard-policy', str(self.policy), '--guard-registry', str(self.registry), *map(str, extra)]
+        return [sys.executable, '-B', str(SCRIPT), '--current', str(self.current), '--candidate-output', str(self.output), '--guard-policy', str(self.policy), '--guard-registry', str(self.registry), *map(str, extra)]
 
     def run_plan(self, *extra):
         before = {path: path.read_bytes() for path in (self.policy, self.registry)}
@@ -209,6 +209,15 @@ class ReleasePreflightTests(unittest.TestCase):
         os.mkfifo(self.current / 'DICOM Anonymizer 2.0.app' / 'fixture-payload.fifo')
         result = self.run_plan()
         self.assertEqual(result['capacity']['status'], 'available')
+
+    def test_write_shaped_output_option_is_not_an_alias_for_candidate(self):
+        command = self.command()
+        if '--candidate-output' in command:
+            command[command.index('--candidate-output')] = '--output'
+        result = subprocess.run(command, capture_output=True, text=True, timeout=20)
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.stdout, '')
+        self.assertFalse(self.output.exists())
 
 
 if __name__ == '__main__':
