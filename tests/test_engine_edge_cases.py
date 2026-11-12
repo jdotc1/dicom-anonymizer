@@ -152,7 +152,7 @@ class EdgeCaseTests(unittest.TestCase):
         result = subprocess.run([sys.executable, str(Path(engine.__file__)), '--source', str(self.source), '--scan'],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout)
-        event = json.loads(result.stdout)
+        event = [e for e in map(json.loads, result.stdout.splitlines()) if e['event'] == 'scan'][-1]
         self.assertEqual((event['event'], event['total_files'], event['excluded_files']), ('scan', 1, 1))
         self.assertNotIn('._a', result.stdout)
         self.assertNotIn(str(self.source), result.stdout + result.stderr)
@@ -163,7 +163,7 @@ class EdgeCaseTests(unittest.TestCase):
             study = generate_uid()
             make_dicom(self.source / '1' / 'a.dcm', identity=identities[0], study=study)
             make_dicom(self.source / '2' / 'b.dcm', identity=identities[1], study=study)
-            with self.assertRaisesRegex(engine.BatchError, 'same study occurs in multiple patient folders'):
+            with self.assertRaisesRegex(engine.BatchError, r'Patient folders 1 and 2 contain images from the same study'):
                 self.run_batch()
             self.assert_no_output()
         make_dicom(self.source / '2' / 'b.dcm', identity='source-b')

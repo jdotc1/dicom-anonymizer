@@ -212,7 +212,7 @@ class BasicProfileTests(unittest.TestCase):
                 self.assertEqual(str(deeper[keyword].value), new)
                 self.assertEqual(uid_map[originals[keyword]], new)
 
-    def test_batch_output_drops_file_meta_titles_and_reports_build4(self):
+    def test_batch_output_drops_file_meta_titles_and_reports_build5(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             path = root / 'input' / '00001' / 'a.dcm'
@@ -231,8 +231,8 @@ class BasicProfileTests(unittest.TestCase):
             self.assertEqual(out.SeriesDescription, 'DWI axial b1000')
             self.assertEqual(out.PatientID, '00001')
             report = json.loads((output / 'anonymization-report.json').read_text())
-            self.assertEqual(report['policy']['version'], '2.0-build4')
-            self.assertEqual(engine.POLICY['version'], '2.0-build4')
+            self.assertEqual(report['policy']['version'], '2.0-build5')
+            self.assertEqual(engine.POLICY['version'], '2.0-build5')
 
 
 if __name__ == '__main__':

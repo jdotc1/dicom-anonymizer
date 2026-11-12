@@ -71,15 +71,20 @@ cannot mistake the read-only planner for a write. See
   change: two mocked datasets lacked `Modality`, which folder-conflict reporting
   reads. Both fixtures were corrected, and the scan-progress and input-stability
   modules (18 methods) then passed.
-- Ten other methods in older modules fail. They test output-side messages and
+- Ten other methods in older modules failed. They test output-side messages and
   event streams, not the input-read path changed here, so these failures came
-  before this change. They expect superseded wording or events: "conflicting"
+  before this change. They expected superseded wording or events: "conflicting"
   and "same study occurs in multiple patient folders" (replaced by the detailed
   folder-conflict messages), policy `2.0-build4` (now `2.0-build5`), a first CLI
   event of `scan` (now preceded by `scan_progress`), single-object CLI JSON (now
   multi-line progress), "space" when disk-usage inspection fails, and a raw
   `OSError` from a failed write (both now classified as output-location errors).
-  Updating them is separate work.
+  Each new behavior was confirmed as documented in `STORAGE-RECOVERY.md`,
+  `SCAN-PROGRESS.md` or the README. The tests were updated to match it, keeping
+  their no-path-leak, no-output and staging-cleanup assertions. Two of them now
+  also assert that no path leaks from output-location errors, and
+  `test_batch_output_drops_file_meta_titles_and_reports_build4` was renamed
+  `..._reports_build5`. Only those ten methods were re-run, and all pass.
 
 No native sources changed, so no native build was needed. No GUI use, app launch,
 packaging, signing or installation occurred. Tests used synthetic files only.

@@ -510,7 +510,7 @@ class FolderConflictTests(unittest.TestCase):
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stderr, '')
-        event = json.loads(result.stdout)
+        event = json.loads(result.stdout.splitlines()[-1])
         self.assertEqual(event['event'], 'error')
         with self.assertRaises(engine.BatchError) as caught:
             engine.scan(self.source)

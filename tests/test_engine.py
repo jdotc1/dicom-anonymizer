@@ -176,11 +176,11 @@ class EngineTests(unittest.TestCase):
     def test_mixed_and_duplicate_patient_identity(self):
         make_dicom(self.source / '1' / 'a.dcm')
         make_dicom(self.source / '1' / 'b.dcm', identity='different')
-        with self.assertRaisesRegex(engine.BatchError, 'conflicting'):
+        with self.assertRaisesRegex(engine.BatchError, r'Patient folder 1 contains images with 2 different source patient (IDs|names)'):
             self.run_batch()
         (self.source / '1' / 'b.dcm').unlink()
         make_dicom(self.source / '2' / 'b.dcm')
-        with self.assertRaisesRegex(engine.BatchError, 'multiple patient'):
+        with self.assertRaisesRegex(engine.BatchError, r'Patient folders 1 and 2 contain images with the same source patient ID'):
             self.run_batch()
         self.assert_no_output()
     def test_folder_identifier_length(self):
@@ -197,7 +197,7 @@ class EngineTests(unittest.TestCase):
             ds = make_dicom(p, identity=identity)
             ds.PatientName = 'Different^PrivateName'
             ds.save_as(p, enforce_file_format=True)
-            with self.assertRaisesRegex(engine.BatchError, 'conflicting'):
+            with self.assertRaisesRegex(engine.BatchError, r'Patient folder 1 contains images with 2 different source patient (IDs|names)'):
                 self.run_batch()
             self.assert_no_output()
     def test_links_and_ambiguous_root(self):
@@ -229,8 +229,9 @@ class EngineTests(unittest.TestCase):
     def test_write_failure_and_cancellation_cleanup(self):
         make_dicom(self.source / '1' / 'a.dcm')
         with patch.object(pydicom.dataset.Dataset, 'save_as', side_effect=OSError('private path')):
-            with self.assertRaises(OSError):
+            with self.assertRaisesRegex(engine.BatchError, 'output location could not be used') as caught:
                 self.run_batch()
+        self.assertNotIn('private path', str(caught.exception))
         self.assert_no_output()
         def cancelled(event, **k):
             if event == 'progress':
@@ -244,8 +245,11 @@ class EngineTests(unittest.TestCase):
             make_dicom(self.source / '1' / f'{i:04d}.dcm', study=study, series=series)
         proc = subprocess.Popen([sys.executable, str(ENGINE), '--source', str(self.source), '--destination', str(self.output)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         try:
-            self.assertEqual(json.loads(proc.stdout.readline())['event'], 'scan')
-            self.assertEqual(json.loads(proc.stdout.readline())['event'], 'progress')
+            self.assertEqual(json.loads(proc.stdout.readline())['event'], 'scan_progress')
+            events = []
+            while 'progress' not in events:
+                events.append(json.loads(proc.stdout.readline())['event'])
+            self.assertIn('scan', events)
             proc.send_signal(signal.SIGTERM)
             stdout, stderr = proc.communicate(timeout=10)
             self.assertEqual(proc.returncode, 1)
@@ -259,7 +263,9 @@ class EngineTests(unittest.TestCase):
         make_dicom(self.source / '1' / 'a.dcm')
         result = subprocess.run([sys.executable, str(ENGINE), '--source', str(self.source), '--scan'], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(json.loads(result.stdout)['total_files'], 1)
+        events = [json.loads(line) for line in result.stdout.splitlines()]
+        self.assertIn('scan_progress', [e['event'] for e in events])
+        self.assertEqual([e for e in events if e['event'] == 'scan'][-1]['total_files'], 1)
         (self.source / '1' / 'bad-private-name.dcm').write_bytes(b'bad')
         result = subprocess.run([sys.executable, str(ENGINE), '--source', str(self.source), '--scan'], capture_output=True, text=True)
         self.assertEqual(result.returncode, 1)
