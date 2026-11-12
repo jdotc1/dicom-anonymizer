@@ -606,12 +606,12 @@ class FolderConflicts:
             def foreign(folder):
                 # The study's source patient IDs appear nowhere else in this folder.
                 ids = folder_ids.get(folder, {})
-                others = set().union(*(values for key, values in ids.items() if key != study))
-                return bool(ids.get(study) and others and not ids[study] & others)
+                others = set().union(*(values for key, values in ids.items() if key != study))  # noqa: B023 - closure runs inside its own loop iteration
+                return bool(ids.get(study) and others and not ids[study] & others)  # noqa: B023 - closure runs inside its own loop iteration
             def weight(folder):
                 # Hedged heuristic for the study's home: consistent patient ID, then images (not only RTSTRUCT), then most files.
-                return (not foreign(folder), any(self.series[r.series[1]][0] != 'RTSTRUCT' for r in folders[folder]),
-                        len(folders[folder]))
+                return (not foreign(folder), any(self.series[r.series[1]][0] != 'RTSTRUCT' for r in folders[folder]),  # noqa: B023 - closure runs inside its own loop iteration
+                        len(folders[folder]))  # noqa: B023 - closure runs inside its own loop iteration
             ranked = sorted(folders, key=weight, reverse=True)
             home = ranked[0] if weight(ranked[0]) > weight(ranked[1]) else None
             unclear |= home is None
@@ -627,7 +627,7 @@ class FolderConflicts:
             stray_locations, all_copies = [], True
             for folder in strays:
                 groups = self.by_location(folders[folder])
-                for location, group in groups[:3]:
+                for _location, group in groups[:3]:
                     copied = sum(home in copies.get(r.sop, ()) for r in group)
                     all_copies &= copied == len(group)
                     note = (f' (copies of files in {home})' if copied == len(group)
@@ -1225,6 +1225,24 @@ REMOVE_TAGS = {
 }
 
 
+IDENTITY_VRS = frozenset({'PN', 'DA', 'DT', 'TM', 'AE'})
+
+
+def effective_vrs(element):
+    """Return the file-declared VR plus the dictionary VR(s) for a standard tag.
+
+    A file can declare a different VR than the dictionary for an identity-bearing
+    tag; both are considered so that the declared VR cannot hide the tag's meaning.
+    """
+    vrs = {element.VR}
+    if not element.tag.is_private:
+        try:
+            vrs.update(pydicom.datadict.dictionary_VR(element.tag).split(' or '))
+        except KeyError:
+            pass
+    return vrs
+
+
 def clean(ds, patient, uid_map):
     ds.remove_private_tags()
     for element in list(ds):
@@ -1233,7 +1251,7 @@ def clean(ds, patient, uid_map):
             del ds[element.tag]
         elif keyword in {'PatientName', 'PatientID'}:
             element.value = patient
-        elif element.VR in ('PN', 'DA', 'DT', 'TM', 'AE'):
+        elif element.VR != 'SQ' and effective_vrs(element) & IDENTITY_VRS:
             # Keep required type-2 attributes present with empty values.
             element.value = ''
         elif element.VR == 'UN':
@@ -1717,6 +1735,11 @@ def audit_dataset(ds, patient, forbidden_uids):
             raise BatchError(AUDIT_FAILURE)
         if vr == 'SQ':
             continue
+        # Independent of clean(): judge identity-bearing tags by the dictionary VR
+        # as well as the VR declared in the file.
+        if effective_vrs(element) & IDENTITY_VRS and keyword not in ('PatientName', 'PatientID') \
+                and element.value not in (None, '', b'', []):
+            raise BatchError(AUDIT_FAILURE)
         if vr == 'UN':
             raise BatchError(AUDIT_FAILURE)
         values = audit_values(element) if vr not in ('OB', 'OW', 'OF', 'OD', 'OL', 'OV', 'UN') else []

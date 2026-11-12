@@ -11,6 +11,7 @@ import pydicom
 from pydicom.dataset import Dataset
 from pydicom.sequence import Sequence
 from test_engine import engine, make_dicom
+from timeouts import scaled
 
 
 class Build5MetadataTests(unittest.TestCase):
@@ -145,7 +146,7 @@ class Build5MetadataTests(unittest.TestCase):
     def test_fifo_rejected_before_open(self):
         os.mkfifo(self.source / '00001' / 'z-fifo.dcm')
         result = subprocess.run([sys.executable, str(Path(engine.__file__)), '--source', str(self.source),
-                                 '--destination', str(self.output)], capture_output=True, text=True, timeout=3)
+                                 '--destination', str(self.output)], capture_output=True, text=True, timeout=scaled(3), check=False)
         self.assertEqual(result.returncode, 1)
         self.assertNotIn(str(self.source), result.stdout + result.stderr)
         self.assertFalse(self.output.exists())

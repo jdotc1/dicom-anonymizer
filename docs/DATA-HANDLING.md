@@ -11,3 +11,16 @@ MR/CT/RTSTRUCT are the supported modality labels. Symbolic links, nonregular pat
 A disk-space preflight estimates required capacity. Staged files are fully read and decoded before atomic publication, including metadata after Pixel Data. The self-audit enforces identity, date, private-tag, UN, clear/remove policy and UID invariants. Some policy lists are shared with the cleaner, so this audit is not an independent conformance oracle. Failures and handled cancellation remove staging; abrupt process death or power loss can leave hidden staging. Sources are not modified. The completed report contains pseudonyms, aggregate counts, versions and audit status, without an original identity mapping.
 
 Review retained labels, ROI names, image text and facial anatomy before sharing. Absence of a burned-in annotation flag does not establish absence of identifying pixels. Do not upload sensitive data to the project's issue tracker.
+
+## Declared-VR mismatches for identity-bearing tags
+
+Cleaning and the self-audit now judge a standard tag by both the value
+representation (VR) declared in the file and the dictionary VR for that tag. A
+file that declares, for example, ReferringPhysicianName, PerformingPhysicianName
+or OperatorsName as LO/SH, or StudyDate, StudyTime or PatientBirthDate as
+LO/SH/CS/DT, previously could keep the value because only the declared VR was
+checked. Such values are now cleared at the top level and inside nested
+sequences, and the self-audit fails the batch if any survives. This only
+tightens output: no additional input is rejected, and the policy label is
+unchanged. Unknown non-private tags with a free-text VR are a separate
+retained-value question and are not changed here.

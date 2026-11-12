@@ -399,7 +399,7 @@ def install(repository, accepted, evidence, private_rules=None):
     git(repository, 'merge-base', '--is-ancestor', oid, 'HEAD')
     root = cache_root(repository)
     hook = root / 'hooks'
-    existing = subprocess.run(['git', '-C', str(repository), 'config', '--get', 'core.hooksPath'], capture_output=True, text=True).stdout.strip()
+    existing = subprocess.run(['git', '-C', str(repository), 'config', '--get', 'core.hooksPath'], capture_output=True, text=True, check=False).stdout.strip()
     if existing not in ('', '/dev/null', str(hook), '.githooks',
                          str(Path(repository).resolve() / '.githooks')):
         raise ValueError('Existing hooks configuration requires explicit integration')
