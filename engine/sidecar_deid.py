@@ -18,7 +18,7 @@ from pathlib import Path
 import re
 import stat
 import time
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping, NoReturn
 import unicodedata
 
 
@@ -509,7 +509,7 @@ def fingerprint(path: Path) -> Fingerprint:
     return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
 
 
-def _raise_io_failure(message: str, error: OSError, *, destination: bool) -> None:
+def _raise_io_failure(message: str, error: OSError, *, destination: bool) -> NoReturn:
     if destination:
         raise SidecarDestinationError(message, error) from error
     raise SidecarError(message) from error

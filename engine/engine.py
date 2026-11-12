@@ -606,12 +606,12 @@ class FolderConflicts:
             def foreign(folder):
                 # The study's source patient IDs appear nowhere else in this folder.
                 ids = folder_ids.get(folder, {})
-                others = set().union(*(values for key, values in ids.items() if key != study))
-                return bool(ids.get(study) and others and not ids[study] & others)
+                others = set().union(*(values for key, values in ids.items() if key != study))  # noqa: B023 - closure runs inside its own loop iteration
+                return bool(ids.get(study) and others and not ids[study] & others)  # noqa: B023 - closure runs inside its own loop iteration
             def weight(folder):
                 # Hedged heuristic for the study's home: consistent patient ID, then images (not only RTSTRUCT), then most files.
-                return (not foreign(folder), any(self.series[r.series[1]][0] != 'RTSTRUCT' for r in folders[folder]),
-                        len(folders[folder]))
+                return (not foreign(folder), any(self.series[r.series[1]][0] != 'RTSTRUCT' for r in folders[folder]),  # noqa: B023 - closure runs inside its own loop iteration
+                        len(folders[folder]))  # noqa: B023 - closure runs inside its own loop iteration
             ranked = sorted(folders, key=weight, reverse=True)
             home = ranked[0] if weight(ranked[0]) > weight(ranked[1]) else None
             unclear |= home is None
@@ -627,7 +627,7 @@ class FolderConflicts:
             stray_locations, all_copies = [], True
             for folder in strays:
                 groups = self.by_location(folders[folder])
-                for location, group in groups[:3]:
+                for _location, group in groups[:3]:
                     copied = sum(home in copies.get(r.sop, ()) for r in group)
                     all_copies &= copied == len(group)
                     note = (f' (copies of files in {home})' if copied == len(group)

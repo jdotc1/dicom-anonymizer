@@ -507,7 +507,7 @@ class FolderConflictTests(unittest.TestCase):
         images = self.series('90001/MR', QUILL, study, 201, 'T2', 2)
         self.rtstruct('90002/RT/RS.dcm', QUILL, study, images[0])
         result = subprocess.run([sys.executable, str(ENGINE), '--source', str(self.source), '--scan'],
-                                capture_output=True, text=True)
+                                capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stderr, '')
         event = json.loads(result.stdout.splitlines()[-1])

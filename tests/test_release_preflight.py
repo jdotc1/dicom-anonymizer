@@ -7,6 +7,8 @@ import sys
 import tempfile
 import unittest
 
+from timeouts import scaled
+
 SCRIPT = Path(__file__).resolve().parents[1] / 'scripts' / 'release_preflight.py'
 REPOSITORY = SCRIPT.parent.parent
 
@@ -60,7 +62,7 @@ class ReleasePreflightTests(unittest.TestCase):
 
     def run_plan(self, *extra):
         before = {path: path.read_bytes() for path in (self.policy, self.registry)}
-        result = subprocess.run(self.command(*extra), capture_output=True, text=True, timeout=20)
+        result = subprocess.run(self.command(*extra), capture_output=True, text=True, timeout=scaled(20), check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(self.output.exists())
         self.assertEqual(before, {path: path.read_bytes() for path in before})
@@ -153,7 +155,7 @@ class ReleasePreflightTests(unittest.TestCase):
             with self.subTest(policy=policy, registry=registry):
                 self.write(self.policy, policy)
                 self.write(self.registry, registry)
-                result = subprocess.run(self.command(), capture_output=True, text=True, timeout=20)
+                result = subprocess.run(self.command(), capture_output=True, text=True, timeout=scaled(20), check=False)
                 self.assertEqual(result.returncode, 1)
                 self.assertEqual(result.stdout, '')
                 self.assertFalse(self.output.exists())
@@ -174,7 +176,7 @@ class ReleasePreflightTests(unittest.TestCase):
 
     def test_output_under_current_release_is_rejected(self):
         self.output = self.current / 'candidate'
-        result = subprocess.run(self.command(), capture_output=True, text=True, timeout=20)
+        result = subprocess.run(self.command(), capture_output=True, text=True, timeout=scaled(20), check=False)
         self.assertEqual(result.returncode, 1)
         self.assertFalse(self.output.exists())
 
@@ -189,12 +191,12 @@ class ReleasePreflightTests(unittest.TestCase):
         self.output.mkdir()
         keep = self.output / 'keep'
         keep.write_bytes(b'existing destination')
-        result = subprocess.run(self.command(), capture_output=True, text=True, timeout=20)
+        result = subprocess.run(self.command(), capture_output=True, text=True, timeout=scaled(20), check=False)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(keep.read_bytes(), b'existing destination')
 
     def test_duplicate_superseded_arguments_are_rejected_before_recipe(self):
-        result = subprocess.run(self.command('--superseded', self.older, self.older), capture_output=True, text=True, timeout=20)
+        result = subprocess.run(self.command('--superseded', self.older, self.older), capture_output=True, text=True, timeout=scaled(20), check=False)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout, '')
 
@@ -202,7 +204,7 @@ class ReleasePreflightTests(unittest.TestCase):
         target = self.root / 'real-policy.json'
         self.policy.rename(target)
         self.policy.symlink_to(target)
-        result = subprocess.run(self.command(), capture_output=True, text=True, timeout=20)
+        result = subprocess.run(self.command(), capture_output=True, text=True, timeout=scaled(20), check=False)
         self.assertEqual(result.returncode, 1)
 
     def test_metadata_plan_does_not_traverse_or_hash_app_payload(self):
@@ -214,7 +216,7 @@ class ReleasePreflightTests(unittest.TestCase):
         command = self.command()
         if '--candidate-output' in command:
             command[command.index('--candidate-output')] = '--output'
-        result = subprocess.run(command, capture_output=True, text=True, timeout=20)
+        result = subprocess.run(command, capture_output=True, text=True, timeout=scaled(20), check=False)
         self.assertEqual(result.returncode, 2)
         self.assertEqual(result.stdout, '')
         self.assertFalse(self.output.exists())
