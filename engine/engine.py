@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Local bulk DICOM pseudonymization. Source data is never modified."""
 import argparse
+from contextlib import contextmanager
 import errno
 import json
 import logging
@@ -168,20 +169,83 @@ def stable_read(path, signature):
     return ds
 
 
-def checked_read(path):
-    if path.is_symlink():
+def _read_identity(info):
+    # Content identity only. st_ctime and permission bits are deliberately
+    # excluded: macOS changes them without touching file bytes (an iCloud
+    # download clearing the dataless flag, extended attributes, chflags), so
+    # comparing them rejects unchanged evicted iCloud inputs.
+    return (info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode), info.st_size,
+            info.st_mtime_ns)
+
+
+@contextmanager
+def _regular_input(path, signature=None):
+    """Pin a regular file while reading; reject ordinary path/content changes."""
+    path = Path(path)
+    before = path.lstat()
+    if stat.S_ISLNK(before.st_mode):
         raise BatchError('Symbolic links are not supported. Use a local copy of the input folders.')
+    if not stat.S_ISREG(before.st_mode):
+        raise BatchError('Input files cannot be read. Check permissions and available local storage.')
+    flags = os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0) | getattr(os, 'O_CLOEXEC', 0)
     try:
-        if not stat.S_ISREG(path.stat(follow_symlinks=False).st_mode):
-            raise BatchError('Input files cannot be read. Check permissions and available local storage.')
+        descriptor = os.open(path, flags)
+    except OSError:
         try:
-            ds = pydicom.dcmread(path)
-        except pydicom.errors.InvalidDicomError:
-            ds = pydicom.dcmread(path, force=True)
-            if not all(ds.get(k) for k in ('SOPClassUID', 'SOPInstanceUID', 'StudyInstanceUID', 'SeriesInstanceUID')):
-                raise ValueError('Unrecognized dataset')
-        # Force lazy elements to decode before accepting input.
-        list(ds.iterall())
+            unchanged = _read_identity(path.lstat()) == _read_identity(before)
+        except OSError:
+            unchanged = False
+        if not unchanged:
+            raise BatchError(INPUT_CHANGED) from None
+        raise
+    try:
+        opened = os.fstat(descriptor)
+        actual_signature = (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns)
+        if _read_identity(opened) != _read_identity(before) or (signature is not None and actual_signature != signature):
+            raise BatchError(INPUT_CHANGED)
+        stream = os.fdopen(descriptor, 'rb')
+        descriptor = None  # The stream now owns closure, including exceptional exits.
+        with stream:
+            def unchanged():
+                try:
+                    stable = (_read_identity(os.fstat(stream.fileno())) == _read_identity(opened) and
+                              _read_identity(path.lstat()) == _read_identity(opened))
+                except OSError:
+                    stable = False
+                if not stable:
+                    raise BatchError(INPUT_CHANGED)
+            try:
+                yield stream
+            except BaseException as error:
+                if not (isinstance(error, BatchError) and error.cancelled):
+                    unchanged()
+                raise
+            else:
+                unchanged()
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def _read_header(path, size, signature=None):
+    with _regular_input(path, signature) as stream:
+        return stream.read(size)
+
+
+def checked_read(path):
+    try:
+        with _regular_input(path) as stream:
+            try:
+                ds = pydicom.dcmread(stream)
+            except pydicom.errors.InvalidDicomError:
+                stream.seek(0)
+                ds = pydicom.dcmread(stream, force=True)
+                if not all(ds.get(k) for k in ('SOPClassUID', 'SOPInstanceUID', 'StudyInstanceUID', 'SeriesInstanceUID')):
+                    raise ValueError('Unrecognized dataset')
+            # Decode lazy elements before closing the pinned descriptor. Preserve
+            # the pathname metadata supplied by the previous path-based reader.
+            list(ds.iterall())
+            ds.filename = os.fspath(path)
         return ds
     except BatchError:
         raise
@@ -866,8 +930,7 @@ def scan(source, progress=None):
         if not path.name.startswith('._'):
             return False
         if header is None:
-            with path.open('rb') as stream:
-                header = stream.read(4)
+            header = _read_header(path, 4)
         return header[:4] == b'\x00\x05\x16\x07'
     try:
         children = sorted(source.iterdir(), key=lambda p: p.name)
@@ -903,16 +966,16 @@ def scan(source, progress=None):
                     if not stat.S_ISREG(path.stat(follow_symlinks=False).st_mode):
                         raise BatchError('Input files cannot be read. Check permissions and available local storage.')
                     signature = fingerprint(path)
-                    with path.open('rb') as stream:
-                        header = stream.read(132)
+                    header = _read_header(path, 132, signature)
                     if appledouble(path, header):
                         excluded += 1
                         continue
                     if header[128:132] != b'DICM' and path.suffix.lower() not in ('.dcm', '.dicom'):
                         # A valid DICOM dataset can lack both extension and Part 10 preamble.
                         try:
-                            probe = pydicom.dcmread(path, force=True, stop_before_pixels=True)
-                            candidate = any(probe.get(k) for k in ('SOPClassUID', 'SOPInstanceUID', 'StudyInstanceUID', 'SeriesInstanceUID'))
+                            with _regular_input(path, signature) as stream:
+                                probe = pydicom.dcmread(stream, force=True, stop_before_pixels=True)
+                                candidate = any(probe.get(k) for k in ('SOPClassUID', 'SOPInstanceUID', 'StudyInstanceUID', 'SeriesInstanceUID'))
                         except BatchError:
                             raise
                         except Exception:

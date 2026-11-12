@@ -24,7 +24,7 @@ class InputStabilityTests(unittest.TestCase):
         self.path.parent.mkdir(parents=True)
         self.path.write_bytes(b'fixture')
         self.signature = engine.fingerprint(self.path)
-        self.ds = SimpleNamespace(StudyInstanceUID='1', SeriesInstanceUID='2', SOPInstanceUID='3', get=lambda key, default='': default, iterall=lambda: iter(()))
+        self.ds = SimpleNamespace(StudyInstanceUID='1', SeriesInstanceUID='2', SOPInstanceUID='3', Modality='MR', get=lambda key, default='': default, iterall=lambda: iter(()))
 
     def assert_changed(self, action):
         with self.assertRaisesRegex(engine.BatchError, 'Keep input files unchanged and retry') as failure:

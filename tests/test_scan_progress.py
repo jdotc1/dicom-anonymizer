@@ -25,14 +25,17 @@ class ScanProgressTests(unittest.TestCase):
         (self.source / '.DS_Store').write_bytes(b'metadata')
         (self.source / '001' / 'one.dcm').write_bytes(b'fixture')
         (self.source / '001' / 'nested' / 'two.dcm').write_bytes(b'fixture')
-        self.ds = SimpleNamespace(StudyInstanceUID='1', SeriesInstanceUID='2', SOPInstanceUID='3', get=lambda key, default='': default, iterall=lambda: iter(()))
-        for name, value in [('checked_read', self.ds), ('validate', None), ('claim_patient_frames', None), ('fingerprint', (0, 0, 7, 0))]:
+        self.ds = SimpleNamespace(StudyInstanceUID='1', SeriesInstanceUID='2', SOPInstanceUID='3', Modality='MR', get=lambda key, default='': default, iterall=lambda: iter(()))
+        # The real fingerprint is kept: header reads now pin the opened file to
+        # the recorded identity, so a fabricated (dev, inode, mtime) would be
+        # correctly rejected as an input change. Fixture files are 7 bytes.
+        for name, value in [('checked_read', self.ds), ('validate', None), ('claim_patient_frames', None)]:
             mocker = patch.object(engine, name, return_value=value)
             mocker.start()
             self.addCleanup(mocker.stop)
         # Public scan's identity checks stay intact; synthetic reads have unique UIDs.
         engine.checked_read.side_effect = lambda path: SimpleNamespace(
-            StudyInstanceUID='1', SeriesInstanceUID='2', SOPInstanceUID=path.name,
+            StudyInstanceUID='1', SeriesInstanceUID='2', SOPInstanceUID=path.name, Modality='MR',
             get=lambda key, default='': default, iterall=lambda: iter(()))
         self.events = []
 

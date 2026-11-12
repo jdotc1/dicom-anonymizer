@@ -118,8 +118,10 @@ class SelfAuditTests(unittest.TestCase):
         self.assertNotIn(str(self.root), str(caught.exception))
         self.assert_no_output()
         with patch.object(engine.shutil, 'disk_usage', side_effect=OSError('private path')):
-            with self.assertRaisesRegex(engine.BatchError, 'space'):
+            with self.assertRaisesRegex(engine.BatchError, 'output location') as caught:
                 self.run_batch()
+        self.assertNotIn('private path', str(caught.exception))
+        self.assertNotIn(str(self.root), str(caught.exception))
         self.assert_no_output()
         with patch.object(engine.shutil, 'disk_usage', return_value=Usage(1 << 40, 0, 1 << 40)):
             self.assertEqual(self.run_batch()['processed'], 3)
