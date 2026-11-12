@@ -6,7 +6,38 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 35, build 39
+## Current release — Preview 36, build 40
+
+Preview 36/build 40 delivers descriptor-pinned input reads and the new MRI-slice
+app icon. Release source is `0b28f7684771c662aa3200a49be38a57d335b68c`; accepted
+engine source is `d95c0e93a220e23203206f27237982c37a0bdd0e`; reused native source
+is `5ebaa55481308ec33169e0420fe10a8c31d9f8e4`. The release source also contains
+the release-capacity preflight and the artifact-retirement identity fix, which are
+maintainer tooling and not part of the app.
+
+The 267 accepted focused methods (the 21 affected engine and sidecar modules plus
+the descriptor-read module), the optimized native executable and the unchanged
+engine-policy, runtime and dependency receipts were reused. No functional test or
+native build was repeated for delivery. The icon was compiled once and injected
+into a copy of the Preview 35 app, so the bundled runtime and dependencies are the
+accepted ones. The publication release gate (source history at the tag target,
+release text and download archive) passed, and the root signature, stapled ticket
+and Gatekeeper checks passed. Apple notarization `64f39470-a132-4501-8e16-0353aeee9ef3` was Accepted.
+The ZIP is 30,611,560 bytes.
+
+Journaled publication completed without retrying a GitHub mutation. The release
+tag, source target and uploaded asset metadata were read back, and delivery
+returned HTTP 200 to a HEAD request without a binary redownload. Earlier GitHub
+releases and signed downloads remain preserved. To make release capacity, an
+explicitly authorized plan retired the local app, download ZIP and
+notarization-upload ZIP of the oldest finalized local release (Preview 29); its
+release metadata and logs were preserved. No GUI use, app launch or installation
+occurred, so the new icon and the read changes have no live GUI acceptance. See
+[Descriptor-pinned input reads](DESCRIPTOR-READS.md) for scope and evidence limits.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.36).
+
+## Previous release — Preview 35, build 39
 
 Preview 35/build 39 delivers DICOM-only staging-inventory checks and recovery-record
 write protection. Release source is `6fedca8f15af84656dfc5aa6404676e2964c726e`;
