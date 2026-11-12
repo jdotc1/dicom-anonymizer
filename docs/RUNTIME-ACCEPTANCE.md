@@ -1,6 +1,41 @@
 # macOS release acceptance
 
-## Current release — Preview 35, build 39
+## Current release — Preview 36, build 40
+
+Preview 36/build 40 pins every patient-file read in scanning and processing to one
+open descriptor: the DICOM header, the extensionless-file probe, the AppleDouble
+resource check and the full decode. A path replaced between the regular-file check
+and the read is rejected with the existing input-changed message, and a named pipe
+or other special file swapped in no longer blocks the read. MRI JSON sidecar reads
+are non-blocking and rechecked after reading. Change time and permission bits are
+deliberately not compared, so metadata-only changes, such as an evicted iCloud
+Drive file that macOS downloads during a scan, are accepted as in Preview 35. The
+app icon is the new MRI-slice icon with a patient tag. Public controls,
+metadata policy, report fields and sidecar default are unchanged. See
+[Descriptor-pinned input reads](DESCRIPTOR-READS.md).
+
+Release source is `0b28f7684771c662aa3200a49be38a57d335b68c`; accepted engine
+source is `d95c0e93a220e23203206f27237982c37a0bdd0e`; the reused native executable
+was built at `5ebaa55481308ec33169e0420fe10a8c31d9f8e4`. Accepted evidence covers
+267 focused synthetic methods across the 21 affected engine and sidecar modules
+and the descriptor-read module. The existing optimized native executable and the
+unchanged policy, runtime and dependency receipts were reused. No functional test
+or native build was repeated for delivery.
+
+Assembly metadata, the publication release gate, root signature, stapled ticket
+and Gatekeeper checks passed. Apple notarization
+`64f39470-a132-4501-8e16-0353aeee9ef3` was Accepted. The ZIP is 30,611,560 bytes.
+Journaled publication completed without retrying a GitHub mutation; the download
+returned HTTP 200 to a HEAD request. Existing GitHub releases/downloads remain
+preserved. No GUI use, app launch or installation occurred. Live interaction
+acceptance of the new icon and the read changes remains pending. These are
+ordinary-concurrency safeguards, not atomic conditional-rename or
+immutable-snapshot guarantees: an in-place rewrite that restores a file's original
+size and modification time is not detected, as in earlier releases.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.36).
+
+## Previous release — Preview 35, build 39
 
 Preview 35/build 39 adds strict DICOM-only staging inventories and conservative
 recovery-record write protection. Unexpected/missing inventory entries and

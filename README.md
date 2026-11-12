@@ -1,11 +1,14 @@
 # DICOM Anonymizer
 
-**Current release: Preview 35/build 39.** DICOM-only batches receive strict
-staging-inventory checks before publication, and recovery-record updates detect
-ordinary concurrent replacement during preparation. The public interface,
-metadata-cleaning policy, report fields and sidecar default remain unchanged.
-See [Staging and journal protection](docs/STAGING-JOURNAL-PROTECTION.md) and the
-[release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.35).
+**Current release: Preview 36/build 40.** Every patient-file read during a scan or
+batch now goes through one open descriptor, so a path replaced after the
+regular-file check is rejected with the existing input-changed message instead of
+being read in its place. The release also ships the new MRI-slice app icon.
+Metadata-only changes, such as an evicted iCloud Drive file that macOS downloads
+during a scan, are still accepted. The public interface, metadata-cleaning policy,
+report fields and sidecar default remain unchanged. See
+[Descriptor-pinned input reads](docs/DESCRIPTOR-READS.md) and the
+[release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.36).
 
 <details>
 <summary>Earlier preview milestones</summary>
@@ -77,7 +80,7 @@ flowchart TB
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: [Preview 35 (app build 39)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.35).** Unified public app with strict DICOM-only staging inventories, recovery-record write protection, structured audit-coverage reports, bounded recovery messages, independent staged-header auditing and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
+**Current download: [Preview 36 (app build 40)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.36).** Unified public app with descriptor-pinned input reads, the MRI-slice app icon, strict DICOM-only staging inventories, recovery-record write protection, structured audit-coverage reports, bounded recovery messages, independent staged-header auditing and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
 
 Preview 14 introduced allocation-aware estimates. Allocation-aware disk-space estimates account for metadata growth, destination allocation, output folders and the report while preserving the interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
 
@@ -114,8 +117,8 @@ complete validity of every MR/CT/RTSTRUCT object.
 3. Open the app, choose the input batch and an output location, inspect the scan
    summary, and process the batch.
 
-The [Preview 35 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.35)
-is app version 2.0.0, build 39. Its app is Developer ID signed and Apple notarized,
+The [Preview 36 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.36)
+is app version 2.0.0, build 40. Its app is Developer ID signed and Apple notarized,
 with a stapled ticket. It includes **CPython 3.13.16 and pydicom 3.0.2** and uses
 its bundled interpreter wherever the app is moved. No Homebrew, separate Python
 installation, launch-time runtime download, or package installation is needed.

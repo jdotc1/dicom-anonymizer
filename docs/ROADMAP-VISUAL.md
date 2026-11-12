@@ -1,6 +1,6 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 29 October 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 35/app build 39: unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback, bounded recovery-record reads/messages, RTSTRUCT label enforcement, staged-file header auditing, structured audit coverage, strict DICOM-only staging inventories, recovery-record write protection and guarded publication.
+Updated 12 November 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 36/app build 40: descriptor-pinned input reads, the MRI-slice app icon, unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback, bounded recovery-record reads/messages, RTSTRUCT label enforcement, staged-file header auditing, structured audit coverage, strict DICOM-only staging inventories, recovery-record write protection and guarded publication.
 
 The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
 
@@ -22,14 +22,16 @@ Allocation-aware disk-space estimates are now delivered. See [Disk-space estimat
 
 ## Latest delivered increment
 
-The latest app delivery is Preview 35/build 39: strict DICOM-only staging
-inventories and conservative recovery-record updates. Audit-coverage reporting
-retains separate DICOM/sidecar statuses and retained-content limitations. Recovery-message
-text remains bounded while complete inspection and uncertainty flags remain in use. File-header and
-RTSTRUCT label audits remain in place. Existing publication, terminal-event and
-Copy Details behavior is retained. Prior releases and signed downloads remain
-preserved. Accepted source/functional evidence was reused; only new distribution
-boundaries were checked. See [Staging and journal protection](STAGING-JOURNAL-PROTECTION.md).
+The latest app delivery is Preview 36/build 40: every patient-file read in
+scanning and processing goes through one open descriptor, so a path replaced after
+the regular-file check is rejected, and the app ships the new MRI-slice icon.
+Metadata-only changes are still accepted. Strict DICOM-only staging inventories,
+conservative recovery-record updates, audit-coverage reporting, bounded recovery
+messages, file-header and RTSTRUCT label audits, and existing publication,
+terminal-event and Copy Details behavior are retained. Prior releases and signed
+downloads remain preserved. Accepted source/functional evidence was reused; only
+new distribution boundaries were checked. See
+[Descriptor-pinned input reads](DESCRIPTOR-READS.md).
 The graphic remains a historical snapshot, and live interaction acceptance
 remains pending.
 

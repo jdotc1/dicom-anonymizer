@@ -154,7 +154,16 @@ all three completed operations. Remaining release metadata and logs were
 preserved separately, without rewriting or rehashing the receipts. Existing
 GitHub releases and signed downloads were unchanged.
 
-This is evidence of that concrete local operation, separate from the accepted
-synthetic fixture coverage. No fixture suite, app/engine acceptance, old signature
+During Preview 36 preparation a second explicitly authorized plan retired the
+same three kinds of artifact from the oldest finalized local release (Preview 29).
+The first plan attempt was refused because the recorded device number and change
+time no longer matched after a reboot; the identity fix described above removed
+those two fields from the comparison, and the plan then validated and applied
+with all three operations journaled. Remaining release metadata and logs were
+preserved separately. Existing GitHub releases and signed downloads were
+unchanged.
+
+The Preview 35 and Preview 36 uses are evidence of those concrete local
+operations, separate from the accepted synthetic fixture coverage. No fixture suite, app/engine acceptance, old signature
 or provenance hash was repeated for retirement. The shared storage guard's
 registry and limits were not manually changed.

@@ -1,6 +1,6 @@
 # Descriptor-pinned input reads
 
-Source increment, merged into `main` on 2026-11-12. Not yet packaged, signed, notarized or published.
+Source increment, merged into `main` on 2026-11-12 and delivered in Preview 36/build 40 (see [Delivery](#delivery)).
 
 ## Behavior
 
@@ -111,3 +111,24 @@ cannot mistake the read-only planner for a write. See
 
 No native sources changed, so no native build was needed. No GUI use, app launch,
 packaging, signing or installation occurred. Tests used synthetic files only.
+
+## Delivery
+
+Preview 36/build 40 ships this change together with the new MRI-slice app icon.
+Release source is `0b28f7684771c662aa3200a49be38a57d335b68c`; accepted engine
+source is `d95c0e93a220e23203206f27237982c37a0bdd0e`; the reused native
+executable was built at `5ebaa55481308ec33169e0420fe10a8c31d9f8e4`. The accepted
+267 focused methods, the optimized native executable and the unchanged policy,
+runtime and dependency receipts were reused; no functional test or native build
+was repeated for delivery. Apple notarization
+`64f39470-a132-4501-8e16-0353aeee9ef3` was Accepted, and the ZIP is 30,611,560
+bytes. Journaled publication completed without retrying a GitHub mutation, and
+the download returned HTTP 200 to a HEAD request.
+
+No GUI use, app launch or installation occurred, so the new icon and the read
+changes have no live GUI acceptance. The reads are ordinary-concurrency
+safeguards, not atomic conditional-rename or immutable-snapshot guarantees: an
+in-place rewrite that restores a file's original size and modification time is not
+detected, as in earlier releases.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.36).

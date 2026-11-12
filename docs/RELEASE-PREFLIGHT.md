@@ -92,4 +92,8 @@ Fixtures verify that guard snapshots and historical evidence remain unchanged
 and no candidate output is created. Temporary synthetic files are removed after
 each method. No accepted test suite, native build, real package scan, GUI use,
 app launch, admission, retirement, signing, publication or installation occurred.
-This source increment is not yet part of a published app release.
+This source increment is part of the repository state tagged for Preview 36; it
+is maintainer tooling and is not packaged in the app. During Preview 36
+preparation it was run read-only against the real release roots before and after
+an explicitly authorized retirement of the oldest local release, and its output
+was kept with the release working files.
