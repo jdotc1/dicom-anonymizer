@@ -1,39 +1,11 @@
 # DICOM Anonymizer
 
-**Current release: Preview 36/build 40.** Every patient-file read during a scan or
-batch now goes through one open descriptor, so a path replaced after the
-regular-file check is rejected with the existing input-changed message instead of
-being read in its place. The release also ships the new MRI-slice app icon.
-Metadata-only changes, such as an evicted iCloud Drive file that macOS downloads
-during a scan, are still accepted. The public interface, metadata-cleaning policy,
-report fields and sidecar default remain unchanged. See
-[Descriptor-pinned input reads](docs/DESCRIPTOR-READS.md) and the
-[release download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.36).
-
-<details>
-<summary>Earlier preview milestones</summary>
-
-**Resilience delivery:** Preview 19/build 23 adds interruption recovery and ships through the resumable publication tooling; consolidation cleanup is complete. See [Interruption recovery](docs/INTERRUPTION-RECOVERY.md).
-
-**Recovery lifecycle:** Preview 20/build 24 delivers combined recovery notices, safe local-record retirement and guarded live-owner reinspection, with accepted headless worker process coverage. See [Recovery lifecycle](docs/RECOVERY-LIFECYCLE.md).
-
-**Recovery explanations:** Preview 21/build 25 adds clearer confirmed/uncertain recovery guidance, with accepted headless worker-to-model integration coverage. See [Recovery explanations](docs/RECOVERY-EXPLANATIONS.md).
-
-**Output-location recovery:** Preview 22/build 26 delivers guarded recovery-location rechecks, with accepted headless record acknowledgement coverage. See [Output-location rechecks](docs/OUTPUT-LOCATION-RECHECKS.md).
-
-**Release tooling:** Preview 23/build 27 ships through bounded read-only reconciliation of delayed release/asset visibility and stale publication resumes, preserving journal/ownership safeguards. See [Resumable publication](docs/RESUMABLE-PUBLICATION.md).
-
-**Recovery-state feedback:** Preview 24/build 28 retains uncertainty on recovery-directory inspection failure and preserves completed results with nonblocking acknowledgement warnings. See [Recovery-state feedback](docs/RECOVERY-STATE-FEEDBACK.md).
-
-**Recovery consistency:** Preview 25/build 29 preserves outstanding acknowledgement warnings across report recovery and rejects stale background snapshots with generation tokens. See [Recovery consistency](docs/RECOVERY-CONSISTENCY.md).
-
-**Artifact retirement tooling:** Preview 26/build 30 ships through fresh ownership-record creation; the plan-first retirement command protects current inputs and evidence. Cleanup requires a separate explicit apply. See [Artifact retirement](docs/ARTIFACT-RETIREMENT.md).
-
-**Worker/sidecar feedback:** Preview 18 delivers robust worker-event framing and sidecar preflight/completion counts in the existing interface. See [Worker and sidecar feedback](docs/WORKER-SIDECAR-FEEDBACK.md).
-
-**Unified public app:** ongoing development now uses this self-contained public SwiftUI implementation. Preview 16 adds detailed folder-conflict recovery and optional MRI JSON-sidecar cleaning. Live sidecar GUI acceptance remains pending. See [Consolidation](docs/PUBLIC-CONSOLIDATION.md) and [MRI JSON sidecars](docs/MRI-JSON-SIDECARS.md).
-
-</details>
+**Project status: maintenance mode.** Feature development is paused indefinitely.
+The repository receives only maintenance. The latest download is
+[Preview 37 (app build 41)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.37).
+Open decisions and deferred work are listed in the [roadmap](docs/ROADMAP.md);
+how to test and release is in [Maintenance](docs/MAINTENANCE.md); every document is
+indexed in the [documentation index](docs/README.md).
 
 **Local DICOM metadata pseudonymization for imaging-data privacy.**
 
@@ -80,11 +52,13 @@ flowchart TB
 > DICOM confidentiality-profile conformance, or complete IOD validation. Review
 > [retained content](#what-changes-and-what-remains) before sharing output.
 
-**Current download: [Preview 36 (app build 40)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.36).** Unified public app with descriptor-pinned input reads, the MRI-slice app icon, strict DICOM-only staging inventories, recovery-record write protection, structured audit-coverage reports, bounded recovery messages, independent staged-header auditing and default-off MRI JSON-sidecar cleaning. Signed, notarized and stapled; accepted verification reused. Live GUI acceptance remains pending.
+**Current download: [Preview 37 (app build 41)](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.37)** (tag `v2.0.0-preview.37`). Signed and notarized macOS arm64 app. What is new since Preview 36 (build 40):
 
-Preview 14 introduced allocation-aware estimates. Allocation-aware disk-space estimates account for metadata growth, destination allocation, output folders and the report while preserving the interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md) and the [visual development roadmap](docs/ROADMAP-VISUAL.md).
+- **Tighter de-identification (engine policy 2.0-build6).** Identity-bearing elements (person-name, date, date-time, time and application-entity values) are now blanked by dictionary VR as well as by the VR a file declares, at top level and nested, so a file that declares a mismatched VR no longer keeps such a value. The self-audit flags survivors. This adds no new rejections.
+- **Engine-only command-line tools.** `--explain` gives a read-only explanation of how the policy treats one file, and `--verify-output DIR` is a read-only, source-free re-audit of a published output folder. The app does not expose either. See the [engine interface reference](docs/ENGINE-INTERFACE.md) and the [engine guide](engine/README.md).
+- **Documentation and contracts.** The engine interface reference now has contract tests, the output-permission contract is documented, and there are a synthetic [performance benchmark](docs/PERFORMANCE.md), a [canary retention survey](docs/CANARY-SURVEY.md), manual-only test and lint scripts, and a [maintenance roadmap](docs/ROADMAP.md).
 
-Output self-audit progress and checked-file counts, introduced in Preview 8, remain included. See [Audit progress](docs/AUDIT-PROGRESS.md) for that contract and reused evidence.
+The native app executable and interface are unchanged from Preview 36 and were reused. Preview 36 received one live GUI acceptance pass on synthetic data (launch, wrong-root rejection, scan, a two-patient six-file batch, an evicted iCloud Drive file and a rename-replaced input; an independent pydicom audit of the output passed). Not observed: Dock and Finder icon presentation, the input-changed message, pipe swap, MRI sidecars, cancellation, recovery, large batches, other macOS versions and real data. See [Runtime acceptance](docs/RUNTIME-ACCEPTANCE.md). `--verify-output` is not an independent conformance check; its limits are in the [roadmap](docs/ROADMAP.md).
 
 ## The batch workflow
 
@@ -117,8 +91,8 @@ complete validity of every MR/CT/RTSTRUCT object.
 3. Open the app, choose the input batch and an output location, inspect the scan
    summary, and process the batch.
 
-The [Preview 36 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.36)
-is app version 2.0.0, build 40. Its app is Developer ID signed and Apple notarized,
+The [Preview 37 release](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.37)
+is app version 2.0.0, build 41. Its app is Developer ID signed and Apple notarized,
 with a stapled ticket. It includes **CPython 3.13.16 and pydicom 3.0.2** and uses
 its bundled interpreter wherever the app is moved. No Homebrew, separate Python
 installation, launch-time runtime download, or package installation is needed.
@@ -269,8 +243,10 @@ runtime checks include scan/completion with external Python locations denied and
 the missing-runtime error without external fallback. These are recorded checks,
 not a claim that every preview reruns all suites or covers all native gestures.
 
-The engine policy remains **2.0-build6**, separately versioned from the app's
-release/build number. CI is manual-only, requires explicit acknowledgment, and
+The engine policy is **2.0-build6**, separately versioned from the app's
+release/build number. It changed from 2.0-build5 in Preview 37 because
+identity-bearing elements are now cleared by dictionary VR as well as declared
+VR. CI is manual-only, requires explicit acknowledgment, and
 has read-only repository permissions. Use the linked records for actual command,
 environment, and acceptance scope.
 
@@ -283,21 +259,13 @@ reports use the private reporting route in [SECURITY.md](SECURITY.md).
 
 Project source is [MIT-licensed](LICENSE). Dependencies retain their own terms. Preserve the complete notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) when redistributing them.
 
-## Release tooling
+## Documentation
 
-Receipt-driven packaging and explicit resumable distribution steps are documented in
-[Release automation](docs/RELEASE-AUTOMATION.md). Accepted application verification is reused;
-packaging fixtures cover only the new tooling.
+The [documentation index](docs/README.md) lists every document by topic. Starting points:
 
-## Scan-progress feedback
-
-Initial scan/preflight examined-file and examined-folder feedback is delivered.
-It stays inside the existing progress area and remains indeterminate. See
-[Scan progress](docs/SCAN-PROGRESS.md) for changed-input evidence and accepted
-verification reuse.
-
-## Allocation-aware disk-space estimate
-
-Allocation-aware output-space estimation is delivered. It accounts for metadata
-growth, destination allocation, directories and the report while preserving the
-existing interface and engine policy. See [Disk-space estimate](docs/SPACE-ESTIMATE.md).
+- [Maintenance](docs/MAINTENANCE.md): tests, lint, manual CI, release and policy-change rules.
+- [Roadmap](docs/ROADMAP.md) and the [visual roadmap](docs/ROADMAP-VISUAL.md): delivered, deferred and awaiting decisions.
+- Policy: [Data handling](docs/DATA-HANDLING.md), [RTSTRUCT policy](docs/RTSTRUCT-POLICY-COMPARISON.md), [MRI JSON sidecars](docs/MRI-JSON-SIDECARS.md).
+- Engine: [Engine interface](docs/ENGINE-INTERFACE.md), [Performance](docs/PERFORMANCE.md), [Canary survey](docs/CANARY-SURVEY.md).
+- Recovery and publication: [Interruption recovery](docs/INTERRUPTION-RECOVERY.md), [Resumable publication](docs/RESUMABLE-PUBLICATION.md), [Release automation](docs/RELEASE-AUTOMATION.md).
+- Evidence: [Runtime acceptance](docs/RUNTIME-ACCEPTANCE.md), [Evidence log](docs/EVIDENCE.md), [Publication checklist](docs/PUBLICATION-CHECKLIST.md).

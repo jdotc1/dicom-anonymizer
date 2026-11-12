@@ -1,6 +1,29 @@
 # macOS release acceptance
 
-## Current release — Preview 36, build 40
+## Current release — Preview 37, build 41 (in preparation)
+
+Preview 37/build 41 changes the engine only. The native app executable and
+interface are unchanged and are reused from the Preview 36 accepted product, so the
+Preview 36 live GUI record below still describes the app. Engine changes:
+identity-bearing elements (person-name, date, date-time, time and application-entity
+values) are cleared by dictionary VR as well as declared VR, with the self-audit
+flagging survivors (policy 2.0-build5 to 2.0-build6); the read-only `--explain` and
+`--verify-output` modes, which the app does not expose, are added. The new modes
+have no live GUI acceptance because the app does not use them. Release source,
+notarization and asset details are recorded in the
+[publication checklist](PUBLICATION-CHECKLIST.md) after publication.
+
+## Preview 36 live GUI acceptance (synthetic data)
+
+Live GUI acceptance of Preview 36/build 40 was performed once, on synthetic data
+only. Observed: launch; rejection of a wrong root folder; scan; a batch of two
+patients and six files; an evicted iCloud Drive file (accepted, as designed); and a
+rename-replaced input. An independent pydicom audit of the produced output passed.
+Not observed: Dock and Finder icon presentation, the input-changed message, a pipe
+swapped in for a file, MRI JSON sidecars, cancellation, recovery, large batches,
+other macOS versions and real data. This does not extend to those untested items.
+
+## Previous release — Preview 36, build 40
 
 Preview 36/build 40 pins every patient-file read in scanning and processing to one
 open descriptor: the DICOM header, the extensionless-file probe, the AppleDouble
@@ -27,8 +50,9 @@ and Gatekeeper checks passed. Apple notarization
 `64f39470-a132-4501-8e16-0353aeee9ef3` was Accepted. The ZIP is 30,611,560 bytes.
 Journaled publication completed without retrying a GitHub mutation; the download
 returned HTTP 200 to a HEAD request. Existing GitHub releases/downloads remain
-preserved. No GUI use, app launch or installation occurred. Live interaction
-acceptance of the new icon and the read changes remains pending. These are
+preserved. No GUI use, app launch or installation occurred during delivery; a
+later live GUI pass on synthetic data is recorded below, and icon presentation and
+the input-changed message were not observed in it. These are
 ordinary-concurrency safeguards, not atomic conditional-rename or
 immutable-snapshot guarantees: an in-place rewrite that restores a file's original
 size and modification time is not detected, as in earlier releases.
