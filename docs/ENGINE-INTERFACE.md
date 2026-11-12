@@ -19,9 +19,10 @@ beyond that sentence; the maintainer decides any wider compatibility promise.
 
 | Flag | Meaning |
 | --- | --- |
-| `--source PATH` | Required. Folder of numeric patient folders. Read-only. |
+| `--source PATH` | Required except with `--verify-output`. Folder of numeric patient folders. Read-only. |
 | `--scan` | Required unless `--destination` is given (mutually exclusive). Reports counts and writes nothing. |
 | `--destination PATH` | Required unless `--scan` is given. Must not exist; the parent must exist. |
+| `--verify-output DIR` | Read-only, source-free re-audit of a published output folder; mutually exclusive with `--scan`, `--destination`, `--source`, `--journal` and `--clean-json-sidecars`. Ends with `verify_complete`, never `complete`. Not an independent conformance check. |
 | `--journal PATH` | Optional private recovery record (mode 0600). Never copied into output or reports. |
 | `--clean-json-sidecars` | Optional. Also writes cleaned MRI JSON sidecar copies (policy `mri-physical-v1`). |
 

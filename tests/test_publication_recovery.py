@@ -207,7 +207,7 @@ class PublicationRecoveryTests(unittest.TestCase):
         emit.assert_called_once_with('error', message=str(error), cancelled=False, cleanup_failed=True)
 
     def test_main_late_signal_returns_zero_after_complete(self):
-        def run(source, destination, *, cancellation):
+        def run(source, destination, *, cancellation, **_options):
             cancellation.begin_publication()
             cancellation.cancel()
             return {}
