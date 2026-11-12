@@ -303,7 +303,7 @@ class RetirementTests(unittest.TestCase):
         planned = subprocess.run(command + ['--current', str(self.current), '--superseded', str(self.old)], capture_output=True, text=True, check=True)
         self.assertEqual(json.loads(planned.stdout)['mode'], 'plan-only')
         self.assertTrue((self.old / 'download.zip').exists())
-        bad = subprocess.run(command + ['--apply', '--current', str(self.current)], capture_output=True, text=True)
+        bad = subprocess.run(command + ['--apply', '--current', str(self.current)], capture_output=True, text=True, check=False)
         self.assertNotEqual(bad.returncode, 0)
         self.assertTrue((self.old / 'download.zip').exists())
         applied = subprocess.run(command + ['--apply'], capture_output=True, text=True, check=True)

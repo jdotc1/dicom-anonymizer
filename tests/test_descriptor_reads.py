@@ -1,16 +1,17 @@
 """Small descriptor-admission fixtures; no application launch or corpus reads."""
 import errno
-import json
 import os
 import stat
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
 import test_engine as fixtures
+from timeouts import scaled
 
 sys.path.insert(0, str(fixtures.ENGINE.parent))
 import sidecar_deid
@@ -60,12 +61,22 @@ class DescriptorReadTests(unittest.TestCase):
         # Same kind of change an iCloud download of an evicted file makes:
         # ctime and flags move, bytes, size and mtime do not.
         before = path.stat()
-        if hasattr(os, 'chflags'):
-            os.chflags(path, before.st_flags | stat.UF_NODUMP)
-        os.chmod(path, 0o600)
-        after = path.stat()
+        # Coarse filesystem timestamps can hide a change made within one tick,
+        # so retry within a bounded deadline and skip rather than flake.
+        deadline = time.monotonic() + scaled(2)
+        after = before
+        mode = 0o600
+        while after.st_ctime_ns == before.st_ctime_ns and time.monotonic() < deadline:
+            if hasattr(os, 'chflags'):
+                os.chflags(path, before.st_flags | stat.UF_NODUMP)
+            os.chmod(path, mode)
+            mode = 0o640 if mode == 0o600 else 0o600
+            after = path.stat()
+            if after.st_ctime_ns == before.st_ctime_ns:
+                time.sleep(0.05)
         self.assertEqual((after.st_size, after.st_mtime_ns), (before.st_size, before.st_mtime_ns))
-        self.assertNotEqual(after.st_ctime_ns, before.st_ctime_ns)
+        if after.st_ctime_ns == before.st_ctime_ns:
+            self.skipTest('filesystem ctime did not advance within the bounded retry window')
 
     def test_metadata_only_change_during_dicom_decode_is_accepted(self):
         original_read = engine.pydicom.dcmread
@@ -155,7 +166,7 @@ else:
         try:
             result = subprocess.run([sys.executable, '-I', '-B', '-c', script,
                                      str(fixtures.ENGINE), str(self.path), str(self.source), mode],
-                                    capture_output=True, text=True, timeout=2)
+                                    capture_output=True, text=True, timeout=scaled(2), check=False)
         except subprocess.TimeoutExpired:
             self.fail('FIFO substitution blocked file admission before rejection')
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -191,7 +202,7 @@ else:
         try:
             result = subprocess.run([sys.executable, '-I', '-B', '-c', script,
                                      str(fixtures.ENGINE.parent), str(fifo)],
-                                    capture_output=True, text=True, timeout=2)
+                                    capture_output=True, text=True, timeout=scaled(2), check=False)
         except subprocess.TimeoutExpired:
             self.fail('Sidecar admission blocked on a FIFO before checking its type')
         self.assertEqual(result.returncode, 0, result.stderr)

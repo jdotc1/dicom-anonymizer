@@ -6,7 +6,7 @@ import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('input_stability_engine', Path(__file__).resolve().parents[1] / 'engine/engine.py')
 engine = importlib.util.module_from_spec(spec)
