@@ -269,7 +269,7 @@ runtime checks include scan/completion with external Python locations denied and
 the missing-runtime error without external fallback. These are recorded checks,
 not a claim that every preview reruns all suites or covers all native gestures.
 
-The engine policy remains **2.0-build5**, separately versioned from the app's
+The engine policy remains **2.0-build6**, separately versioned from the app's
 release/build number. CI is manual-only, requires explicit acknowledgment, and
 has read-only repository permissions. Use the linked records for actual command,
 environment, and acceptance scope.

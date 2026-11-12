@@ -24,7 +24,7 @@ from pydicom.uid import generate_uid
 warnings.filterwarnings('ignore', module='pydicom')
 logging.getLogger('pydicom').disabled = True
 POLICY = {
-    'version': '2.0-build5', 'modalities': ['MR', 'CT', 'RTSTRUCT'],
+    'version': '2.0-build6', 'modalities': ['MR', 'CT', 'RTSTRUCT'],
     'patient_identity': 'Exact numeric patient folder identifier in PatientName and PatientID',
     'private_tags': 'removed recursively', 'dates_times': 'cleared recursively',
     'free_text': 'LT/ST/UT text, URLs and PS3.15 Annex E Basic Profile identifying attributes removed or cleared recursively',
