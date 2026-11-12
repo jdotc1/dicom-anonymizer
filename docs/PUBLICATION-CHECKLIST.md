@@ -6,7 +6,7 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 37, build 41 (in preparation)
+## Current release — Preview 37, build 41
 
 Preview 37/build 41 is an engine-only change on top of the unchanged Preview 36
 app. The native executable and interface are reused from the accepted Preview 36
@@ -15,9 +15,28 @@ dictionary VR as well as declared VR (engine policy label 2.0-build5 to
 2.0-build6, separate from the app build number), the self-audit flags survivors,
 and the read-only `--explain` and `--verify-output` modes are added; the app does
 not expose them. Documentation, contract tests, a synthetic benchmark and manual
-test and lint scripts were also added. The release tag will be `v2.0.0-preview.37`.
+test and lint scripts were also added. The release tag is `v2.0.0-preview.37`.
 
-Release source, notarization and asset details: recorded after publication.
+Release source and engine source are `f44dd12701a90c73a7946293498e3161b97813f2`
+(main after public pull requests 12 and 13); the reused native source is
+`5ebaa55481308ec33169e0420fe10a8c31d9f8e4`. Engine verification: one full engine
+suite run on merged main (540 tests; 538 passed, and the two failures, a
+documentation flag-table row and a test stub, were fixed in pull request 12 with
+only those two modules rerun), then focused reruns of the policy-label modules.
+No native build was repeated, and no GUI use, app launch or installation occurred
+for this build. Source-history, release-text and download-archive sanitation
+boundaries passed through the guarded release tools. The root signature, stapled
+ticket and Gatekeeper checks passed; Apple notarization
+`a52460a7-846f-41fa-9012-472ea6410089` was Accepted. The ZIP is 30,619,980 bytes.
+
+Journaled publication completed without retrying a GitHub mutation. The tag,
+source target and uploaded asset metadata were read back, and delivery returned
+HTTP 200 to a HEAD request without a binary redownload. Earlier releases and signed
+downloads remain preserved. To make release capacity, the local app, download ZIP
+and notarization-upload ZIP of the oldest finalized local release (Preview 30)
+were retired through the plan-first command; its release metadata was preserved.
+
+[Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.37).
 
 ## Previous release — Preview 36, build 40
 

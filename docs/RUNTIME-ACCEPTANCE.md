@@ -1,6 +1,6 @@
 # macOS release acceptance
 
-## Current release — Preview 37, build 41 (in preparation)
+## Current release — Preview 37, build 41
 
 Preview 37/build 41 changes the engine only. The native app executable and
 interface are unchanged and are reused from the Preview 36 accepted product, so the
@@ -11,7 +11,7 @@ flagging survivors (policy 2.0-build5 to 2.0-build6); the read-only `--explain` 
 `--verify-output` modes, which the app does not expose, are added. The new modes
 have no live GUI acceptance because the app does not use them. Release source,
 notarization and asset details are recorded in the
-[publication checklist](PUBLICATION-CHECKLIST.md) after publication.
+[publication checklist](PUBLICATION-CHECKLIST.md).
 
 ## Preview 36 live GUI acceptance (synthetic data)
 
