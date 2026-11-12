@@ -19,7 +19,8 @@ conditions, and pseudonymization limits. No patient data or Python runtime is
 bundled in the source repository; the separately released macOS app bundles its
 runtime.
 
-JSON-line event names are `scan`, `progress`, `complete`, and `error`. Errors use
+The CLI writes JSON-line events; the complete list of flags, events, fields and
+report keys is in the [engine interface reference](../docs/ENGINE-INTERFACE.md). Errors use
 fixed text to avoid exposing source identity, and library diagnostic messages
 are suppressed. Completed output includes `anonymization-report.json` with
 aggregate counts and self-audit status.
