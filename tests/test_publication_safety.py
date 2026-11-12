@@ -2,7 +2,6 @@
 import io
 import gzip
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -205,7 +204,7 @@ class SafetyTests(unittest.TestCase):
     def test_publication_gate_before_journal_or_api(self):
         with patch.object(publication, 'selection', return_value={'target': self.base}), \
              patch.object(publication.publication_safety, 'release_gate', side_effect=ValueError('blocked')), \
-             patch.object(publication.release, 'locked') as lock:
+             patch.object(publication.release, 'locked'):
             with self.assertRaisesRegex(ValueError, 'blocked'):
                 publication.publish(self.root, 'title', 'notes', authorize=True,
                                     api=lambda _: self.fail('remote call'))
@@ -321,7 +320,7 @@ class SafetyTests(unittest.TestCase):
                 release.write(root / 'state.json', state)
         with patch.object(release.publication_safety, 'app_gate'), \
              patch.object(release, 'step', side_effect=step), \
-             patch.object(release.publication_safety, 'ledger') as ledger, \
+             patch.object(release.publication_safety, 'ledger'), \
              patch.object(release.publication_safety, 'archive_gate', side_effect=ValueError('blocked')):
             with self.assertRaisesRegex(ValueError, 'blocked'):
                 release.distribute(self.root, 'finalize')
@@ -386,7 +385,7 @@ class SafetyTests(unittest.TestCase):
         dispatcher = hooks / 'pre-push'
         self.assertTrue(dispatcher.is_file())
         # This fixture intentionally has no tracked checker; no push is invoked.
-        result = subprocess.run([str(dispatcher)], cwd=self.repo, capture_output=True, text=True)
+        result = subprocess.run([str(dispatcher)], cwd=self.repo, capture_output=True, text=True, check=False)
         self.assertNotEqual(0, result.returncode)
         self.assertIn('checker missing', result.stderr)
 

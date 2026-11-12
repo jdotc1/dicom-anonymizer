@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import patch
 
 import test_engine as fixtures
+from timeouts import scaled
 
 sys.path.insert(0, str(fixtures.ENGINE.parent))
 import sidecar_deid
@@ -228,7 +229,7 @@ print(result['processed'])
 '''
         result = subprocess.run([sys.executable, '-I', '-B', '-c', script,
                                  str(fixtures.ENGINE), str(self.source), str(self.output)],
-                                capture_output=True, text=True, timeout=20)
+                                capture_output=True, text=True, timeout=scaled(20), check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), '1')
         self.assertEqual(list(self.root.glob('.dicom-batch-*')), [])

@@ -4,7 +4,6 @@ import io
 import json
 import os
 from pathlib import Path
-import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -199,7 +198,7 @@ class ReleaseStorageTests(unittest.TestCase):
              patch.object(storage.subprocess, 'run', return_value=SimpleNamespace(returncode=0)) as run, \
              patch.object(release, 'main', side_effect=AssertionError('distribution dispatch')):
             self.assertEqual(0, storage.main(['--admit-output', '--output', str(self.root / 'output')]))
-        run.assert_called_once_with([self.guard, 'active'], capture_output=True, text=True)
+        run.assert_called_once_with([self.guard, 'active'], capture_output=True, text=True, check=False)
         self.assertFalse((self.root / 'output').exists())
 
     def test_admission_worker_refuses_unauthenticated_invocation(self):

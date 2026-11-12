@@ -248,9 +248,18 @@ uses only the example generator and a separate preferences identifier, writing
 under `.synthetic/`.
 
 ```sh
-python -m unittest discover -s tests -v
+scripts/run_tests.sh            # unit tests with a private temp root
 bash test_drop.sh
+scripts/lint.sh                 # optional, non-gating lint counts (--strict to gate)
 ```
+
+`scripts/run_tests.sh` forwards extra arguments to `python -B -m unittest discover`
+(for example `-k sidecar`). Several test modules read `DICOM_TEST_TMPDIR`: if it is
+set to an existing directory the runner uses it and never removes it; otherwise the
+runner creates a private directory under `${TMPDIR:-/tmp}`, prints it, and removes
+only that directory on exit. Set `DICOM_TEST_TIMEOUT_SCALE` (for example `3`) to
+stretch subprocess timeouts on a slow machine. Running `python -m unittest discover -s tests`
+directly also works when `DICOM_TEST_TMPDIR` is exported first.
 
 [Runtime acceptance](docs/RUNTIME-ACCEPTANCE.md),
 [error recovery](docs/ERROR-RECOVERY.md), and

@@ -12,6 +12,7 @@ import pydicom
 from pydicom.dataset import FileDataset, FileMetaDataset, Dataset
 from pydicom.sequence import Sequence
 from pydicom.uid import ExplicitVRLittleEndian, MRImageStorage, RTStructureSetStorage, generate_uid
+from timeouts import kill_after, scaled
 
 ENGINE = Path(__file__).resolve().parents[1] / 'engine' / 'engine.py'
 spec = importlib.util.spec_from_file_location('bulk_engine', ENGINE)
@@ -244,6 +245,7 @@ class EngineTests(unittest.TestCase):
         for i in range(120):
             make_dicom(self.source / '1' / f'{i:04d}.dcm', study=study, series=series)
         proc = subprocess.Popen([sys.executable, str(ENGINE), '--source', str(self.source), '--destination', str(self.output)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        watchdog = kill_after(proc, 60)
         try:
             self.assertEqual(json.loads(proc.stdout.readline())['event'], 'scan_progress')
             events = []
@@ -251,23 +253,24 @@ class EngineTests(unittest.TestCase):
                 events.append(json.loads(proc.stdout.readline())['event'])
             self.assertIn('scan', events)
             proc.send_signal(signal.SIGTERM)
-            stdout, stderr = proc.communicate(timeout=10)
+            stdout, stderr = proc.communicate(timeout=scaled(10))
             self.assertEqual(proc.returncode, 1)
             self.assertIn('cancelled', stdout)
             self.assertEqual(stderr, '')
             self.assert_no_output()
         finally:
+            watchdog.cancel()
             if proc.poll() is None:
                 proc.kill(); proc.wait()
     def test_cli_safe_error_and_scan(self):
         make_dicom(self.source / '1' / 'a.dcm')
-        result = subprocess.run([sys.executable, str(ENGINE), '--source', str(self.source), '--scan'], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, str(ENGINE), '--source', str(self.source), '--scan'], capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0)
         events = [json.loads(line) for line in result.stdout.splitlines()]
         self.assertIn('scan_progress', [e['event'] for e in events])
         self.assertEqual([e for e in events if e['event'] == 'scan'][-1]['total_files'], 1)
         (self.source / '1' / 'bad-private-name.dcm').write_bytes(b'bad')
-        result = subprocess.run([sys.executable, str(ENGINE), '--source', str(self.source), '--scan'], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, str(ENGINE), '--source', str(self.source), '--scan'], capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 1)
         self.assertNotIn('bad-private-name', result.stdout + result.stderr)
         self.assertNotIn(str(self.source), result.stdout + result.stderr)
