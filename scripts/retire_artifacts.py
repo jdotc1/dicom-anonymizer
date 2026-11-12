@@ -36,6 +36,17 @@ def tree(path):
     return release.artifact_identity(path)
 
 
+def comparable(identity):
+    """Replacement-detection fields that survive a reboot or a metadata-only touch.
+
+    The device number is renumbered by reboots and remounts, and the change time
+    moves on chmod, extended-attribute and similar metadata-only operations, so
+    neither may decide whether a recorded artifact was replaced. Inode, mode,
+    size and modification time still bind the artifact to its recorded creation.
+    """
+    return {name: [value[1], value[2], value[3], value[4]] for name, value in identity.items()}
+
+
 
 def record(root):
     root = canonical(root)
@@ -124,14 +135,17 @@ def require_current(current):
 def owned_artifact(old, name, identity):
     if name == 'download.zip':
         entry = identity['.']
-        # Bind to the completed publication's existing filesystem identity.
-        if old['download_identity'] != [entry[0], entry[1], entry[3], entry[4], entry[5]]:
+        # Bind to the completed publication's recorded inode, size and mtime. The
+        # recorded device number and change time are not compared (see comparable).
+        recorded = old['download_identity']
+        if (not isinstance(recorded, list) or len(recorded) != 5 or
+                recorded[1:4] != [entry[1], entry[3], entry[4]]):
             raise ValueError('Published download was replaced or changed before planning')
     ownership = old.get('ownership')
     expected = ownership.get('artifacts', {}).get(name) if ownership else None
     if expected is None:
         return name == 'download.zip'
-    if expected != identity:
+    if comparable(expected) != comparable(identity):
         raise ValueError('Artifact changed since its recorded creation')
     return True
 

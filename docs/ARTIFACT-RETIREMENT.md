@@ -75,6 +75,14 @@ metadata at finalization. This records metadata only, without hashes or repeated
 accepted checks. It refuses an existing ownership file or symlink. Completed
 legacy finalization steps are reused without backfilling ownership records.
 
+Ownership and download bindings compare inode, mode, size and modification time
+(the download binding has no mode). They do not compare the device number or the
+change time: a reboot or remount renumbers the device, and metadata-only touches
+such as permission or extended-attribute changes move the change time, so
+comparing either would refuse every release recorded before the last reboot.
+This accepts an in-place rewrite that restores the original modification time;
+it remains an ordinary replacement check, not cryptographic identity.
+
 Bundles and upload ZIPs lacking recorded creation ownership are retained and
 listed as skipped. This command intentionally cannot automatically retire every
 legacy artifact from before ownership recording. A bound legacy download may

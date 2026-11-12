@@ -202,6 +202,47 @@ class RetirementTests(unittest.TestCase):
             self.plan()
         self.assertTrue((self.old / retire.APP).exists())
 
+    def test_device_number_and_change_time_changes_do_not_block_retirement(self):
+        # A reboot renumbers the device and a metadata-only touch moves ctime.
+        def renumber(value):
+            for identity in value['artifacts'].values():
+                for entry in identity.values():
+                    entry[0] += 1; entry[5] += 1
+        self.edit(self.old, 'artifact-ownership.json', renumber)
+        def shift_download(value):
+            identity = value['selection']['identity']
+            identity[0] += 1; identity[4] += 1
+        self.edit(self.old, 'publication.json', shift_download)
+        self.assertEqual(len(self.plan()['entries']), 3)
+        journal = retire.apply(self.plan_file)
+        self.assertTrue(all(v['status'] == 'retired' for v in journal['entries'].values()))
+        for name in retire.NAMES:
+            self.assertFalse((self.old / name).exists())
+
+    def test_inode_size_and_mtime_still_bind_recorded_ownership(self):
+        def bump(index):
+            def change(value):
+                entry = value['artifacts']['notarization-upload.zip']['.']; entry[index] += 1
+            return change
+        for index, label in ((1, 'inode'), (3, 'size'), (4, 'mtime')):
+            with self.subTest(artifact=label):
+                self.edit(self.old, 'artifact-ownership.json', bump(index))
+                with self.assertRaisesRegex(ValueError, 'changed since its recorded creation'):
+                    self.plan()
+                self.assertTrue((self.old / 'notarization-upload.zip').exists())
+                (self.old / 'artifact-ownership.json').unlink()
+                retire.release.record_artifact_ownership(self.old)
+        def move(index, step):
+            def change(value):
+                value['selection']['identity'][index] += step
+            return change
+        for index, label in ((1, 'inode'), (2, 'size'), (3, 'mtime')):
+            with self.subTest(download=label):
+                self.edit(self.old, 'publication.json', move(index, 1))
+                with self.assertRaisesRegex(ValueError, 'Published download was replaced'):
+                    self.plan()
+                self.edit(self.old, 'publication.json', move(index, -1))
+
     def test_missing_current_input_after_plan_prevents_all_retirement(self):
         self.plan(); (self.inputs / 'native').unlink()
         with self.assertRaisesRegex(ValueError, 'Current accepted native'):
