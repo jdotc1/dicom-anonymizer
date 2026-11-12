@@ -1,0 +1,17 @@
+# Non-gating lint baseline; see scripts/lint.sh. Run: ruff check
+target-version = "py310"
+extend-exclude = ["build", ".synthetic"]
+
+[lint]
+select = ["F", "E9", "B", "PLW1510"]
+# Not mechanical: each of these can change runtime behavior or error chaining,
+# so they are left for a reviewed change instead of a cleanup.
+ignore = [
+  "B904",  # raise ... from: changes exception chaining
+  "B905",  # zip strict=: changes behavior on unequal lengths
+  "B008",  # BatchLimits() default argument: evaluated once by design
+]
+
+[lint.per-file-ignores]
+# Test closures are defined and called inside the same loop iteration.
+"tests/*" = ["B023"]

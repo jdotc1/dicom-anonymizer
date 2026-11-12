@@ -13,3 +13,16 @@ A disk-space preflight estimates required capacity. Staged files are fully read 
 Review retained labels, ROI names, image text and facial anatomy before sharing. Absence of a burned-in annotation flag does not establish absence of identifying pixels. Do not upload sensitive data to the project's issue tracker.
 
 Output permissions: the staging folder is created owner-only (0700) and keeps that mode when it is renamed to the published root, so the published root is 0700 and access to the batch depends on that folder. Folders and files inside it (series folders, DICOM files, the report) are not individually restricted: they follow the process umask, which is 0755 for folders and 0644 for files under the common umask 022. The optional recovery record is created 0600 (its parent folder 0700 if newly created) and is never copied into the output. Moving or copying files out of the root can expose them. A test pins these modes; this documents current behavior and does not change it.
+
+## Declared-VR mismatches for identity-bearing tags
+
+Cleaning and the self-audit now judge a standard tag by both the value
+representation (VR) declared in the file and the dictionary VR for that tag. A
+file that declares, for example, ReferringPhysicianName, PerformingPhysicianName
+or OperatorsName as LO/SH, or StudyDate, StudyTime or PatientBirthDate as
+LO/SH/CS/DT, previously could keep the value because only the declared VR was
+checked. Such values are now cleared at the top level and inside nested
+sequences, and the self-audit fails the batch if any survives. This only
+tightens output: no additional input is rejected, and the policy label is
+unchanged. Unknown non-private tags with a free-text VR are a separate
+retained-value question and are not changed here.

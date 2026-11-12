@@ -1,6 +1,5 @@
 """Only scan telemetry plumbing; all DICOM reads and policy checks are mocked."""
 import importlib.util
-import json
 import os
 from pathlib import Path
 import sys

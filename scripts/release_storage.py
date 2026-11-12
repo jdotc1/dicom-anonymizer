@@ -20,7 +20,7 @@ def executable():
 
 
 def authenticate(guard):
-    active = subprocess.run([guard, 'active'], capture_output=True, text=True)
+    active = subprocess.run([guard, 'active'], capture_output=True, text=True, check=False)
     if active.returncode != 0:
         raise StorageGuardError('Allocating release actions require an authenticated storage-guard run')
 
@@ -32,7 +32,7 @@ def require_active(output):
     try:
         authenticate(guard)
         checked = subprocess.run([guard, 'check', '--path', destination],
-                                 capture_output=True, text=True)
+                                 capture_output=True, text=True, check=False)
         if checked.returncode != 0:
             raise StorageGuardError('Storage guard refused the release destination; preserve current inputs and partial outputs')
         if getattr(checked, 'stderr', ''):
@@ -42,7 +42,7 @@ def require_active(output):
         admitted = subprocess.run([guard, 'run', '--entry', str(Path(__file__).resolve()),
                                    '--interpreter', sys.executable, '--',
                                    '--admit-output', '--output', destination],
-                                  capture_output=True, text=True)
+                                  capture_output=True, text=True, check=False)
         if getattr(admitted, 'stderr', ''):
             sys.stderr.write(admitted.stderr)
         if admitted.returncode != 0:
@@ -60,7 +60,7 @@ def supervise(arguments):
                '--interpreter', sys.executable, '--', *arguments]
     try:
         # Do not capture: keep guard warnings/refusals visible and preserve status.
-        return subprocess.run(command).returncode
+        return subprocess.run(command, check=False).returncode
     except OSError as exc:
         raise StorageGuardError('Storage guard could not start the release worker') from exc
 

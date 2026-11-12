@@ -150,7 +150,7 @@ class EdgeCaseTests(unittest.TestCase):
         make_dicom(self.source / '1' / 'a.dcm')
         (self.source / '1' / '._a.dcm').write_bytes(APPLEDOUBLE)
         result = subprocess.run([sys.executable, str(Path(engine.__file__)), '--source', str(self.source), '--scan'],
-                                capture_output=True, text=True)
+                                capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0, result.stdout)
         event = [e for e in map(json.loads, result.stdout.splitlines()) if e['event'] == 'scan'][-1]
         self.assertEqual((event['event'], event['total_files'], event['excluded_files']), ('scan', 1, 1))
