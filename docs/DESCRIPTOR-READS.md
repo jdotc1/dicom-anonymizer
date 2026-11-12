@@ -1,6 +1,6 @@
 # Descriptor-pinned input reads
 
-Branch source, 2026-11-12. Not yet merged, packaged, signed, notarized or published.
+Source increment, merged into `main` on 2026-11-12. Not yet packaged, signed, notarized or published.
 
 ## Behavior
 
@@ -29,10 +29,10 @@ The comparison deliberately leaves out change time (`st_ctime`) and permission
 bits, because macOS updates both without touching a file's bytes. The common case
 is iCloud Drive: reading an evicted ("dataless") file downloads it and clears the
 dataless flag, and that moves the change time. Extended attributes, `chflags` and
-`chmod` do the same. An earlier revision of this branch compared change time, and
-it rejected every evicted iCloud input with the input-changed error. The released
-engine on `main` accepts them, and with change time excluded this branch accepts
-them again.
+`chmod` do the same. An earlier revision of this change compared change time, and
+it rejected every evicted iCloud input with the input-changed error. The previously
+released engine accepts them, and with change time excluded the merged engine
+accepts them again.
 
 The trade-off: an in-place rewrite that restores the original size and
 modification time is not detected, either during a read or between scanning and
