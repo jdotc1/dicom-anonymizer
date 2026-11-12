@@ -1225,6 +1225,24 @@ REMOVE_TAGS = {
 }
 
 
+IDENTITY_VRS = frozenset({'PN', 'DA', 'DT', 'TM', 'AE'})
+
+
+def effective_vrs(element):
+    """Return the file-declared VR plus the dictionary VR(s) for a standard tag.
+
+    A file can declare a different VR than the dictionary for an identity-bearing
+    tag; both are considered so that the declared VR cannot hide the tag's meaning.
+    """
+    vrs = {element.VR}
+    if not element.tag.is_private:
+        try:
+            vrs.update(pydicom.datadict.dictionary_VR(element.tag).split(' or '))
+        except KeyError:
+            pass
+    return vrs
+
+
 def clean(ds, patient, uid_map):
     ds.remove_private_tags()
     for element in list(ds):
@@ -1233,7 +1251,7 @@ def clean(ds, patient, uid_map):
             del ds[element.tag]
         elif keyword in {'PatientName', 'PatientID'}:
             element.value = patient
-        elif element.VR in ('PN', 'DA', 'DT', 'TM', 'AE'):
+        elif element.VR != 'SQ' and effective_vrs(element) & IDENTITY_VRS:
             # Keep required type-2 attributes present with empty values.
             element.value = ''
         elif element.VR == 'UN':
@@ -1702,6 +1720,11 @@ def audit_dataset(ds, patient, forbidden_uids):
             raise BatchError(AUDIT_FAILURE)
         if vr == 'SQ':
             continue
+        # Independent of clean(): judge identity-bearing tags by the dictionary VR
+        # as well as the VR declared in the file.
+        if effective_vrs(element) & IDENTITY_VRS and keyword not in ('PatientName', 'PatientID') \
+                and element.value not in (None, '', b'', []):
+            raise BatchError(AUDIT_FAILURE)
         if vr == 'UN':
             raise BatchError(AUDIT_FAILURE)
         values = audit_values(element) if vr not in ('OB', 'OW', 'OF', 'OD', 'OL', 'OV', 'UN') else []
