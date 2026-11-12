@@ -1816,7 +1816,24 @@ def environment_info():
     return {'pydicom': pydicom.__version__, 'python': '%d.%d.%d' % sys.version_info[:3]}
 
 
+def _explain(argv):
+    # Value-free dry run for one file; implemented in explain_mode.py. Loaded by
+    # filename when the engine directory is not on the module path.
+    try:
+        import explain_mode
+    except ModuleNotFoundError as error:
+        if error.name != 'explain_mode':
+            raise
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('explain_mode', Path(__file__).resolve().with_name('explain_mode.py'))
+        explain_mode = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(explain_mode)
+    return explain_mode.explain_main(sys.modules[__name__], argv)
+
+
 def main():
+    if sys.argv[1:2] == ['--explain']:
+        return _explain(sys.argv[1:])
     parser = argparse.ArgumentParser(description='Bulk local DICOM pseudonymization')
     parser.add_argument('--source', required=True)
     parser.add_argument('--journal', help='Private local recovery record path; never included in batch reports')

@@ -39,6 +39,27 @@ path replaced after the regular-file check is rejected with the existing
 input-changed message. Metadata-only changes are still accepted, and the metadata
 policy is unchanged.
 
+## Explain mode
+
+`python engine/engine.py --explain FILE` previews what a real run would do to one
+file, without printing any dataset value and without writing anything. It uses
+the same pinned read and `validate()` as a real run, then runs the engine's own
+`clean()` on a deep copy with a throwaway UID map and a fixed UID factory, and
+compares the copy with the original. One JSON line is printed: `event: explain`,
+an `attributes` list (`path`, dictionary `keyword`, `vr`, `action`) and `counts`.
+
+Actions are `removed`, `cleared`, `pseudonym` (PatientName/PatientID),
+`uid_remapped`, `replaced` and `changed`; unchanged attributes are only counted
+as `retained`. Nested items use tag paths such as `(0008,1140)[0]/(0008,1155)`;
+elements removed with a parent sequence are only counted (`removed_with_parent`).
+Private and unknown elements show an empty keyword and are never described by
+creator or value. Refusals (unsupported modality, overlays, unreadable file)
+print the same fixed `error` event as a real run, with exit code 1.
+
+Explain covers `clean()` only. Fields a real run then sets (pseudonym identity,
+de-identification markers, rebuilt file meta, output naming) and the
+self-audit are not part of the preview, and the cleaning policy is unchanged.
+
 Rough, caveated synthetic-data timing figures and a manual benchmark script are in
 [performance notes](../docs/PERFORMANCE.md); they are not a gate.
 
