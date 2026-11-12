@@ -11,7 +11,7 @@ flagging survivors (policy 2.0-build5 to 2.0-build6); the read-only `--explain` 
 `--verify-output` modes, which the app does not expose, are added. The new modes
 have no live GUI acceptance because the app does not use them. Release source,
 notarization and asset details are recorded in the
-[publication checklist](PUBLICATION-CHECKLIST.md) after publication.
+[publication checklist](PUBLICATION-CHECKLIST.md).
 
 ## Preview 36 live GUI acceptance (synthetic data)
 
