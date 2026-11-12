@@ -132,3 +132,13 @@ See `DESCRIPTOR-READS.md`: 12 new synthetic descriptor-read methods and the 17-m
 ## 2026-11-12 — descriptor-pinned reads Preview 36/build 40
 
 Accepted verification was reused: 267 focused synthetic methods across the 21 affected engine and sidecar modules and the descriptor-read module, the existing optimized native executable and the unchanged policy, runtime and dependency evidence. No functional test or native build was repeated for delivery. The new MRI-slice icon was compiled once and added to a copy of the Preview 35 app. Release source is `0b28f7684771c662aa3200a49be38a57d335b68c`, accepted engine source `d95c0e93a220e23203206f27237982c37a0bdd0e` and native source `5ebaa55481308ec33169e0420fe10a8c31d9f8e4`. The publication release gate, root signature, stapled ticket and Gatekeeper checks passed; Apple notarization `64f39470-a132-4501-8e16-0353aeee9ef3` was Accepted. The ZIP is 30,611,560 bytes. Journaled publication completed without retrying a GitHub mutation, and the download returned HTTP 200 to a HEAD request. To make release capacity, an explicitly authorized plan retired the app, download ZIP and notarization-upload ZIP of the Preview 29 local release; the artifact-retirement identity fix recorded above was needed first. No GUI use, app launch or installation occurred. Live GUI acceptance of the new icon and the read changes remains pending. See `DESCRIPTOR-READS.md` and `PUBLICATION-CHECKLIST.md`.
+
+## 2026-11-12 — Preview 36 live GUI acceptance (synthetic data)
+
+Live GUI acceptance of Preview 36/build 40 was performed once, on synthetic data
+only. Observed: launch; rejection of a wrong root folder; scan; a batch of two
+patients and six files; an evicted iCloud Drive file (accepted, as designed); and a
+rename-replaced input. An independent pydicom audit of the produced output passed.
+Not observed: Dock and Finder icon presentation, the input-changed message, a pipe
+swapped in for a file, MRI JSON sidecars, cancellation, recovery, large batches,
+other macOS versions and real data. This does not extend to those untested items.

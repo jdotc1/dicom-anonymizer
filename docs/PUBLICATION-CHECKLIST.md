@@ -6,7 +6,20 @@ evidence; do not bypass the gate. Source history, release text and selected
 artifacts are distinct acceptance boundaries. Existing historical receipts below
 retain their original scope.
 
-## Current release — Preview 36, build 40
+## Current release — Preview 37, build 41 (in preparation)
+
+Preview 37/build 41 is an engine-only change on top of the unchanged Preview 36
+app. The native executable and interface are reused from the accepted Preview 36
+product. Engine changes since Preview 36: identity-bearing elements are cleared by
+dictionary VR as well as declared VR (engine policy label 2.0-build5 to
+2.0-build6, separate from the app build number), the self-audit flags survivors,
+and the read-only `--explain` and `--verify-output` modes are added; the app does
+not expose them. Documentation, contract tests, a synthetic benchmark and manual
+test and lint scripts were also added. The release tag will be `v2.0.0-preview.37`.
+
+Release source, notarization and asset details: recorded after publication.
+
+## Previous release — Preview 36, build 40
 
 Preview 36/build 40 delivers descriptor-pinned input reads and the new MRI-slice
 app icon. Release source is `0b28f7684771c662aa3200a49be38a57d335b68c`; accepted
@@ -32,10 +45,12 @@ releases and signed downloads remain preserved. To make release capacity, an
 explicitly authorized plan retired the local app, download ZIP and
 notarization-upload ZIP of the oldest finalized local release (Preview 29); its
 release metadata and logs were preserved. No GUI use, app launch or installation
-occurred, so the new icon and the read changes have no live GUI acceptance. See
+occurred during delivery, so the new icon and the read changes had no live GUI acceptance at that point. See
 [Descriptor-pinned input reads](DESCRIPTOR-READS.md) for scope and evidence limits.
 
 [Release and download](https://github.com/jdotc1/dicom-anonymizer/releases/tag/v2.0.0-preview.36).
+
+A later live GUI pass on synthetic data is recorded in [Runtime acceptance](RUNTIME-ACCEPTANCE.md); it did not observe icon presentation or the input-changed message.
 
 ## Previous release — Preview 35, build 39
 

@@ -28,6 +28,8 @@ beyond that sentence; the maintainer decides any wider compatibility promise.
 
 Exit status is 0 on success and 1 after an `error` event.
 
+`--explain FILE` is a separate read-only mode handled before argument parsing: it takes one file path, prints a single value-free `explain` JSON line (a per-attribute action list and counts) and writes nothing. It is described in the [engine guide](../engine/README.md#explain-mode).
+
 ## Output format
 
 Standard output carries one JSON object per line. Every object has an `event`

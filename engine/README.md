@@ -33,11 +33,31 @@ Preview 35/build 39 adds [staging and journal protection](../docs/STAGING-JOURNA
 strict default-mode publication inventories and conservative recovery-record
 updates. It does not enable sidecar processing or change the metadata policy.
 
+Preview 37/build 41 changes only the engine: identity-bearing elements are now
+cleared by dictionary VR as well as by the VR a file declares (policy label
+2.0-build5 to 2.0-build6), and `--explain` and `--verify-output` are added. The
+native app is unchanged and does not expose the new modes.
+
 Preview 36/build 40 adds [descriptor-pinned input reads](../docs/DESCRIPTOR-READS.md):
 each patient-file read in scanning and processing uses one open descriptor, and a
 path replaced after the regular-file check is rejected with the existing
 input-changed message. Metadata-only changes are still accepted, and the metadata
 policy is unchanged.
+
+## Flags and events at a glance
+
+Flags: `--source`, `--scan`, `--destination`, `--journal`, `--clean-json-sidecars`,
+`--verify-output DIR` (read-only, source-free re-audit; see below) and
+`--explain FILE` (read-only explanation of one file; see below). `--explain` is
+handled before normal argument parsing and takes a single file path and nothing
+else. Each mode is mutually exclusive with the others as described in the
+[interface reference](../docs/ENGINE-INTERFACE.md).
+
+Events: `scan_progress`, `scan`, `progress`, `audit_progress`, `phase`, `complete`
+and `error`, plus `sidecar_scan_progress`, `sidecar_progress` and
+`sidecar_audit_progress` with `--clean-json-sidecars`. The additional terminal
+events are `verify_complete` (`--verify-output`, never `complete`) and `explain`
+(`--explain`, one JSON line).
 
 ## Verifying a published output folder
 
@@ -89,7 +109,7 @@ self-audit are not part of the preview, and the cleaning policy is unchanged.
 Rough, caveated synthetic-data timing figures and a manual benchmark script are in
 [performance notes](../docs/PERFORMANCE.md); they are not a gate.
 
-**Policy version: 2.0-build5.** App preview/build numbers are separate. Accepted
+**Policy version: 2.0-build6** (was 2.0-build5 before Preview 37). App preview/build numbers are separate. Accepted
 engine and bundled-runtime evidence, reused checks, and remaining limits are
 recorded in [runtime acceptance](../docs/RUNTIME-ACCEPTANCE.md). Later
 [interface recovery checks](../docs/ERROR-RECOVERY.md) do not change the engine

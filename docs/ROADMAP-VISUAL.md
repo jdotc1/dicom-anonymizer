@@ -1,8 +1,8 @@
 # DICOM Anonymizer — visual development roadmap
 
-Updated 12 November 2026. This view tracks the sole ongoing public app. The current delivered milestone is Preview 36/app build 40: descriptor-pinned input reads, the MRI-slice app icon, unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback, bounded recovery-record reads/messages, RTSTRUCT label enforcement, staged-file header auditing, structured audit coverage, strict DICOM-only staging inventories, recovery-record write protection and guarded publication.
+Updated 12 November 2026. **Project status: maintenance mode; feature development is paused indefinitely.** Open decisions and deferred work are in the [roadmap](ROADMAP.md). The current milestone is Preview 37/app build 41 (engine policy 2.0-build6): the native app is unchanged from Preview 36/build 40 and was reused, and the engine gained dictionary-VR clearing of identity-bearing elements, the read-only `--explain` and `--verify-output` modes, an engine-interface reference with contract tests, a synthetic benchmark, a canary retention survey and manual-only test and lint scripts. Earlier milestones: descriptor-pinned input reads, the MRI-slice app icon, unified public UI, folder and interruption recovery, optional MRI JSON sidecars, worker feedback, bounded recovery-record reads/messages, RTSTRUCT label enforcement, staged-file header auditing, structured audit coverage, strict DICOM-only staging inventories, recovery-record write protection and guarded publication.
 
-The graphic below is the retained storage-recovery milestone snapshot, before the release-automation delivery. Current delivery is stated above; the unchanged graphic was not rerendered or reverified.
+The graphic below is a historical snapshot of the storage-recovery milestone, taken before the release-automation delivery. It has not been updated since; current delivery is stated above and in the [roadmap](ROADMAP.md).
 
 ![Storage-recovery milestone snapshot](roadmap/current-roadmap.png)
 
@@ -10,7 +10,7 @@ The graphic below is the retained storage-recovery milestone snapshot, before th
 
 ## Current development stage
 
-The app has a delivered standalone macOS workflow, bundled Python, an app icon, signing/notarization, pre-publication output auditing, visible audit progress and focused recovery. Current delivery includes allocation-aware disk-space estimates, scan/audit and sidecar feedback, and worker-event reliability, with the existing metadata policy retained. Live sidecar interaction, startup/recovery, responsiveness and compact-window appearance checks remain pending under the no-GUI restriction.
+The app has a delivered standalone macOS workflow, bundled Python, an app icon, signing/notarization, pre-publication output auditing, visible audit progress and focused recovery. Current delivery includes allocation-aware disk-space estimates, scan/audit and sidecar feedback, and worker-event reliability, with the existing metadata policy retained. One live GUI acceptance pass on synthetic data was done for Preview 36 (see below); live sidecar interaction, recovery, cancellation, responsiveness and compact-window appearance were not observed.
 
 The storage-recovery implementation reuses accepted optimized products and evidence: 27 new engine checks plus one intentionally changed publication regression for the public app, 11 model checks, and native warning/output-replacement review. Earlier unchanged policy, runtime, icon and UI receipts remain in use. See [Storage recovery](STORAGE-RECOVERY.md) for the acceptance and delivery record.
 
@@ -22,18 +22,34 @@ Allocation-aware disk-space estimates are now delivered. See [Disk-space estimat
 
 ## Latest delivered increment
 
-The latest app delivery is Preview 36/build 40: every patient-file read in
-scanning and processing goes through one open descriptor, so a path replaced after
-the regular-file check is rejected, and the app ships the new MRI-slice icon.
-Metadata-only changes are still accepted. Strict DICOM-only staging inventories,
-conservative recovery-record updates, audit-coverage reporting, bounded recovery
-messages, file-header and RTSTRUCT label audits, and existing publication,
-terminal-event and Copy Details behavior are retained. Prior releases and signed
-downloads remain preserved. Accepted source/functional evidence was reused; only
-new distribution boundaries were checked. See
+Preview 37/build 41 is an engine-and-documentation release on top of the unchanged
+Preview 36 app. Identity-bearing elements (person-name, date, date-time, time and
+application-entity values) are now cleared by dictionary VR as well as by the VR a
+file declares, at top level and nested, and the self-audit flags survivors; this
+tightens de-identification and adds no new rejections. `--explain` and
+`--verify-output` are engine-level read-only modes that the app does not expose.
+See [Engine interface](ENGINE-INTERFACE.md) and [Maintenance](MAINTENANCE.md).
+
+## Preview 36 live GUI acceptance (synthetic data)
+
+Preview 36/build 40 (descriptor-pinned input reads, new MRI-slice icon) received one
+live GUI acceptance pass on synthetic data. Observed: launch, rejection of a wrong
+root folder, scan, a batch of two patients and six files, an evicted iCloud Drive
+file accepted, and a rename-replaced input; an independent pydicom audit of the
+output passed. Not observed: Dock and Finder icon presentation, the input-changed
+message, pipe swap, MRI JSON sidecars, cancellation, recovery, large batches, other
+macOS versions and real data. See [Runtime acceptance](RUNTIME-ACCEPTANCE.md).
+
+## Preview 36 delivery
+
+Preview 36/build 40: every patient-file read in scanning and processing goes
+through one open descriptor, so a path replaced after the regular-file check is
+rejected, and the app ships the new MRI-slice icon. Metadata-only changes are still
+accepted. Strict DICOM-only staging inventories, conservative recovery-record
+updates, audit-coverage reporting, bounded recovery messages, file-header and
+RTSTRUCT label audits, and existing publication, terminal-event and Copy Details
+behavior are retained. Accepted source/functional evidence was reused. See
 [Descriptor-pinned input reads](DESCRIPTOR-READS.md).
-The graphic remains a historical snapshot, and live interaction acceptance
-remains pending.
 
 ## Audit-coverage delivery
 
@@ -98,6 +114,6 @@ accepted compile-only native build. See
 [Worker and storage bounds](BOUNDED-WORKER-STORAGE.md). The dated graphic above
 remains unchanged; it was not rerendered or reverified.
 
-1. **Resolve supported-input policy decisions separately.** Opaque payloads, unsupported structures, resource limits and conformance claims need explicit scope and approval before implementation.
+1. **Resolve supported-input policy decisions separately.** Opaque payloads, unsupported structures, resource limits and conformance claims need explicit scope and approval before implementation. They are listed in the [roadmap](ROADMAP.md); development is paused.
 
 These priorities are proposals, not scheduled commitments. The graphic separates delivered work from future work and decision-dependent scope. Its editable source is SVG, with Arial 10 pt text throughout; the PNG is a rendered copy.
