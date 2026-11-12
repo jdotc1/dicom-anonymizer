@@ -559,8 +559,10 @@ def _read_regular_nofollow(
         current = path.stat(follow_symlinks=False)
         first = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
         second = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
-        stamp = lambda info: (info.st_dev, info.st_ino, info.st_mode, info.st_size,
-                              info.st_mtime_ns, info.st_ctime_ns)
+        # Content identity only; ctime and permissions change on metadata-only
+        # events such as an iCloud download of an evicted sidecar.
+        stamp = lambda info: (info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode),
+                              info.st_size, info.st_mtime_ns)
         if first != second or stamp(before) != stamp(after) or stamp(before) != stamp(current):
             raise SidecarError(
                 "A cleaned JSON sidecar changed while it was being read from staging."

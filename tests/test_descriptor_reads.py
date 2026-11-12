@@ -2,6 +2,7 @@
 import errno
 import json
 import os
+import stat
 from pathlib import Path
 import subprocess
 import sys
@@ -55,10 +56,50 @@ class DescriptorReadTests(unittest.TestCase):
             with self.assertRaises(engine.BatchError):
                 engine.checked_read(self.path)
 
+    def metadata_only_change(self, path):
+        # Same kind of change an iCloud download of an evicted file makes:
+        # ctime and flags move, bytes, size and mtime do not.
+        before = path.stat()
+        if hasattr(os, 'chflags'):
+            os.chflags(path, before.st_flags | stat.UF_NODUMP)
+        os.chmod(path, 0o600)
+        after = path.stat()
+        self.assertEqual((after.st_size, after.st_mtime_ns), (before.st_size, before.st_mtime_ns))
+        self.assertNotEqual(after.st_ctime_ns, before.st_ctime_ns)
+
+    def test_metadata_only_change_during_dicom_decode_is_accepted(self):
+        original_read = engine.pydicom.dcmread
+
+        def read(*args, **kwargs):
+            self.metadata_only_change(self.path)
+            return original_read(*args, **kwargs)
+
+        with patch.object(engine.pydicom, 'dcmread', read):
+            result = engine.checked_read(self.path)
+        self.assertEqual(str(result.SOPInstanceUID), str(self.dataset.SOPInstanceUID))
+
+    def test_metadata_only_change_during_sidecar_read_is_accepted(self):
+        path = self.root / 'input.json'
+        path.write_bytes(b'{"EchoTime":0.003}')
+        original_read = os.read
+        changed = []
+
+        def read(*args):
+            data = original_read(*args)
+            if not changed:
+                self.metadata_only_change(path)
+                changed.append(True)
+            return data
+
+        with patch.object(sidecar_deid.os, 'read', read):
+            data, _ = sidecar_deid._read_regular_nofollow(path)
+        self.assertEqual(data, b'{"EchoTime":0.003}')
+
     def fifo_child(self, mode):
         script = r'''
 import importlib.util
 import os
+import stat
 from pathlib import Path
 import sys
 spec = importlib.util.spec_from_file_location('descriptor_engine', sys.argv[1])

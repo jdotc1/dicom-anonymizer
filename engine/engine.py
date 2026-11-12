@@ -170,8 +170,12 @@ def stable_read(path, signature):
 
 
 def _read_identity(info):
-    return (info.st_dev, info.st_ino, info.st_mode, info.st_size,
-            info.st_mtime_ns, info.st_ctime_ns)
+    # Content identity only. st_ctime and permission bits are deliberately
+    # excluded: macOS changes them without touching file bytes (an iCloud
+    # download clearing the dataless flag, extended attributes, chflags), so
+    # comparing them rejects unchanged evicted iCloud inputs.
+    return (info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode), info.st_size,
+            info.st_mtime_ns)
 
 
 @contextmanager
