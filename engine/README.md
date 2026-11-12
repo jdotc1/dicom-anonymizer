@@ -39,6 +39,32 @@ path replaced after the regular-file check is rejected with the existing
 input-changed message. Metadata-only changes are still accepted, and the metadata
 policy is unchanged.
 
+## Verifying a published output folder
+
+```sh
+python engine/engine.py --verify-output path/to/output
+```
+
+This read-only mode needs no source. It re-runs the engine's own file-header and
+dataset audit over every output DICOM file (with the patient taken from each
+top-level folder), checks that the tree has exactly the engine layout and agrees
+with `anonymization-report.json` (patient, series and file counts, policy
+version, passed self-audit), and checks that every RTSTRUCT reference resolves to
+an instance in the same patient folder. It also rejects duplicate instance UIDs
+and patient frames shared across folders. Nothing under the folder is written.
+
+Events are the usual JSON lines (`scan`, `audit_progress`, `error` with fixed
+text containing no path or value) plus one terminal `verify_complete` event with
+the audited counts and a `tree_sha256` digest of the report and every DICOM file,
+which can be recorded and compared later. It never emits `complete`. The terminal
+event always states `source_uid_check: not_performed`: leaked source UIDs can
+only be found with the source. It is not an independent conformance check, since
+it reuses the engine's own audit, and the report holds no per-file digests, so
+it cannot detect an edit that stays audit-clean unless the `tree_sha256` from an
+earlier run is compared. Closure is strict: a tree whose RTSTRUCT referenced
+images that were not in the source batch fails. Trees with JSON sidecar output
+are refused. `--verify-output` cannot be combined with `--source`.
+
 ## Explain mode
 
 `python engine/engine.py --explain FILE` previews what a real run would do to one

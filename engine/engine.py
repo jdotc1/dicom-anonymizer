@@ -1341,6 +1341,21 @@ def _seal_dicom_inventory(staging, identity, written, report_path, cancellation)
     require_owned_root()
 
 
+def _verify_module():
+    try:
+        import verify_output
+        return verify_output
+    except ModuleNotFoundError as error:
+        if error.name != 'verify_output':
+            raise
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'verify_output', Path(__file__).resolve().with_name('verify_output.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def _sidecar_output_operation(operation, *args):
     import sidecar_deid
     try:
@@ -1835,18 +1850,26 @@ def main():
     if sys.argv[1:2] == ['--explain']:
         return _explain(sys.argv[1:])
     parser = argparse.ArgumentParser(description='Bulk local DICOM pseudonymization')
-    parser.add_argument('--source', required=True)
+    parser.add_argument('--source')
     parser.add_argument('--journal', help='Private local recovery record path; never included in batch reports')
     parser.add_argument('--clean-json-sidecars', action='store_true', help='Write cleaned MRI JSON sidecar copies using mri-physical-v1')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--scan', action='store_true')
     group.add_argument('--destination')
+    group.add_argument('--verify-output', metavar='DIR', help='Read-only source-free re-audit of a published output folder; not an independent conformance check')
     args = parser.parse_args()
+    if args.verify_output is not None:
+        if args.source or args.journal or args.clean_json_sidecars:
+            parser.error('--verify-output cannot be combined with --source, --journal or --clean-json-sidecars')
+    elif not args.source:
+        parser.error('the following arguments are required: --source')
     cancellation = Cancellation()
     signal.signal(signal.SIGTERM, cancellation.cancel)
     signal.signal(signal.SIGINT, cancellation.cancel)
     try:
-        if args.scan:
+        if args.verify_output is not None:
+            _verify_module().verify(args.verify_output, sys.modules[__name__], progress=emit)
+        elif args.scan:
             records, patients, excluded = scan(args.source, progress=emit)
             if args.clean_json_sidecars:
                 sidecars = _sidecar_scan(args.source, cancellation, progress=emit)
