@@ -1,6 +1,6 @@
 # macOS release acceptance
 
-## Current release — Preview 37, build 41 (in preparation)
+## Current release — Preview 37, build 41
 
 Preview 37/build 41 changes the engine only. The native app executable and
 interface are unchanged and are reused from the Preview 36 accepted product, so the
